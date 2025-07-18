@@ -1,7 +1,7 @@
-import React from 'react';
-import ARViewer from './components/ARViewer';
-import ThirdWebProviderWrapper from './providers/ThirdWebProvider';
-import './App.css';
+import React from "react";
+import ARViewer from "./components/ARViewer";
+import ThirdWebProviderWrapper from "./providers/ThirdWebProvider";
+import "./App.css";
 
 function App() {
   return (
@@ -12,3 +12,5 @@ function App() {
     </ThirdWebProviderWrapper>
   );
 }
+
+export default App;

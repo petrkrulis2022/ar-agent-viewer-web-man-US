@@ -1,27 +1,26 @@
-import React from 'react';
-import { 
+import React from "react";
+import {
   ConnectWallet,
   useAddress,
   useConnectionStatus,
   useDisconnect,
   useUser,
-  ConnectButton,
   lightTheme,
-  darkTheme
-} from '@thirdweb-dev/react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Wallet, 
-  User, 
-  LogOut, 
-  CheckCircle, 
+  darkTheme,
+} from "@thirdweb-dev/react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Wallet,
+  User,
+  LogOut,
+  CheckCircle,
   AlertCircle,
   Smartphone,
   Mail,
-  MessageCircle
-} from 'lucide-react';
+  MessageCircle,
+} from "lucide-react";
 
 const ThirdWebWalletConnect = ({ onConnectionChange }) => {
   const address = useAddress();
@@ -37,7 +36,7 @@ const ThirdWebWalletConnect = ({ onConnectionChange }) => {
         address,
         connectionStatus,
         user,
-        isLoggedIn
+        isLoggedIn,
       });
     }
   }, [address, connectionStatus, user, isLoggedIn, onConnectionChange]);
@@ -45,32 +44,40 @@ const ThirdWebWalletConnect = ({ onConnectionChange }) => {
   const handleDisconnect = async () => {
     try {
       await disconnect();
-      console.log('🔌 Wallet disconnected');
+      console.log("🔌 Wallet disconnected");
     } catch (error) {
-      console.error('❌ Disconnect error:', error);
+      console.error("❌ Disconnect error:", error);
     }
   };
 
   const formatAddress = (addr) => {
-    if (!addr) return '';
+    if (!addr) return "";
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
 
   const getConnectionStatusColor = () => {
     switch (connectionStatus) {
-      case 'connected': return 'bg-green-500';
-      case 'connecting': return 'bg-yellow-500';
-      case 'disconnected': return 'bg-red-500';
-      default: return 'bg-gray-500';
+      case "connected":
+        return "bg-green-500";
+      case "connecting":
+        return "bg-yellow-500";
+      case "disconnected":
+        return "bg-red-500";
+      default:
+        return "bg-gray-500";
     }
   };
 
   const getConnectionStatusText = () => {
     switch (connectionStatus) {
-      case 'connected': return 'Connected';
-      case 'connecting': return 'Connecting...';
-      case 'disconnected': return 'Disconnected';
-      default: return 'Unknown';
+      case "connected":
+        return "Connected";
+      case "connecting":
+        return "Connecting...";
+      case "disconnected":
+        return "Disconnected";
+      default:
+        return "Unknown";
     }
   };
 
@@ -82,8 +89,8 @@ const ThirdWebWalletConnect = ({ onConnectionChange }) => {
           <CardTitle className="text-white flex items-center space-x-2">
             <Wallet className="w-5 h-5" />
             <span>Wallet Connected</span>
-            <Badge 
-              variant="outline" 
+            <Badge
+              variant="outline"
               className={`text-xs ${getConnectionStatusColor()} border-none text-white`}
             >
               {getConnectionStatusText()}
@@ -97,11 +104,13 @@ const ThirdWebWalletConnect = ({ onConnectionChange }) => {
               <User className="w-8 h-8 text-purple-300" />
               <div>
                 <p className="text-white font-medium">
-                  {user.email || user.phoneNumber || 'Anonymous User'}
+                  {user.email || user.phoneNumber || "Anonymous User"}
                 </p>
                 <p className="text-purple-200 text-sm">
                   {user.email && <Mail className="w-3 h-3 inline mr-1" />}
-                  {user.phoneNumber && <Smartphone className="w-3 h-3 inline mr-1" />}
+                  {user.phoneNumber && (
+                    <Smartphone className="w-3 h-3 inline mr-1" />
+                  )}
                   Social Login Active
                 </p>
               </div>
@@ -113,7 +122,9 @@ const ThirdWebWalletConnect = ({ onConnectionChange }) => {
             <Wallet className="w-6 h-6 text-purple-300" />
             <div>
               <p className="text-purple-200 text-sm">Wallet Address</p>
-              <p className="text-white font-mono text-sm">{formatAddress(address)}</p>
+              <p className="text-white font-mono text-sm">
+                {formatAddress(address)}
+              </p>
             </div>
             <CheckCircle className="w-5 h-5 text-green-400 ml-auto" />
           </div>
@@ -152,8 +163,8 @@ const ThirdWebWalletConnect = ({ onConnectionChange }) => {
         <CardTitle className="text-white flex items-center space-x-2">
           <Wallet className="w-5 h-5" />
           <span>Connect Wallet</span>
-          <Badge 
-            variant="outline" 
+          <Badge
+            variant="outline"
             className="text-xs bg-red-500/20 border-red-500 text-red-300"
           >
             {getConnectionStatusText()}
@@ -175,72 +186,50 @@ const ThirdWebWalletConnect = ({ onConnectionChange }) => {
         {/* Social Login Options */}
         <div className="space-y-3">
           <p className="text-purple-200 text-sm font-medium">Connect with:</p>
-          
+
           {/* ThirdWeb Connect Button with Social Options */}
           <div className="space-y-2">
-            <ConnectButton
-              client={import.meta.env.VITE_THIRDWEB_CLIENT_ID}
+            <ConnectWallet
               theme={darkTheme({
                 colors: {
-                  primaryButtonBg: '#8b5cf6',
-                  primaryButtonText: '#ffffff',
-                  borderColor: '#8b5cf6',
-                  separatorLine: '#374151',
-                  modalBg: '#1f2937',
-                  dropdownBg: '#374151',
-                  tertiaryBg: '#4b5563',
-                  secondaryText: '#d1d5db',
-                  primaryText: '#ffffff',
-                  accentText: '#8b5cf6',
-                  connectedButtonBg: '#059669',
-                  connectedButtonBgHover: '#047857',
-                }
+                  primaryButtonBg: "#8b5cf6",
+                  primaryButtonText: "#ffffff",
+                  borderColor: "#8b5cf6",
+                  separatorLine: "#374151",
+                  modalBg: "#1f2937",
+                  dropdownBg: "#374151",
+                  tertiaryBg: "#4b5563",
+                  secondaryText: "#d1d5db",
+                  primaryText: "#ffffff",
+                  accentText: "#8b5cf6",
+                  connectedButtonBg: "#059669",
+                  connectedButtonBgHover: "#047857",
+                },
               })}
-              connectModal={{
-                size: 'wide',
-                title: 'Connect to NeAR Viewer',
-                showThirdwebBranding: false,
-                welcomeScreen: {
-                  title: 'Welcome to NeAR Viewer',
-                  subtitle: 'Connect your wallet to interact with AR agents and access premium features',
-                  img: {
-                    src: 'https://via.placeholder.com/300x200/8b5cf6/ffffff?text=NeAR+Viewer',
-                    width: 300,
-                    height: 200,
-                  },
+              modalTitle="Connect to NeAR Viewer"
+              modalSize="wide"
+              welcomeScreen={{
+                title: "Welcome to NeAR Viewer",
+                subtitle:
+                  "Connect your wallet to interact with AR agents and access premium features",
+                img: {
+                  src: "https://via.placeholder.com/300x200/8b5cf6/ffffff?text=NeAR+Viewer",
+                  width: 300,
+                  height: 200,
                 },
               }}
-              wallets={[
-                'io.metamask',
-                'com.coinbase.wallet',
-                'me.rainbow',
-                'io.zerion.wallet',
-              ]}
-              connectButton={{
-                label: 'Connect Wallet',
-                style: {
-                  background: 'linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '12px 24px',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  width: '100%',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                },
-              }}
-              auth={{
-                loginOptional: false,
-                options: [
-                  'email',
-                  'phone',
-                  'google',
-                  'discord',
-                  'telegram',
-                  'passkey',
-                ],
+              btnTitle="Connect Wallet"
+              style={{
+                background: "linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%)",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                padding: "12px 24px",
+                fontSize: "14px",
+                fontWeight: "600",
+                width: "100%",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
               }}
             />
           </div>
@@ -250,41 +239,41 @@ const ThirdWebWalletConnect = ({ onConnectionChange }) => {
             <ConnectWallet
               theme={darkTheme({
                 colors: {
-                  primaryButtonBg: '#8b5cf6',
-                  primaryButtonText: '#ffffff',
-                  borderColor: '#8b5cf6',
-                  separatorLine: '#374151',
-                  modalBg: '#1f2937',
-                  dropdownBg: '#374151',
-                  tertiaryBg: '#4b5563',
-                  secondaryText: '#d1d5db',
-                  primaryText: '#ffffff',
-                  accentText: '#8b5cf6',
-                }
+                  primaryButtonBg: "#8b5cf6",
+                  primaryButtonText: "#ffffff",
+                  borderColor: "#8b5cf6",
+                  separatorLine: "#374151",
+                  modalBg: "#1f2937",
+                  dropdownBg: "#374151",
+                  tertiaryBg: "#4b5563",
+                  secondaryText: "#d1d5db",
+                  primaryText: "#ffffff",
+                  accentText: "#8b5cf6",
+                },
               })}
               btnTitle="Connect with MetaMask"
               modalTitle="Connect to NeAR Viewer"
               modalSize="wide"
               welcomeScreen={{
-                title: 'Welcome to NeAR Viewer',
-                subtitle: 'Connect your wallet to interact with AR agents',
+                title: "Welcome to NeAR Viewer",
+                subtitle: "Connect your wallet to interact with AR agents",
                 img: {
-                  src: 'https://via.placeholder.com/300x200/8b5cf6/ffffff?text=NeAR+AR',
+                  src: "https://via.placeholder.com/300x200/8b5cf6/ffffff?text=NeAR+AR",
                   width: 300,
                   height: 200,
                 },
               }}
               style={{
-                background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                padding: '12px 24px',
-                fontSize: '14px',
-                fontWeight: '600',
-                width: '100%',
-                cursor: 'pointer',
-                marginTop: '8px',
+                background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                padding: "12px 24px",
+                fontSize: "14px",
+                fontWeight: "600",
+                width: "100%",
+                cursor: "pointer",
+                marginTop: "8px",
               }}
             />
           </div>
@@ -306,4 +295,3 @@ const ThirdWebWalletConnect = ({ onConnectionChange }) => {
 };
 
 export default ThirdWebWalletConnect;
-
