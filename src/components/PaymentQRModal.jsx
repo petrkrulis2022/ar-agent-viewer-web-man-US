@@ -1,29 +1,31 @@
-import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { 
-  X, 
-  QrCode, 
-  Copy, 
-  CheckCircle, 
-  Clock, 
+import React, { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  X,
+  QrCode,
+  Copy,
+  CheckCircle,
+  Clock,
   Wallet,
   ExternalLink,
-  RefreshCw
-} from 'lucide-react';
-import QRCode from 'react-qr-code';
+  RefreshCw,
+} from "lucide-react";
+import QRCode from "react-qr-code";
+import { USBDGToken, ContractAddresses } from "../config/blockdag-chain";
 
-const PaymentQRModal = ({ 
-  agent, 
-  isOpen, 
-  onClose, 
-  onPaymentComplete 
-}) => {
+const PaymentQRModal = ({ agent, isOpen, onClose, onPaymentComplete }) => {
   const [paymentData, setPaymentData] = useState(null);
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes
   const [copied, setCopied] = useState(false);
-  const [paymentStatus, setPaymentStatus] = useState('pending'); // pending, completed, expired
+  const [paymentStatus, setPaymentStatus] = useState("pending"); // pending, completed, expired
 
   // Generate payment QR code data
   useEffect(() => {
@@ -31,7 +33,7 @@ const PaymentQRModal = ({
       const payment = generatePaymentData(agent);
       setPaymentData(payment);
       setTimeLeft(300);
-      setPaymentStatus('pending');
+      setPaymentStatus("pending");
     }
   }, [isOpen, agent]);
 
@@ -40,9 +42,9 @@ const PaymentQRModal = ({
     if (!isOpen || timeLeft <= 0) return;
 
     const timer = setInterval(() => {
-      setTimeLeft(prev => {
+      setTimeLeft((prev) => {
         if (prev <= 1) {
-          setPaymentStatus('expired');
+          setPaymentStatus("expired");
           return 0;
         }
         return prev - 1;
@@ -54,22 +56,25 @@ const PaymentQRModal = ({
 
   // Generate EIP-681 compliant payment data
   const generatePaymentData = (agent) => {
-    const amount = '0.1'; // 0.1 USDFC
-    const contractAddress = '0x742d35Cc6634C0532925a3b8D4C9db96c4b4c8b6'; // USDFC contract
-    const chainId = '1043'; // BlockDAG Primordial Testnet
-    
+    const amount = "10"; // 10 USBDG+
+    const contractAddress = ContractAddresses.USBDG; // Use correct USBDG+ contract address
+    const chainId = "1043"; // BlockDAG Primordial Testnet
+
     // EIP-681 format for MetaMask compatibility
-    const eip681Uri = `ethereum:${contractAddress}@${chainId}/transfer?address=${agent.wallet_address || '0x742d35Cc6634C0532925a3b8D4C9db96c4b4c8b6'}&uint256=${amount}`;
-    
+    const eip681Uri = `ethereum:${contractAddress}@${chainId}/transfer?address=${
+      agent.wallet_address || contractAddress
+    }&uint256=${amount}`;
+
     return {
       uri: eip681Uri,
       amount,
-      token: 'USDFC',
-      recipient: agent.wallet_address || '0x742d35Cc6634C0532925a3b8D4C9db96c4b4c8b6',
+      token: "USBDG+",
+      recipient: agent.wallet_address || contractAddress,
       chainId,
-      network: 'BlockDAG Primordial Testnet',
+      network: "BlockDAG Primordial Testnet",
       agentName: agent.name,
-      description: `Payment for ${agent.name} interaction`
+      description: `Payment for ${agent.name} interaction`,
+      contractAddress,
     };
   };
 
@@ -80,7 +85,7 @@ const PaymentQRModal = ({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error('Failed to copy:', err);
+      console.error("Failed to copy:", err);
     }
   };
 
@@ -88,12 +93,12 @@ const PaymentQRModal = ({
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   // Simulate payment completion (in real app, this would be detected via blockchain)
   const simulatePayment = () => {
-    setPaymentStatus('completed');
+    setPaymentStatus("completed");
     setTimeout(() => {
       if (onPaymentComplete) {
         onPaymentComplete(agent, paymentData);
@@ -110,7 +115,9 @@ const PaymentQRModal = ({
         <CardHeader className="bg-gradient-to-r from-purple-600 to-blue-600 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-xl text-white">Payment QR Code</CardTitle>
+              <CardTitle className="text-xl text-white">
+                Payment QR Code
+              </CardTitle>
               <CardDescription className="text-purple-100">
                 Pay {paymentData.amount} {paymentData.token} to {agent.name}
               </CardDescription>
@@ -127,7 +134,7 @@ const PaymentQRModal = ({
         </CardHeader>
 
         <CardContent className="p-6 space-y-6">
-          {paymentStatus === 'pending' && (
+          {paymentStatus === "pending" && (
             <>
               {/* QR Code */}
               <div className="flex justify-center">
@@ -156,7 +163,9 @@ const PaymentQRModal = ({
               <div className="bg-slate-800 rounded-lg p-4 space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-slate-400">Amount:</span>
-                  <span className="text-white font-semibold">{paymentData.amount} {paymentData.token}</span>
+                  <span className="text-white font-semibold">
+                    {paymentData.amount} {paymentData.token}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-slate-400">Network:</span>
@@ -200,7 +209,12 @@ const PaymentQRModal = ({
                 </Button>
 
                 <Button
-                  onClick={() => window.open(`https://explorer-testnet.blockdag.org`, '_blank')}
+                  onClick={() =>
+                    window.open(
+                      `https://explorer-testnet.blockdag.org`,
+                      "_blank"
+                    )
+                  }
                   variant="outline"
                   className="w-full border-slate-600 text-slate-300 hover:bg-slate-800"
                 >
@@ -220,13 +234,15 @@ const PaymentQRModal = ({
             </>
           )}
 
-          {paymentStatus === 'completed' && (
+          {paymentStatus === "completed" && (
             <div className="text-center space-y-4">
               <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto">
                 <CheckCircle className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h3 className="text-xl font-semibold text-white mb-2">Payment Successful!</h3>
+                <h3 className="text-xl font-semibold text-white mb-2">
+                  Payment Successful!
+                </h3>
                 <p className="text-green-400">
                   {paymentData.amount} {paymentData.token} sent to {agent.name}
                 </p>
@@ -237,13 +253,15 @@ const PaymentQRModal = ({
             </div>
           )}
 
-          {paymentStatus === 'expired' && (
+          {paymentStatus === "expired" && (
             <div className="text-center space-y-4">
               <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mx-auto">
                 <Clock className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h3 className="text-xl font-semibold text-white mb-2">QR Code Expired</h3>
+                <h3 className="text-xl font-semibold text-white mb-2">
+                  QR Code Expired
+                </h3>
                 <p className="text-red-400">
                   This payment QR code has expired for security reasons.
                 </p>
@@ -253,7 +271,7 @@ const PaymentQRModal = ({
                   const newPayment = generatePaymentData(agent);
                   setPaymentData(newPayment);
                   setTimeLeft(300);
-                  setPaymentStatus('pending');
+                  setPaymentStatus("pending");
                 }}
                 className="bg-purple-500 hover:bg-purple-600"
               >
@@ -269,4 +287,3 @@ const PaymentQRModal = ({
 };
 
 export default PaymentQRModal;
-
