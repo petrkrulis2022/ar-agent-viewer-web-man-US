@@ -5,7 +5,6 @@ import {
   useConnectionStatus,
   useDisconnect,
   useUser,
-  ConnectButton,
   lightTheme,
   darkTheme
 } from '@thirdweb-dev/react';
@@ -176,10 +175,9 @@ const ThirdWebWalletConnect = ({ onConnectionChange }) => {
         <div className="space-y-3">
           <p className="text-purple-200 text-sm font-medium">Connect with:</p>
           
-          {/* ThirdWeb Connect Button with Social Options */}
+          {/* ThirdWeb Connect Wallet Button */}
           <div className="space-y-2">
-            <ConnectButton
-              client={import.meta.env.VITE_THIRDWEB_CLIENT_ID}
+            <ConnectWallet
               theme={darkTheme({
                 colors: {
                   primaryButtonBg: '#8b5cf6',
@@ -196,56 +194,33 @@ const ThirdWebWalletConnect = ({ onConnectionChange }) => {
                   connectedButtonBgHover: '#047857',
                 }
               })}
-              connectModal={{
-                size: 'wide',
-                title: 'Connect to NeAR Viewer',
-                showThirdwebBranding: false,
-                welcomeScreen: {
-                  title: 'Welcome to NeAR Viewer',
-                  subtitle: 'Connect your wallet to interact with AR agents and access premium features',
-                  img: {
-                    src: 'https://via.placeholder.com/300x200/8b5cf6/ffffff?text=NeAR+Viewer',
-                    width: 300,
-                    height: 200,
-                  },
+              btnTitle="Connect Wallet"
+              modalTitle="Connect to NeAR Viewer"
+              modalSize="wide"
+              welcomeScreen={{
+                title: 'Welcome to NeAR Viewer',
+                subtitle: 'Connect your wallet to interact with AR agents',
+                img: {
+                  src: 'https://via.placeholder.com/300x200/8b5cf6/ffffff?text=NeAR+AR',
+                  width: 300,
+                  height: 200,
                 },
               }}
-              wallets={[
-                'io.metamask',
-                'com.coinbase.wallet',
-                'me.rainbow',
-                'io.zerion.wallet',
-              ]}
-              connectButton={{
-                label: 'Connect Wallet',
-                style: {
-                  background: 'linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '12px 24px',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  width: '100%',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                },
-              }}
-              auth={{
-                loginOptional: false,
-                options: [
-                  'email',
-                  'phone',
-                  'google',
-                  'discord',
-                  'telegram',
-                  'passkey',
-                ],
+              style={{
+                background: 'linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '12px 24px',
+                fontSize: '14px',
+                fontWeight: '600',
+                width: '100%',
+                cursor: 'pointer',
               }}
             />
           </div>
 
-          {/* Alternative: Custom Connect Wallet Button */}
+          {/* Alternative MetaMask Button */}
           <div className="pt-2">
             <ConnectWallet
               theme={darkTheme({

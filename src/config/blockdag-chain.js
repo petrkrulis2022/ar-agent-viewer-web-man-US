@@ -8,7 +8,7 @@ export const BlockDAGTestnet = {
     symbol: 'BDAG',
     decimals: 18,
   },
-  rpc: ['https://rpc-testnet.blockdag.org'],
+  rpc: ['https://test-rpc.primordial.bdagscan.com/'],
   faucets: [],
   explorers: [
     {
@@ -30,14 +30,14 @@ export const BlockDAGTestnet = {
   slug: 'blockdag-testnet',
 };
 
-// USDFC Token Configuration
-export const USDFCToken = {
-  address: '0x...', // Replace with actual USDFC token contract address
-  name: 'USD Filecoin',
-  symbol: 'USDFC',
+// USBDG+ Token Configuration
+export const USBDGPlusToken = {
+  address: '0xFAD0070d0388FB3F18F1100A5FFc67dF8834D9db', // USBDG+ token contract on Primordial testnet
+  name: 'USBDG+',
+  symbol: 'USBDG+',
   decimals: 18,
   chainId: 1043,
-  logoURI: 'https://via.placeholder.com/64x64/059669/ffffff?text=USDFC',
+  logoURI: 'https://via.placeholder.com/64x64/8b5cf6/ffffff?text=USBDG+',
 };
 
 // Contract addresses for the NeAR Viewer ecosystem
@@ -47,7 +47,7 @@ export const ContractAddresses = {
   PaymentProcessor: '0x...', // Replace with actual contract address
   
   // Token contracts
-  USDFC: USDFCToken.address,
+  USBDG_PLUS: USBDGPlusToken.address,
   
   // NFT contracts for agent ownership
   AgentNFT: '0x...', // Replace with actual contract address
@@ -61,7 +61,7 @@ export const getNetworkConfig = () => {
   return {
     chain: BlockDAGTestnet,
     tokens: {
-      USDFC: USDFCToken,
+      USBDG_PLUS: USBDGPlusToken,
     },
     contracts: ContractAddresses,
     features: {

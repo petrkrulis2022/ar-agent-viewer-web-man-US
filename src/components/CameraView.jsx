@@ -24,7 +24,8 @@ const CameraView = ({
   showControls = true,
   agents = [],
   userLocation = null,
-  onAgentInteraction = null
+  onAgentInteraction = null,
+  connectedWallet = null // Add connected wallet prop
 }) => {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
@@ -560,6 +561,7 @@ const CameraView = ({
         isOpen={showPaymentModal}
         onClose={closeModals}
         onPaymentComplete={handlePaymentComplete}
+        connectedWallet={connectedWallet}
       />
     </div>
   );

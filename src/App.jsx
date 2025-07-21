@@ -12,3 +12,5 @@ function App() {
     </ThirdWebProviderWrapper>
   );
 }
+
+export default App;

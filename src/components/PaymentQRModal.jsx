@@ -18,7 +18,8 @@ const PaymentQRModal = ({
   agent, 
   isOpen, 
   onClose, 
-  onPaymentComplete 
+  onPaymentComplete,
+  connectedWallet // Add connected wallet address prop
 }) => {
   const [paymentData, setPaymentData] = useState(null);
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes
@@ -54,22 +55,51 @@ const PaymentQRModal = ({
 
   // Generate EIP-681 compliant payment data
   const generatePaymentData = (agent) => {
-    const amount = '0.1'; // 0.1 USDFC
-    const contractAddress = '0x742d35Cc6634C0532925a3b8D4C9db96c4b4c8b6'; // USDFC contract
+    const amount = '10'; // 10 USBDG+ (integer instead of decimal)
+    const contractAddress = '0xFAD0070d0388FB3F18F1100A5FFc67dF8834D9db'; // USBDG+ token contract on Primordial
     const chainId = '1043'; // BlockDAG Primordial Testnet
     
-    // EIP-681 format for MetaMask compatibility
-    const eip681Uri = `ethereum:${contractAddress}@${chainId}/transfer?address=${agent.wallet_address || '0x742d35Cc6634C0532925a3b8D4C9db96c4b4c8b6'}&uint256=${amount}`;
+    // Use connected wallet address as recipient (the website owner/agent operator)
+    // The person scanning/paying sends USBDG+ to the connected wallet
+    const recipientAddress = connectedWallet || agent.wallet_address || '0x742d35Cc6634C0532925a3b8D4C9db96c4b4c8b6'; // Fallback address
+    
+    // Debug logging
+    console.log('🔧 PaymentQRModal Debug:');
+    console.log('- Connected Wallet:', connectedWallet);
+    console.log('- Agent Wallet:', agent.wallet_address);
+    console.log('- Final Recipient:', recipientAddress);
+    console.log('- Amount:', amount, 'USBDG+');
+    
+    // Validate recipient address
+    if (!recipientAddress || recipientAddress === '0x742d35Cc6634C0532925a3b8D4C9db96c4b4c8b6') {
+      console.warn('⚠️ Using fallback recipient address - wallet may not be connected');
+    }
+    
+    // Convert amount to wei (18 decimals for USBDG+)
+    const amountInWei = (parseFloat(amount) * Math.pow(10, 18)).toString();
+    
+    // EIP-681 format for MetaMask compatibility with ERC-20 token transfer
+    const eip681Uri = `ethereum:${contractAddress}@${chainId}/transfer?address=${recipientAddress}&uint256=${amountInWei}`;
+    
+    // Alternative format for better MetaMask compatibility
+    const metamaskUri = `https://metamask.app.link/send/${contractAddress}@${chainId}/transfer?address=${recipientAddress}&uint256=${amountInWei}`;
+    
+    console.log('- Generated URI:', eip681Uri);
     
     return {
       uri: eip681Uri,
+      metamaskUri: metamaskUri,
       amount,
-      token: 'USDFC',
-      recipient: agent.wallet_address || '0x742d35Cc6634C0532925a3b8D4C9db96c4b4c8b6',
+      amountInWei,
+      token: 'USBDG+',
+      contractAddress,
+      recipient: recipientAddress,
       chainId,
       network: 'BlockDAG Primordial Testnet',
+      rpcUrl: 'https://test-rpc.primordial.bdagscan.com/',
+      explorerUrl: 'https://explorer-testnet.blockdag.org',
       agentName: agent.name,
-      description: `Payment for ${agent.name} interaction`
+      description: `Payment for ${agent.name} interaction - 10 USBDG+`
     };
   };
 
@@ -163,8 +193,20 @@ const PaymentQRModal = ({
                   <span className="text-purple-400">{paymentData.network}</span>
                 </div>
                 <div className="flex justify-between items-center">
+                  <span className="text-slate-400">Token Contract:</span>
+                  <span className="text-blue-400 font-mono text-xs">{paymentData.contractAddress}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400">Recipient:</span>
+                  <span className="text-green-400 font-mono text-xs">{paymentData.recipient}</span>
+                </div>
+                <div className="flex justify-between items-center">
                   <span className="text-slate-400">Agent:</span>
                   <span className="text-white">{agent.name}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400">Chain ID:</span>
+                  <span className="text-yellow-400">{paymentData.chainId}</span>
                 </div>
               </div>
 
@@ -172,15 +214,35 @@ const PaymentQRModal = ({
               <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-4">
                 <h4 className="text-blue-300 font-medium mb-2">How to Pay:</h4>
                 <ol className="text-blue-100 text-sm space-y-1">
-                  <li>1. Open MetaMask or compatible wallet</li>
-                  <li>2. Scan this QR code with your wallet</li>
-                  <li>3. Confirm the transaction</li>
-                  <li>4. Wait for confirmation</li>
+                  <li>1. Click "Open in MetaMask" or scan QR code</li>
+                  <li>2. Add BlockDAG Primordial Testnet if prompted</li>
+                  <li>3. Confirm the USBDG+ token transfer</li>
+                  <li>4. Wait for transaction confirmation</li>
                 </ol>
+                <div className="mt-3 p-2 bg-yellow-500/20 border border-yellow-500/30 rounded">
+                  <p className="text-yellow-200 text-xs">
+                    <strong>Note:</strong> Make sure you have USBDG+ tokens on Primordial testnet
+                  </p>
+                </div>
+                {!connectedWallet && (
+                  <div className="mt-3 p-2 bg-red-500/20 border border-red-500/30 rounded">
+                    <p className="text-red-200 text-xs">
+                      <strong>Warning:</strong> No wallet connected. Payment will go to fallback address. Connect your wallet in the Wallet tab for proper recipient setup.
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Action Buttons */}
               <div className="space-y-3">
+                <Button
+                  onClick={() => window.open(paymentData.metamaskUri, '_blank')}
+                  className="w-full bg-orange-500 hover:bg-orange-600"
+                >
+                  <Wallet className="w-4 h-4 mr-2" />
+                  Open in MetaMask
+                </Button>
+
                 <Button
                   onClick={() => copyToClipboard(paymentData.uri)}
                   variant="outline"
@@ -200,7 +262,7 @@ const PaymentQRModal = ({
                 </Button>
 
                 <Button
-                  onClick={() => window.open(`https://explorer-testnet.blockdag.org`, '_blank')}
+                  onClick={() => window.open(paymentData.explorerUrl, '_blank')}
                   variant="outline"
                   className="w-full border-slate-600 text-slate-300 hover:bg-slate-800"
                 >
@@ -211,9 +273,10 @@ const PaymentQRModal = ({
                 {/* Demo Payment Button */}
                 <Button
                   onClick={simulatePayment}
-                  className="w-full bg-green-500 hover:bg-green-600"
+                  variant="outline"
+                  className="w-full border-green-500 text-green-400 hover:bg-green-500/20"
                 >
-                  <Wallet className="w-4 h-4 mr-2" />
+                  <CheckCircle className="w-4 h-4 mr-2" />
                   Simulate Payment (Demo)
                 </Button>
               </div>
