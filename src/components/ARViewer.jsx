@@ -1,27 +1,34 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { 
-  Camera, 
-  MapPin, 
-  Wifi, 
-  WifiOff, 
-  Users, 
-  Zap, 
-  Globe, 
+import React, { useState, useEffect, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import {
+  Camera,
+  MapPin,
+  Wifi,
+  WifiOff,
+  Users,
+  Zap,
+  Globe,
   Settings,
   Play,
   Pause,
   RotateCcw,
   Satellite,
-  Wallet
-} from 'lucide-react';
-import { useDatabase } from '../hooks/useDatabase';
-import CameraView from './CameraView';
-import ThirdWebWalletConnect from './ThirdWebWalletConnect';
-import rtkLocationService from '../services/rtkLocation';
+  Wallet,
+} from "lucide-react";
+import { useDatabase } from "../hooks/useDatabase";
+import CameraView from "./CameraView";
+import ThirdWebWalletConnect from "./ThirdWebWalletConnect";
+import UnifiedWalletConnect from "./UnifiedWalletConnect";
+import rtkLocationService from "../services/rtkLocation";
 
 const ARViewer = () => {
   const [currentLocation, setCurrentLocation] = useState(null);
@@ -30,20 +37,23 @@ const ARViewer = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [nearbyObjects, setNearbyObjects] = useState([]);
   const [cameraActive, setCameraActive] = useState(false);
-  const [selectedTab, setSelectedTab] = useState('viewer');
-  const [rtkStatus, setRtkStatus] = useState({ isRTKEnhanced: false, source: 'Standard GPS' });
+  const [selectedTab, setSelectedTab] = useState("viewer");
+  const [rtkStatus, setRtkStatus] = useState({
+    isRTKEnhanced: false,
+    source: "Standard GPS",
+  });
   const [walletConnection, setWalletConnection] = useState({
     isConnected: false,
     address: null,
-    user: null
+    user: null,
   });
-  
-  const { 
-    isLoading, 
-    error: dbError, 
-    connectionStatus, 
-    getNearbyObjects, 
-    refreshConnection 
+
+  const {
+    isLoading,
+    error: dbError,
+    connectionStatus,
+    getNearbyObjects,
+    refreshConnection,
   } = useDatabase();
 
   const isMountedRef = useRef(true);
@@ -52,26 +62,26 @@ const ARViewer = () => {
   const initializeLocation = async () => {
     try {
       setInitializationStep(1);
-      console.log('📍 Requesting RTK-enhanced location...');
+      console.log("📍 Requesting RTK-enhanced location...");
 
       // Use RTK location service for enhanced accuracy
       const location = await rtkLocationService.getEnhancedLocation();
-      
+
       setCurrentLocation(location);
       setLocationError(null);
       setRtkStatus({
         isRTKEnhanced: location.isRTKEnhanced || false,
-        source: location.source || 'Standard GPS',
+        source: location.source || "Standard GPS",
         accuracy: location.accuracy,
-        altitude: location.altitude
+        altitude: location.altitude,
       });
-      
-      console.log('✅ RTK Location acquired:', location);
+
+      console.log("✅ RTK Location acquired:", location);
       return location;
     } catch (error) {
-      console.error('❌ RTK Location error:', error);
+      console.error("❌ RTK Location error:", error);
       setLocationError(error.message);
-      
+
       // Use fallback location (San Francisco) as last resort
       const fallbackLocation = {
         latitude: 37.7749,
@@ -80,18 +90,18 @@ const ARViewer = () => {
         accuracy: 1000,
         timestamp: Date.now(),
         isFallback: true,
-        source: 'Fallback Location'
+        source: "Fallback Location",
       };
-      
+
       setCurrentLocation(fallbackLocation);
       setRtkStatus({
         isRTKEnhanced: false,
-        source: 'Fallback Location',
+        source: "Fallback Location",
         accuracy: 1000,
-        altitude: 52.0
+        altitude: 52.0,
       });
-      
-      console.log('🔄 Using fallback location:', fallbackLocation);
+
+      console.log("🔄 Using fallback location:", fallbackLocation);
       return fallbackLocation;
     }
   };
@@ -100,24 +110,24 @@ const ARViewer = () => {
   const initializeCamera = async () => {
     try {
       setInitializationStep(2);
-      console.log('📷 Initializing camera...');
+      console.log("📷 Initializing camera...");
 
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          facingMode: 'environment',
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: "environment",
           width: { ideal: 1280 },
-          height: { ideal: 720 }
-        } 
+          height: { ideal: 720 },
+        },
       });
 
       // Stop the stream immediately as we just needed permission
-      stream.getTracks().forEach(track => track.stop());
-      
+      stream.getTracks().forEach((track) => track.stop());
+
       setCameraActive(true);
-      console.log('✅ Camera permission granted');
+      console.log("✅ Camera permission granted");
       return true;
     } catch (error) {
-      console.error('❌ Camera error:', error);
+      console.error("❌ Camera error:", error);
       setCameraActive(false);
       return false;
     }
@@ -127,20 +137,33 @@ const ARViewer = () => {
   const loadNearbyObjects = async (location) => {
     try {
       setInitializationStep(3);
-      console.log('🔍 Loading nearby objects...');
+      console.log("🔍 Loading nearby objects for location:", location);
 
       const objects = await getNearbyObjects({
         latitude: location.latitude,
         longitude: location.longitude,
-        radius_meters: 100,
-        limit: 10
+        radius_meters: 200, // Increased search radius
+        limit: 20, // Increased limit
       });
 
+      console.log(`📊 Raw objects received:`, objects);
+      console.log(`📊 Objects length: ${objects?.length || 0}`);
+
+      if (objects && objects.length > 0) {
+        console.log(`📊 First object details:`, objects[0]);
+        console.log(
+          `📊 Object types:`,
+          objects.map((o) => o.agent_type).join(", ")
+        );
+      }
+
       setNearbyObjects(objects || []);
-      console.log(`✅ Loaded ${objects?.length || 0} nearby objects`);
+      console.log(
+        `✅ Set nearbyObjects state with ${objects?.length || 0} objects`
+      );
       return objects;
     } catch (error) {
-      console.error('❌ Error loading objects:', error);
+      console.error("❌ Error loading objects:", error);
       setNearbyObjects([]);
       return [];
     }
@@ -151,13 +174,13 @@ const ARViewer = () => {
     try {
       if (!isMountedRef.current) return;
 
-      console.log('🚀 Starting AR Viewer initialization...');
-      
+      console.log("🚀 Starting AR Viewer initialization...");
+
       // Step 1: Location
       const location = await initializeLocation();
       if (!isMountedRef.current) return;
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Step 2: Camera
       if (isMountedRef.current) {
@@ -165,7 +188,7 @@ const ARViewer = () => {
       }
       if (!isMountedRef.current) return;
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Step 3: Database and objects
       if (isMountedRef.current) {
@@ -174,17 +197,16 @@ const ARViewer = () => {
       }
       if (!isMountedRef.current) return;
 
-      await new Promise(resolve => setTimeout(resolve, 800));
+      await new Promise((resolve) => setTimeout(resolve, 800));
 
       // Step 4: Complete
       if (isMountedRef.current) {
         setInitializationStep(4);
         setIsInitialized(true);
-        console.log('🎉 AR Viewer initialization complete!');
+        console.log("🎉 AR Viewer initialization complete!");
       }
-
     } catch (error) {
-      console.error('❌ Initialization error:', error);
+      console.error("❌ Initialization error:", error);
       if (isMountedRef.current) {
         setIsInitialized(true); // Allow app to continue with fallbacks
       }
@@ -207,43 +229,77 @@ const ARViewer = () => {
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
         <Card className="w-full max-w-md bg-black/50 border-purple-500/30 backdrop-blur-sm">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold text-white">NeAR Viewer</CardTitle>
+            <CardTitle className="text-2xl font-bold text-white">
+              NeAR Viewer
+            </CardTitle>
             <CardDescription className="text-purple-200">
               Initializing AR Experience
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-4">
-              <div className={`flex items-center space-x-3 p-3 rounded-lg ${
-                initializationStep >= 1 ? 'bg-green-500/20 text-green-300' : 'bg-slate-700/50 text-slate-400'
-              }`}>
+              <div
+                className={`flex items-center space-x-3 p-3 rounded-lg ${
+                  initializationStep >= 1
+                    ? "bg-green-500/20 text-green-300"
+                    : "bg-slate-700/50 text-slate-400"
+                }`}
+              >
                 <MapPin className="w-5 h-5" />
                 <span>Location Services</span>
-                {initializationStep >= 1 && <Badge variant="secondary" className="ml-auto">✓</Badge>}
+                {initializationStep >= 1 && (
+                  <Badge variant="secondary" className="ml-auto">
+                    ✓
+                  </Badge>
+                )}
               </div>
-              
-              <div className={`flex items-center space-x-3 p-3 rounded-lg ${
-                initializationStep >= 2 ? 'bg-green-500/20 text-green-300' : 'bg-slate-700/50 text-slate-400'
-              }`}>
+
+              <div
+                className={`flex items-center space-x-3 p-3 rounded-lg ${
+                  initializationStep >= 2
+                    ? "bg-green-500/20 text-green-300"
+                    : "bg-slate-700/50 text-slate-400"
+                }`}
+              >
                 <Camera className="w-5 h-5" />
                 <span>Camera Access</span>
-                {initializationStep >= 2 && <Badge variant="secondary" className="ml-auto">✓</Badge>}
+                {initializationStep >= 2 && (
+                  <Badge variant="secondary" className="ml-auto">
+                    ✓
+                  </Badge>
+                )}
               </div>
-              
-              <div className={`flex items-center space-x-3 p-3 rounded-lg ${
-                initializationStep >= 3 ? 'bg-green-500/20 text-green-300' : 'bg-slate-700/50 text-slate-400'
-              }`}>
+
+              <div
+                className={`flex items-center space-x-3 p-3 rounded-lg ${
+                  initializationStep >= 3
+                    ? "bg-green-500/20 text-green-300"
+                    : "bg-slate-700/50 text-slate-400"
+                }`}
+              >
                 <Globe className="w-5 h-5" />
                 <span>Database Connection</span>
-                {initializationStep >= 3 && <Badge variant="secondary" className="ml-auto">✓</Badge>}
+                {initializationStep >= 3 && (
+                  <Badge variant="secondary" className="ml-auto">
+                    ✓
+                  </Badge>
+                )}
               </div>
-              
-              <div className={`flex items-center space-x-3 p-3 rounded-lg ${
-                initializationStep >= 4 ? 'bg-green-500/20 text-green-300' : 'bg-slate-700/50 text-slate-400'
-              }`}>
+
+              <div
+                className={`flex items-center space-x-3 p-3 rounded-lg ${
+                  initializationStep >= 4
+                    ? "bg-green-500/20 text-green-300"
+                    : "bg-slate-700/50 text-slate-400"
+                }`}
+              >
                 <Zap className="w-5 h-5" />
                 <span>AR Ready</span>
-                {initializationStep >= 4 && <Badge variant="secondary" className="ml-auto">✓</Badge>}
+                {initializationStep >= 4 && (
+                  <Badge variant="secondary" className="ml-auto">
+                    ✓
+                  </Badge>
+                )}
               </div>
             </div>
 
@@ -278,11 +334,22 @@ const ARViewer = () => {
               <p className="text-sm text-purple-200">AR Agent Network</p>
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-2">
-            <Badge variant={connectionStatus === 'connected' ? 'default' : 'destructive'} className="flex items-center space-x-1">
-              {connectionStatus === 'connected' ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
-              <span>{connectionStatus === 'connected' ? 'Connected' : 'Offline'}</span>
+            <Badge
+              variant={
+                connectionStatus === "connected" ? "default" : "destructive"
+              }
+              className="flex items-center space-x-1"
+            >
+              {connectionStatus === "connected" ? (
+                <Wifi className="w-3 h-3" />
+              ) : (
+                <WifiOff className="w-3 h-3" />
+              )}
+              <span>
+                {connectionStatus === "connected" ? "Connected" : "Offline"}
+              </span>
             </Badge>
           </div>
         </div>
@@ -292,19 +359,19 @@ const ARViewer = () => {
       <div className="bg-black/20 backdrop-blur-sm border-b border-purple-500/20">
         <div className="flex">
           {[
-            { id: 'viewer', label: 'NeAR Viewer', icon: Camera },
-            { id: 'agents', label: 'NEAR Agents', icon: Users },
-            { id: 'map', label: 'NEAR Map', icon: MapPin },
-            { id: 'wallet', label: 'Wallet', icon: Wallet },
-            { id: 'settings', label: 'Settings', icon: Settings }
-          ].map(tab => (
+            { id: "viewer", label: "NeAR Viewer", icon: Camera },
+            { id: "agents", label: "NEAR Agents", icon: Users },
+            { id: "map", label: "NEAR Map", icon: MapPin },
+            { id: "wallet", label: "Wallet", icon: Wallet },
+            { id: "settings", label: "Settings", icon: Settings },
+          ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setSelectedTab(tab.id)}
               className={`flex-1 flex items-center justify-center space-x-2 p-4 transition-colors ${
-                selectedTab === tab.id 
-                  ? 'bg-purple-500/30 text-white border-b-2 border-purple-400' 
-                  : 'text-purple-200 hover:bg-purple-500/10'
+                selectedTab === tab.id
+                  ? "bg-purple-500/30 text-white border-b-2 border-purple-400"
+                  : "text-purple-200 hover:bg-purple-500/10"
               }`}
             >
               <tab.icon className="w-4 h-4" />
@@ -316,17 +383,17 @@ const ARViewer = () => {
 
       {/* Content Area */}
       <div className="p-4 space-y-4">
-        {selectedTab === 'viewer' && (
+        {selectedTab === "viewer" && (
           <div className="space-y-4">
             {/* Live Camera View */}
             <CameraView
               isActive={cameraActive}
               onToggle={setCameraActive}
-              onError={(err) => console.error('Camera error:', err)}
+              onError={(err) => console.error("Camera error:", err)}
               agents={nearbyObjects}
-              userLocation={location}
+              userLocation={currentLocation}
               onAgentInteraction={(agent, action, data) => {
-                console.log('Agent interaction:', agent.name, action, data);
+                console.log("Agent interaction:", agent.name, action, data);
                 // Handle agent interactions here
               }}
               showControls={true}
@@ -347,21 +414,30 @@ const ARViewer = () => {
                       <div className="flex items-center space-x-2">
                         <p className="text-sm text-purple-200">Location</p>
                         {rtkStatus.isRTKEnhanced && (
-                          <Badge variant="outline" className="text-xs bg-green-500/20 border-green-500 text-green-300">
+                          <Badge
+                            variant="outline"
+                            className="text-xs bg-green-500/20 border-green-500 text-green-300"
+                          >
                             RTK Enhanced
                           </Badge>
                         )}
                       </div>
                       <p className="font-semibold text-white">
-                        {currentLocation ? 
-                          `${currentLocation.latitude.toFixed(6)}, ${currentLocation.longitude.toFixed(6)}` :
-                          'Unknown'
-                        }
+                        {currentLocation
+                          ? `${currentLocation.latitude.toFixed(
+                              6
+                            )}, ${currentLocation.longitude.toFixed(6)}`
+                          : "Unknown"}
                       </p>
                       {currentLocation && (
                         <div className="text-xs text-purple-300 mt-1">
-                          <div>Alt: {(currentLocation.altitude || 0).toFixed(1)}m</div>
-                          <div>±{(rtkStatus.accuracy || 10).toFixed(2)}m • {rtkStatus.source}</div>
+                          <div>
+                            Alt: {(currentLocation.altitude || 0).toFixed(1)}m
+                          </div>
+                          <div>
+                            ±{(rtkStatus.accuracy || 10).toFixed(2)}m •{" "}
+                            {rtkStatus.source}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -375,7 +451,9 @@ const ARViewer = () => {
                     <Users className="w-8 h-8 text-purple-400" />
                     <div>
                       <p className="text-sm text-purple-200">Nearby Objects</p>
-                      <p className="font-semibold text-white">{nearbyObjects.length}</p>
+                      <p className="font-semibold text-white">
+                        {nearbyObjects.length}
+                      </p>
                     </div>
                   </div>
                 </CardContent>
@@ -388,7 +466,9 @@ const ARViewer = () => {
                     <div>
                       <p className="text-sm text-purple-200">Database</p>
                       <p className="font-semibold text-white">
-                        {connectionStatus === 'connected' ? 'Connected' : 'Offline'}
+                        {connectionStatus === "connected"
+                          ? "Connected"
+                          : "Offline"}
                       </p>
                     </div>
                   </div>
@@ -398,7 +478,7 @@ const ARViewer = () => {
           </div>
         )}
 
-        {selectedTab === 'agents' && (
+        {selectedTab === "agents" && (
           <div className="space-y-4">
             <Card className="bg-black/50 border-purple-500/30 backdrop-blur-sm">
               <CardHeader>
@@ -413,13 +493,21 @@ const ARViewer = () => {
               <CardContent className="space-y-3">
                 {nearbyObjects.length > 0 ? (
                   nearbyObjects.map((obj, index) => (
-                    <div key={obj.id} className="p-4 bg-slate-800/50 rounded-lg border border-purple-500/20">
+                    <div
+                      key={obj.id}
+                      className="p-4 bg-slate-800/50 rounded-lg border border-purple-500/20"
+                    >
                       <div className="flex items-center justify-between">
                         <div>
-                          <h4 className="font-semibold text-white">{obj.name}</h4>
-                          <p className="text-sm text-purple-200">{obj.description}</p>
+                          <h4 className="font-semibold text-white">
+                            {obj.name}
+                          </h4>
+                          <p className="text-sm text-purple-200">
+                            {obj.description}
+                          </p>
                           <p className="text-xs text-slate-400 mt-1">
-                            {obj.distance_meters?.toFixed(1)}m away • {obj.object_type}
+                            {obj.distance_meters?.toFixed(1)}m away •{" "}
+                            {obj.object_type}
                           </p>
                         </div>
                         <Badge variant="secondary">Active</Badge>
@@ -430,9 +518,9 @@ const ARViewer = () => {
                   <div className="text-center py-8">
                     <Users className="w-12 h-12 text-slate-500 mx-auto mb-4" />
                     <p className="text-slate-400">No agents found nearby</p>
-                    <Button 
+                    <Button
                       onClick={() => loadNearbyObjects(currentLocation)}
-                      variant="outline" 
+                      variant="outline"
                       className="mt-4"
                       disabled={isLoading}
                     >
@@ -446,7 +534,7 @@ const ARViewer = () => {
           </div>
         )}
 
-        {selectedTab === 'map' && (
+        {selectedTab === "map" && (
           <Card className="bg-black/50 border-purple-500/30 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="text-white flex items-center space-x-2">
@@ -461,22 +549,24 @@ const ARViewer = () => {
               <div className="aspect-video bg-slate-800 rounded-lg flex items-center justify-center">
                 <div className="text-center">
                   <MapPin className="w-16 h-16 text-purple-300 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-white mb-2">Interactive Map</h3>
-                  <p className="text-purple-200">Map view would be implemented here</p>
+                  <h3 className="text-xl font-semibold text-white mb-2">
+                    Interactive Map
+                  </h3>
+                  <p className="text-purple-200">
+                    Map view would be implemented here
+                  </p>
                 </div>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {selectedTab === 'wallet' && (
+        {selectedTab === "wallet" && (
           <div className="space-y-4">
-            <ThirdWebWalletConnect 
-              onConnectionChange={setWalletConnection}
-            />
-            
+            <UnifiedWalletConnect onConnectionChange={setWalletConnection} />
+
             {/* Wallet Status Summary */}
-            {walletConnection.isConnected && (
+            {walletConnection.hasAnyConnection && (
               <Card className="bg-black/50 border-green-500/30 backdrop-blur-sm">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center space-x-2">
@@ -487,20 +577,36 @@ const ARViewer = () => {
                 <CardContent className="space-y-3">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="p-3 bg-green-500/20 rounded-lg">
-                      <p className="text-green-300 text-sm font-medium">Agent Payments</p>
-                      <p className="text-white text-xs">Pay agents with USDFC tokens</p>
+                      <p className="text-green-300 text-sm font-medium">
+                        Agent Payments
+                      </p>
+                      <p className="text-white text-xs">
+                        Pay agents with USDFC tokens
+                      </p>
                     </div>
                     <div className="p-3 bg-blue-500/20 rounded-lg">
-                      <p className="text-blue-300 text-sm font-medium">Premium Features</p>
-                      <p className="text-white text-xs">Access exclusive AR content</p>
+                      <p className="text-blue-300 text-sm font-medium">
+                        Premium Features
+                      </p>
+                      <p className="text-white text-xs">
+                        Access exclusive AR content
+                      </p>
                     </div>
                     <div className="p-3 bg-purple-500/20 rounded-lg">
-                      <p className="text-purple-300 text-sm font-medium">NFT Agents</p>
-                      <p className="text-white text-xs">Own and trade agent NFTs</p>
+                      <p className="text-purple-300 text-sm font-medium">
+                        NFT Agents
+                      </p>
+                      <p className="text-white text-xs">
+                        Own and trade agent NFTs
+                      </p>
                     </div>
                     <div className="p-3 bg-yellow-500/20 rounded-lg">
-                      <p className="text-yellow-300 text-sm font-medium">DAO Voting</p>
-                      <p className="text-white text-xs">Participate in governance</p>
+                      <p className="text-yellow-300 text-sm font-medium">
+                        DAO Voting
+                      </p>
+                      <p className="text-white text-xs">
+                        Participate in governance
+                      </p>
                     </div>
                   </div>
                 </CardContent>
@@ -509,7 +615,7 @@ const ARViewer = () => {
           </div>
         )}
 
-        {selectedTab === 'settings' && (
+        {selectedTab === "settings" && (
           <Card className="bg-black/50 border-purple-500/30 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="text-white flex items-center space-x-2">
@@ -524,9 +630,9 @@ const ARViewer = () => {
               <div className="space-y-3">
                 <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
                   <span className="text-white">Database Connection</span>
-                  <Button 
+                  <Button
                     onClick={refreshConnection}
-                    variant="outline" 
+                    variant="outline"
                     size="sm"
                     disabled={isLoading}
                   >
@@ -534,25 +640,27 @@ const ARViewer = () => {
                     Refresh
                   </Button>
                 </div>
-                
+
                 <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
                   <span className="text-white">Camera Permission</span>
-                  <Badge variant={cameraActive ? 'default' : 'destructive'}>
-                    {cameraActive ? 'Granted' : 'Denied'}
+                  <Badge variant={cameraActive ? "default" : "destructive"}>
+                    {cameraActive ? "Granted" : "Denied"}
                   </Badge>
                 </div>
-                
+
                 <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
                   <span className="text-white">Location Services</span>
-                  <Badge variant={currentLocation ? 'default' : 'destructive'}>
-                    {currentLocation ? 'Active' : 'Inactive'}
+                  <Badge variant={currentLocation ? "default" : "destructive"}>
+                    {currentLocation ? "Active" : "Inactive"}
                   </Badge>
                 </div>
               </div>
 
               {dbError && (
                 <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
-                  <p className="text-red-200 text-sm font-medium">Database Error</p>
+                  <p className="text-red-200 text-sm font-medium">
+                    Database Error
+                  </p>
                   <p className="text-red-300 text-xs mt-1">{dbError.message}</p>
                 </div>
               )}
@@ -565,4 +673,3 @@ const ARViewer = () => {
 };
 
 export default ARViewer;
-

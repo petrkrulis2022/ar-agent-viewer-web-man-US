@@ -21,7 +21,13 @@ import {
 import QRCode from "react-qr-code";
 import { USBDGToken, ContractAddresses } from "../config/blockdag-chain";
 
-const PaymentQRModal = ({ agent, isOpen, onClose, onPaymentComplete }) => {
+const PaymentQRModal = ({
+  agent,
+  isOpen,
+  onClose,
+  onPaymentComplete,
+  onQRScan,
+}) => {
   const [paymentData, setPaymentData] = useState(null);
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes
   const [copied, setCopied] = useState(false);
@@ -221,6 +227,18 @@ const PaymentQRModal = ({ agent, isOpen, onClose, onPaymentComplete }) => {
                   <ExternalLink className="w-4 h-4 mr-2" />
                   View on Explorer
                 </Button>
+
+                {/* Scan QR to Pay Button */}
+                {onQRScan && (
+                  <Button
+                    onClick={() => onQRScan(agent, paymentData)}
+                    variant="outline"
+                    className="w-full border-green-600 text-green-400 hover:bg-green-500/20 hover:border-green-500"
+                  >
+                    <QrCode className="w-4 h-4 mr-2" />
+                    Scan QR to Pay
+                  </Button>
+                )}
 
                 {/* Demo Payment Button */}
                 <Button

@@ -39,7 +39,7 @@ const ThirdWebWalletConnect = ({ onConnectionChange }) => {
         isLoggedIn,
       });
     }
-  }, [address, connectionStatus, user, isLoggedIn, onConnectionChange]);
+  }, [address, connectionStatus, user, isLoggedIn]); // Removed onConnectionChange from dependencies
 
   const handleDisconnect = async () => {
     try {
