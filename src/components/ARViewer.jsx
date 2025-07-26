@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -23,6 +24,8 @@ import {
   RotateCcw,
   Satellite,
   Wallet,
+  ArrowLeft,
+  Home,
 } from "lucide-react";
 import { useDatabase } from "../hooks/useDatabase";
 import CameraView from "./CameraView";
@@ -31,6 +34,7 @@ import UnifiedWalletConnect from "./UnifiedWalletConnect";
 import rtkLocationService from "../services/rtkLocation";
 
 const ARViewer = () => {
+  const navigate = useNavigate();
   const [currentLocation, setCurrentLocation] = useState(null);
   const [locationError, setLocationError] = useState(null);
   const [initializationStep, setInitializationStep] = useState(0);
@@ -326,6 +330,15 @@ const ARViewer = () => {
       <div className="bg-black/30 backdrop-blur-sm border-b border-purple-500/30 p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
+            {/* Back Button */}
+            <button
+              onClick={() => navigate("/")}
+              className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 transition-colors text-slate-400 hover:text-white"
+              title="Back to Main"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+
             <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
               <Camera className="w-5 h-5 text-white" />
             </div>
