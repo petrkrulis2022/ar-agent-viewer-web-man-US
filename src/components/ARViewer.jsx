@@ -397,6 +397,7 @@ const ARViewer = () => {
                 // Handle agent interactions here
               }}
               showControls={true}
+              connectedWallet={walletConnection.address}
             />
 
             {/* Status Cards */}
