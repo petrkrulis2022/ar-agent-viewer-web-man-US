@@ -26,9 +26,12 @@ import {
   Wallet,
   ArrowLeft,
   Home,
+  Box,
+  Layers,
 } from "lucide-react";
 import { useDatabase } from "../hooks/useDatabase";
 import CameraView from "./CameraView";
+import AR3DScene from "./AR3DScene";
 import ThirdWebWalletConnect from "./ThirdWebWalletConnect";
 import UnifiedWalletConnect from "./UnifiedWalletConnect";
 import rtkLocationService from "../services/rtkLocation";
@@ -42,6 +45,7 @@ const ARViewer = () => {
   const [nearbyObjects, setNearbyObjects] = useState([]);
   const [cameraActive, setCameraActive] = useState(false);
   const [selectedTab, setSelectedTab] = useState("viewer");
+  const [viewMode, setViewMode] = useState("3d"); // "2d" or "3d" - Default to 3D for immersive experience
   const [rtkStatus, setRtkStatus] = useState({
     isRTKEnhanced: false,
     source: "Standard GPS",
@@ -165,6 +169,23 @@ const ARViewer = () => {
       console.log(
         `✅ Set nearbyObjects state with ${objects?.length || 0} objects`
       );
+      console.log("🎯 Setting nearbyObjects to:", objects);
+
+      // Additional debug for 3D rendering
+      if (objects && objects.length > 0) {
+        console.log("🔍 Object properties check:");
+        objects.forEach((obj, i) => {
+          console.log(`Agent ${i + 1}:`, {
+            id: obj.id,
+            name: obj.name,
+            type: obj.agent_type,
+            lat: obj.latitude,
+            lng: obj.longitude,
+            distance: obj.distance_meters,
+          });
+        });
+      }
+
       return objects;
     } catch (error) {
       console.error("❌ Error loading objects:", error);
@@ -398,20 +419,147 @@ const ARViewer = () => {
       <div className="p-4 space-y-4">
         {selectedTab === "viewer" && (
           <div className="space-y-4">
-            {/* Live Camera View */}
-            <CameraView
-              isActive={cameraActive}
-              onToggle={setCameraActive}
-              onError={(err) => console.error("Camera error:", err)}
-              agents={nearbyObjects}
-              userLocation={currentLocation}
-              onAgentInteraction={(agent, action, data) => {
-                console.log("Agent interaction:", agent.name, action, data);
-                // Handle agent interactions here
-              }}
-              showControls={true}
-              connectedWallet={walletConnection.address}
-            />
+            {/* 3D/2D Mode Toggle */}
+            <div className="flex justify-between items-center p-4 bg-black/30 rounded-lg border border-purple-500/30">
+              <div>
+                <h2 className="text-xl font-bold text-white">AR Experience</h2>
+                <p className="text-sm text-purple-200">
+                  {viewMode === "3d"
+                    ? "🚀 Immersive 3D mode with spinning & floating agents"
+                    : "📱 Traditional 2D overlay mode"}
+                </p>
+              </div>
+              <div className="flex items-center space-x-3">
+                <Badge
+                  variant={viewMode === "2d" ? "default" : "outline"}
+                  className={`text-xs transition-all ${
+                    viewMode === "2d"
+                      ? "bg-blue-500"
+                      : "bg-slate-700 text-slate-400"
+                  }`}
+                >
+                  2D Overlay
+                </Badge>
+                <button
+                  onClick={() => {
+                    const newMode = viewMode === "2d" ? "3d" : "2d";
+                    console.log(
+                      `🔄 Switching AR view mode from ${viewMode} to ${newMode}`
+                    );
+                    setViewMode(newMode);
+                  }}
+                  className={`p-3 rounded-lg transition-all shadow-lg ${
+                    viewMode === "3d"
+                      ? "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                      : "bg-purple-500 hover:bg-purple-600"
+                  }`}
+                  title={`Switch to ${viewMode === "2d" ? "3D" : "2D"} mode`}
+                >
+                  {viewMode === "2d" ? (
+                    <Box className="w-6 h-6 text-white" />
+                  ) : (
+                    <Layers className="w-6 h-6 text-white" />
+                  )}
+                </button>
+                <Badge
+                  variant={viewMode === "3d" ? "default" : "outline"}
+                  className={`text-xs transition-all ${
+                    viewMode === "3d"
+                      ? "bg-gradient-to-r from-purple-500 to-pink-500"
+                      : "bg-slate-700 text-slate-400"
+                  }`}
+                >
+                  🚀 3D Immersive
+                </Badge>
+              </div>
+            </div>
+
+            {/* AR View Container */}
+            <div className="relative">
+              {viewMode === "2d" ? (
+                /* Traditional 2D Camera View */
+                <CameraView
+                  isActive={cameraActive}
+                  onToggle={setCameraActive}
+                  onError={(err) => console.error("Camera error:", err)}
+                  agents={nearbyObjects}
+                  userLocation={currentLocation}
+                  onAgentInteraction={(agent, action, data) => {
+                    console.log("Agent interaction:", agent.name, action, data);
+                    // Handle agent interactions here
+                  }}
+                  showControls={true}
+                  connectedWallet={walletConnection.address}
+                />
+              ) : (
+                /* New 3D Immersive View */
+                <div className="relative" style={{ minHeight: "500px" }}>
+                  {/* Background Camera Feed for 3D AR - Lower priority */}
+                  <div className="absolute inset-0 z-0">
+                    <CameraView
+                      isActive={cameraActive}
+                      onToggle={setCameraActive}
+                      onError={(err) => console.error("Camera error:", err)}
+                      agents={[]} // Don't show 2D agents in 3D mode
+                      userLocation={currentLocation}
+                      onAgentInteraction={() => {}} // Disable 2D interactions
+                      showControls={false} // Hide 2D controls
+                      connectedWallet={walletConnection.address}
+                    />
+                  </div>
+                  {/* 3D Scene Overlay - Higher priority */}
+                  <div
+                    className="absolute inset-0 z-20"
+                    style={{ pointerEvents: "auto" }}
+                  >
+                    <AR3DScene
+                      agents={nearbyObjects}
+                      onAgentClick={(agent) => {
+                        console.log("3D Agent clicked:", agent.name);
+                        // Handle 3D agent interactions - same as 2D
+                        // This maintains all existing interaction functionality
+                      }}
+                      userLocation={currentLocation}
+                      cameraViewSize={{ width: 1280, height: 720 }}
+                      connectedWallet={walletConnection.address}
+                    />
+                  </div>
+                  {/* 3D Mode Controls - Highest priority */}
+                  <div className="absolute top-4 right-4 z-30">
+                    <div className="bg-black/70 backdrop-blur-sm rounded-lg p-3 text-white">
+                      <p className="text-sm font-medium mb-1">
+                        🚀 3D AR Mode ACTIVE
+                      </p>
+                      <p className="text-xs text-gray-300">
+                        {nearbyObjects.length} spinning agents loaded • Tap to
+                        interact
+                      </p>
+                      <p className="text-xs text-green-400 mt-1">
+                        ✅ Enhanced3DAgent components rendering
+                      </p>
+                    </div>
+                  </div>{" "}
+                  {/* Camera Toggle for 3D Mode */}
+                  <div className="absolute bottom-4 right-4 z-30">
+                    <button
+                      onClick={() => setCameraActive(!cameraActive)}
+                      className={`p-3 rounded-full ${
+                        cameraActive
+                          ? "bg-green-500 hover:bg-green-600"
+                          : "bg-red-500 hover:bg-red-600"
+                      } transition-colors shadow-lg`}
+                      title={cameraActive ? "Stop Camera" : "Start Camera"}
+                    >
+                      {cameraActive ? (
+                        <Pause className="w-6 h-6 text-white" />
+                      ) : (
+                        <Play className="w-6 h-6 text-white" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Status Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
