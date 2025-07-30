@@ -19,7 +19,7 @@ import qrCodeService from "../services/qrCodeService";
 const ARQRViewer = ({
   isActive = false,
   userLocation,
-  nearbyAgents = [],
+  nearAgents = [],
   onQRScanned,
   className = "",
 }) => {

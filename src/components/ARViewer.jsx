@@ -42,7 +42,7 @@ const ARViewer = () => {
   const [locationError, setLocationError] = useState(null);
   const [initializationStep, setInitializationStep] = useState(0);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [nearbyObjects, setNearbyObjects] = useState([]);
+  const [nearAgents, setNearAgents] = useState([]);
   const [cameraActive, setCameraActive] = useState(false);
   const [selectedTab, setSelectedTab] = useState("viewer");
   const [viewMode, setViewMode] = useState("3d"); // "2d" or "3d" - Default to 3D for immersive experience
@@ -60,7 +60,7 @@ const ARViewer = () => {
     isLoading,
     error: dbError,
     connectionStatus,
-    getNearbyObjects,
+    getNearAgents,
     refreshConnection,
   } = useDatabase();
 
@@ -141,13 +141,13 @@ const ARViewer = () => {
     }
   };
 
-  // Load nearby objects
-  const loadNearbyObjects = async (location) => {
+  // Load NeAR agents
+  const loadNearAgents = async (location) => {
     try {
       setInitializationStep(3);
-      console.log("🔍 Loading nearby objects for location:", location);
+      console.log("🔍 Loading NeAR agents for location:", location);
 
-      const objects = await getNearbyObjects({
+      const objects = await getNearAgents({
         latitude: location.latitude,
         longitude: location.longitude,
         radius_meters: 200, // Increased search radius
@@ -165,11 +165,11 @@ const ARViewer = () => {
         );
       }
 
-      setNearbyObjects(objects || []);
+      setNearAgents(objects || []);
       console.log(
-        `✅ Set nearbyObjects state with ${objects?.length || 0} objects`
+        `✅ Set nearAgents state with ${objects?.length || 0} agents`
       );
-      console.log("🎯 Setting nearbyObjects to:", objects);
+      console.log("🎯 Setting nearAgents to:", objects);
 
       // Additional debug for 3D rendering
       if (objects && objects.length > 0) {
@@ -189,7 +189,7 @@ const ARViewer = () => {
       return objects;
     } catch (error) {
       console.error("❌ Error loading objects:", error);
-      setNearbyObjects([]);
+      setNearAgents([]);
       return [];
     }
   };
@@ -218,7 +218,7 @@ const ARViewer = () => {
       // Step 3: Database and objects
       if (isMountedRef.current) {
         await refreshConnection();
-        await loadNearbyObjects(location);
+        await loadNearAgents(location);
       }
       if (!isMountedRef.current) return;
 
@@ -525,9 +525,9 @@ const ARViewer = () => {
                   <div className="flex items-center space-x-3">
                     <Users className="w-8 h-8 text-purple-400" />
                     <div>
-                      <p className="text-sm text-purple-200">Nearby Objects</p>
+                      <p className="text-sm text-purple-200">NeAR Agents</p>
                       <p className="font-semibold text-white">
-                        {nearbyObjects.length}
+                        {nearAgents.length}
                       </p>
                     </div>
                   </div>
@@ -559,7 +559,7 @@ const ARViewer = () => {
                   isActive={cameraActive}
                   onToggle={setCameraActive}
                   onError={(err) => console.error("Camera error:", err)}
-                  agents={nearbyObjects}
+                  agents={nearAgents}
                   userLocation={currentLocation}
                   onAgentInteraction={(agent, action, data) => {
                     console.log("Agent interaction:", agent.name, action, data);
@@ -590,7 +590,7 @@ const ARViewer = () => {
                     style={{ pointerEvents: "auto" }}
                   >
                     <AR3DScene
-                      agents={nearbyObjects}
+                      agents={nearAgents}
                       onAgentClick={(agent) => {
                         console.log("3D Agent clicked:", agent.name);
                         // Handle 3D agent interactions - same as 2D
@@ -608,7 +608,7 @@ const ARViewer = () => {
                         🚀 3D AR Mode ACTIVE
                       </p>
                       <p className="text-xs text-gray-300">
-                        {nearbyObjects.length} spinning agents loaded • Tap to
+                        {nearAgents.length} spinning agents loaded • Tap to
                         interact
                       </p>
                       <p className="text-xs text-green-400 mt-1">
@@ -649,12 +649,12 @@ const ARViewer = () => {
                   <span>NEAR Agents</span>
                 </CardTitle>
                 <CardDescription className="text-purple-200">
-                  Nearby AI agents available for interaction
+                  NeAR AI agents available for interaction
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                {nearbyObjects.length > 0 ? (
-                  nearbyObjects.map((obj, index) => (
+                {nearAgents.length > 0 ? (
+                  nearAgents.map((obj, index) => (
                     <div
                       key={obj.id}
                       className="p-4 bg-slate-800/50 rounded-lg border border-purple-500/20"
@@ -681,7 +681,7 @@ const ARViewer = () => {
                     <Users className="w-12 h-12 text-slate-500 mx-auto mb-4" />
                     <p className="text-slate-400">No agents found nearby</p>
                     <Button
-                      onClick={() => loadNearbyObjects(currentLocation)}
+                      onClick={() => loadNearAgents(currentLocation)}
                       variant="outline"
                       className="mt-4"
                       disabled={isLoading}
@@ -704,7 +704,7 @@ const ARViewer = () => {
                 <span>NEAR Map</span>
               </CardTitle>
               <CardDescription className="text-purple-200">
-                Interactive map view of nearby agents
+                Interactive map view of NeAR agents
               </CardDescription>
             </CardHeader>
             <CardContent>

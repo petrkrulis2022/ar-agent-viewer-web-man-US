@@ -1,5 +1,5 @@
-import React from 'react';
-import { 
+import React from "react";
+import {
   ThirdwebProvider,
   metamaskWallet,
   coinbaseWallet,
@@ -7,9 +7,9 @@ import {
   localWallet,
   embeddedWallet,
   smartWallet,
-  en
-} from '@thirdweb-dev/react';
-import { BlockDAGTestnet } from '../config/blockdag-chain';
+  en,
+} from "@thirdweb-dev/react";
+import { BlockDAGTestnet } from "../config/blockdag-chain";
 
 // ThirdWeb configuration
 const clientId = import.meta.env.VITE_THIRDWEB_CLIENT_ID;
@@ -22,14 +22,7 @@ const supportedWallets = [
   walletConnect(),
   embeddedWallet({
     auth: {
-      options: [
-        'email',
-        'phone',
-        'google',
-        'discord',
-        'telegram',
-        'passkey',
-      ],
+      options: ["email", "phone", "google", "discord", "telegram", "passkey"],
     },
   }),
   localWallet(),
@@ -37,24 +30,28 @@ const supportedWallets = [
 
 // Smart wallet configuration for gasless transactions
 const smartWalletConfig = smartWallet(embeddedWallet(), {
-  factoryAddress: '0x...',  // Replace with actual factory address
+  factoryAddress: "0x...", // Replace with actual factory address
   gasless: true,
 });
 
 const ThirdWebProviderWrapper = ({ children }) => {
-  console.log('🔧 ThirdWeb Provider initializing with:', {
-    clientId: clientId ? 'Set' : 'Missing',
-    secretKey: secretKey ? 'Set' : 'Missing',
-    chain: 'BlockDAG Testnet (1043)'
+  console.log("🔧 ThirdWeb Provider initializing with:", {
+    clientId: clientId ? "Set" : "Missing",
+    secretKey: secretKey ? "Set" : "Missing",
+    chain: "BlockDAG Testnet (1043)",
   });
 
   if (!clientId) {
-    console.error('❌ VITE_THIRDWEB_CLIENT_ID is not set in environment variables');
+    console.error(
+      "❌ VITE_THIRDWEB_CLIENT_ID is not set in environment variables"
+    );
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
         <div className="text-center text-white">
           <h2 className="text-2xl font-bold mb-4">Configuration Error</h2>
-          <p className="text-purple-200">ThirdWeb client ID is not configured</p>
+          <p className="text-purple-200">
+            ThirdWeb client ID is not configured
+          </p>
         </div>
       </div>
     );
@@ -68,36 +65,39 @@ const ThirdWebProviderWrapper = ({ children }) => {
       supportedWallets={supportedWallets}
       locale={en()}
       dAppMeta={{
-        name: 'NeAR Viewer',
-        description: 'Augmented Reality viewer for NEAR agents with blockchain integration',
-        logoUrl: 'https://via.placeholder.com/200x200/8b5cf6/ffffff?text=NeAR',
-        url: 'https://near-viewer.app',
+        name: "NeAR Viewer",
+        description:
+          "Augmented Reality viewer for NeAR agents with blockchain integration",
+        logoUrl: "https://via.placeholder.com/200x200/8b5cf6/ffffff?text=NeAR",
+        url: "https://NeAR-viewer.app",
         isDarkMode: true,
       }}
       authConfig={{
-        authUrl: '/api/auth',
+        authUrl: "/api/auth",
         domain: window.location.origin,
-        loginRedirect: '/',
+        loginRedirect: "/",
       }}
       sdkOptions={{
         gasless: {
           openzeppelin: {
-            relayerUrl: 'https://api.defender.openzeppelin.com/autotasks/...',
+            relayerUrl: "https://api.defender.openzeppelin.com/autotasks/...",
           },
         },
       }}
       storageInterface={{
         // Custom storage interface for better UX
-        download: (url) => fetch(url).then(res => res.blob()),
+        download: (url) => fetch(url).then((res) => res.blob()),
         upload: (file) => {
           // Implement file upload logic
-          console.log('📁 File upload requested:', file);
-          return Promise.resolve('https://example.com/uploaded-file');
+          console.log("📁 File upload requested:", file);
+          return Promise.resolve("https://example.com/uploaded-file");
         },
         uploadBatch: (files) => {
           // Implement batch upload logic
-          console.log('📁 Batch upload requested:', files);
-          return Promise.resolve(files.map(() => 'https://example.com/uploaded-file'));
+          console.log("📁 Batch upload requested:", files);
+          return Promise.resolve(
+            files.map(() => "https://example.com/uploaded-file")
+          );
         },
       }}
     >
@@ -107,4 +107,3 @@ const ThirdWebProviderWrapper = ({ children }) => {
 };
 
 export default ThirdWebProviderWrapper;
-

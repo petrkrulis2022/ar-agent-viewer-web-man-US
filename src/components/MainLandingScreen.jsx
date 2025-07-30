@@ -37,7 +37,7 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
             <div>
               <h1 className="text-xl font-bold text-green-400">NeAR Viewer</h1>
               <p className="text-xs text-slate-400">
-                Discover NEAR Agents in Your Near World
+                Discover NeAR Agents in Your NeAR World
               </p>
             </div>
           </div>
@@ -49,11 +49,11 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
             <Bell className="w-5 h-5 text-slate-400" />
           </button>
 
-          {/* NEAR Protocol Badge */}
+          {/* NeAR Protocol Badge */}
           <Badge className="bg-green-500/20 text-green-400 border-green-400/30 px-3 py-1">
             <div className="flex items-center space-x-1">
               <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              <span className="text-sm font-medium">NEAR Protocol</span>
+              <span className="text-sm font-medium">NeAR Protocol</span>
             </div>
           </Badge>
 
@@ -82,13 +82,13 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
           {/* Main Title */}
           <div className="space-y-4">
             <h1 className="text-5xl md:text-6xl font-bold leading-tight">
-              Intelligent NEAR Agent
+              Intelligent NeAR Agent
               <br />
               <span className="text-green-400">Augmented Reality</span>
             </h1>
 
             <p className="text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
-              Chat, interact, and collaborate with NEAR-powered AI agents
+              Chat, interact, and collaborate with NeAR-powered AI agents
               positioned at precise real-world locations using GEODNET RTK
               precision
             </p>
@@ -103,7 +103,7 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
             >
               <ChevronRight className="w-5 h-5 mr-2" />
               Enter Agent World
-              <span className="text-xs ml-2 opacity-75">powered by NEAR</span>
+              <span className="text-xs ml-2 opacity-75">powered by NeAR</span>
             </Button>
 
             {/* Secondary Link */}
@@ -122,7 +122,7 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
         <div className="max-w-4xl mx-auto">
           <div className="bg-slate-800/50 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
             <h3 className="text-lg font-semibold text-green-400 mb-4 text-center">
-              NEAR Agent Network Status
+              NeAR Agent Network Status
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -142,7 +142,7 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
                 </div>
               </div>
 
-              {/* NEAR Network Status */}
+              {/* NeAR Network Status */}
               <div className="flex items-center space-x-3 p-3 bg-slate-700/30 rounded-lg">
                 <div className="p-2 bg-green-500/20 rounded-lg">
                   <Zap className="w-5 h-5 text-green-400" />
@@ -151,7 +151,7 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
                   <div className="flex items-center space-x-2">
                     <CheckCircle className="w-4 h-4 text-green-400" />
                     <span className="text-sm font-medium text-green-400">
-                      NEAR Network: Connected
+                      NeAR Network: Connected
                     </span>
                   </div>
                   <p className="text-xs text-slate-400">BlockDAG Testnet</p>
@@ -167,7 +167,7 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
                   <div className="flex items-center space-x-2">
                     <CheckCircle className="w-4 h-4 text-green-400" />
                     <span className="text-sm font-medium text-green-400">
-                      Active NEAR Agents: {isLoading ? "..." : activeAgentCount}
+                      Active NeAR Agents: {isLoading ? "..." : activeAgentCount}
                     </span>
                   </div>
                   <p className="text-xs text-slate-400">Available in network</p>
@@ -189,12 +189,12 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
 
             <button className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors">
               <Users className="w-5 h-5" />
-              <span className="text-xs font-medium">NEAR Agents</span>
+              <span className="text-xs font-medium">NeAR Agents</span>
             </button>
 
             <button className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors">
               <MapPin className="w-5 h-5" />
-              <span className="text-xs font-medium">NEAR Map</span>
+              <span className="text-xs font-medium">NeAR Map</span>
             </button>
 
             <button className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors">

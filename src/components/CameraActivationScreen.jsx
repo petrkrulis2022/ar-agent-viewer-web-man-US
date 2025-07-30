@@ -62,7 +62,7 @@ const CameraActivationScreen = ({ onStartCamera, onGoBack }) => {
             </h1>
 
             <p className="text-xl text-slate-300 max-w-xl mx-auto">
-              Activate your camera to discover and interact with NEAR agents in
+              Activate your camera to discover and interact with NeAR agents in
               augmented reality
             </p>
           </div>
@@ -102,7 +102,7 @@ const CameraActivationScreen = ({ onStartCamera, onGoBack }) => {
             </Button>
 
             <p className="text-sm text-slate-400">
-              Once activated, you'll see NEAR agents positioned around you
+              Once activated, you'll see NeAR agents positioned around you
             </p>
           </div>
 
@@ -147,7 +147,7 @@ const CameraActivationScreen = ({ onStartCamera, onGoBack }) => {
           <div className="flex items-center justify-center space-x-6 text-sm">
             <div className="flex items-center space-x-2">
               <CheckCircle className="w-4 h-4 text-green-400" />
-              <span className="text-slate-300">NEAR Network Ready</span>
+              <span className="text-slate-300">NeAR Network Ready</span>
             </div>
             <div className="flex items-center space-x-2">
               <CheckCircle className="w-4 h-4 text-green-400" />

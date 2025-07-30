@@ -315,7 +315,7 @@ const ARAgentOverlay = ({
             <Bot className="w-8 h-8 text-slate-400 mx-auto mb-2" />
             <p className="text-white text-sm font-medium">No agents nearby</p>
             <p className="text-slate-400 text-xs">
-              Move around to discover NEAR agents
+              Move around to discover NeAR agents
             </p>
           </div>
         </div>
@@ -329,7 +329,7 @@ const ARAgentOverlay = ({
             <p className="text-white text-sm font-medium">
               Scanning for agents...
             </p>
-            <p className="text-slate-400 text-xs">Connecting to NEAR network</p>
+            <p className="text-slate-400 text-xs">Connecting to NeAR network</p>
           </div>
         </div>
       )}

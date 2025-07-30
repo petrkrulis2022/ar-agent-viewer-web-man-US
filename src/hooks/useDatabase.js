@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
   supabase,
-  getNearbyObjectsFromSupabase,
+  getNearAgentsFromSupabase,
   getConnectionStatus,
   isSupabaseConfigured,
   debugSupabaseConfig,
@@ -146,17 +146,17 @@ export const useDatabase = () => {
 
   const isMountedRef = useRef(true);
 
-  // Get nearby objects with fallback to mock data
-  const getNearbyObjects = useCallback(async (location) => {
+  // Get NeAR agents with fallback to mock data
+  const getNearAgents = useCallback(async (location) => {
     try {
       if (isMountedRef.current) {
         setState((prev) => ({ ...prev, isLoading: true, error: null }));
       }
 
-      console.log("🔍 Fetching nearby objects for location:", location);
+      console.log("🔍 Fetching NeAR agents for location:", location);
 
       // Try to get data from Supabase first
-      const supabaseData = await getNearbyObjectsFromSupabase(
+      const supabaseData = await getNearAgentsFromSupabase(
         location.latitude,
         location.longitude,
         location.radius_meters || 100
@@ -244,7 +244,7 @@ export const useDatabase = () => {
     } catch (error) {
       const errorInfo = {
         code: "QUERY_ERROR",
-        message: error.message || "Failed to fetch nearby objects",
+        message: error.message || "Failed to fetch NeAR agents",
         details: error,
       };
 
@@ -270,7 +270,7 @@ export const useDatabase = () => {
           setState((prev) => ({ ...prev, isLoading: true, error: null }));
         }
 
-        const objects = await getNearbyObjects(id);
+        const objects = await getNearAgents(id);
 
         if (isMountedRef.current) {
           setState((prev) => ({
@@ -295,7 +295,7 @@ export const useDatabase = () => {
         return null;
       }
     },
-    [getNearbyObjects]
+    [getNearAgents]
   );
 
   // Refresh connection
@@ -359,7 +359,7 @@ export const useDatabase = () => {
 
   return {
     ...state,
-    getNearbyObjects,
+    getNearAgents,
     getObjectById,
     refreshConnection,
     clearError,

@@ -7,18 +7,21 @@ A cutting-edge augmented reality web application that allows users to discover, 
 ## 🌟 Features
 
 ### 🎥 **Advanced Camera System**
+
 - **Live camera feed** with retry logic for maximum compatibility
 - **Full-screen AR view** with professional overlay elements
 - **Cross-platform support** for desktop and mobile devices
 - **Intelligent error handling** with progressive fallback constraints
 
 ### 🛰️ **RTK-Enhanced Location Services**
+
 - **Geodnet RTK integration** for centimeter-level GPS accuracy
 - **Real-time positioning** with altitude and precision data
 - **Fallback systems** for standard GPS when RTK unavailable
 - **Location status indicators** showing accuracy and source
 
 ### 🤖 **AR Agent Interactions**
+
 - **Interactive agent overlays** positioned on live camera feed
 - **Smart positioning algorithm** distributing agents across view
 - **Real-time chat system** with contextual AI responses
@@ -26,6 +29,7 @@ A cutting-edge augmented reality web application that allows users to discover, 
 - **Agent type classification** (Assistant, Creator, Services, Tutor, Game)
 
 ### 💰 **Blockchain Integration**
+
 - **ThirdWeb wallet connection** with social login options
 - **MetaMask integration** for seamless crypto transactions
 - **BlockDAG Testnet support** (Chain ID 1043)
@@ -33,6 +37,7 @@ A cutting-edge augmented reality web application that allows users to discover, 
 - **QR code generation** for mobile wallet compatibility
 
 ### 🗄️ **Database Connectivity**
+
 - **Supabase integration** for real-time agent data
 - **43+ agents** loaded from live database
 - **GPS coordinate mapping** for accurate AR positioning
@@ -41,6 +46,7 @@ A cutting-edge augmented reality web application that allows users to discover, 
 ## 🚀 **Technology Stack**
 
 ### **Frontend**
+
 - **React 19** - Modern UI framework
 - **Vite** - Fast build tool and dev server
 - **Tailwind CSS** - Utility-first styling
@@ -48,17 +54,20 @@ A cutting-edge augmented reality web application that allows users to discover, 
 - **Lucide React** - Beautiful icon system
 
 ### **Blockchain**
+
 - **ThirdWeb SDK** - Web3 development platform
 - **MetaMask** - Ethereum wallet integration
 - **BlockDAG Network** - High-performance blockchain
 - **EIP-681** - Payment URI standard
 
 ### **Location Services**
+
 - **Geodnet RTK** - Real-time kinematic positioning
 - **Web Geolocation API** - Standard GPS fallback
 - **NTRIP Protocol** - RTK correction data streaming
 
 ### **Database**
+
 - **Supabase** - Real-time PostgreSQL database
 - **Real-time subscriptions** - Live data updates
 - **Row Level Security** - Secure data access
@@ -66,11 +75,13 @@ A cutting-edge augmented reality web application that allows users to discover, 
 ## 📦 **Installation**
 
 ### **Prerequisites**
-- Node.js 18+ 
+
+- Node.js 18+
 - pnpm (recommended) or npm
 - Modern web browser with camera support
 
 ### **Setup**
+
 ```bash
 # Clone the repository
 git clone https://github.com/your-username/ar-viewer-web.git
@@ -85,6 +96,7 @@ cp .env.example .env
 ```
 
 ### **Environment Variables**
+
 ```env
 # Supabase Configuration
 VITE_SUPABASE_URL=your_supabase_url
@@ -106,6 +118,7 @@ VITE_ASSEMBLY_AI_API_KEY=your_assembly_ai_key
 ```
 
 ### **Development**
+
 ```bash
 # Start development server
 pnpm run dev
@@ -120,18 +133,21 @@ pnpm run preview
 ## 🎯 **Usage**
 
 ### **Getting Started**
+
 1. **Open the application** in a modern web browser
 2. **Allow location access** for GPS positioning
 3. **Grant camera permissions** for AR functionality
 4. **Wait for initialization** (Location → Camera → Database)
 
 ### **AR Agent Interaction**
+
 1. **Start the camera** using the "Start Camera" button
 2. **Look for colored agent markers** overlaid on the camera feed
 3. **Tap any agent** to open the interaction modal
 4. **Choose interaction type**: Chat, Voice, Video, or Payment
 
 ### **Wallet Connection**
+
 1. **Navigate to Wallet tab** in the main interface
 2. **Click "Connect Wallet"** to open connection modal
 3. **Choose connection method**: MetaMask, Social Login, or Email
@@ -139,6 +155,7 @@ pnpm run preview
 5. **Start making payments** to agents with USDFC tokens
 
 ### **RTK Location Enhancement**
+
 - **Automatic RTK detection** when Geodnet credentials configured
 - **Real-time accuracy display** showing positioning precision
 - **Altitude information** included in location data
@@ -147,6 +164,7 @@ pnpm run preview
 ## 🏗️ **Architecture**
 
 ### **Component Structure**
+
 ```
 src/
 ├── components/
@@ -167,6 +185,7 @@ src/
 ```
 
 ### **Data Flow**
+
 1. **Location Service** → RTK-enhanced GPS coordinates
 2. **Database Service** → Agent data with GPS positions
 3. **AR Overlay** → Positioned agents on camera feed
@@ -176,6 +195,7 @@ src/
 ## 🔧 **Configuration**
 
 ### **Supabase Database Schema**
+
 ```sql
 -- Agents table
 CREATE TABLE agents (
@@ -192,6 +212,7 @@ CREATE TABLE agents (
 ```
 
 ### **BlockDAG Network**
+
 - **Chain ID**: 1043
 - **Network Name**: BlockDAG Primordial Testnet
 - **RPC URL**: https://rpc-testnet.blockdag.org
@@ -199,6 +220,7 @@ CREATE TABLE agents (
 - **Native Token**: BDAG
 
 ### **RTK Configuration**
+
 - **Provider**: Geodnet
 - **Protocol**: NTRIP
 - **Accuracy**: 2cm (when RTK signal available)
@@ -207,6 +229,7 @@ CREATE TABLE agents (
 ## 🚀 **Deployment**
 
 ### **Static Hosting**
+
 ```bash
 # Build for production
 pnpm run build
@@ -216,6 +239,7 @@ pnpm run build
 ```
 
 ### **Environment Setup**
+
 - Configure environment variables in hosting platform
 - Ensure HTTPS for camera and location access
 - Set up proper CORS headers for API access
@@ -223,6 +247,7 @@ pnpm run build
 ## 🤝 **Contributing**
 
 ### **Development Workflow**
+
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/amazing-feature`
 3. Commit changes: `git commit -m 'Add amazing feature'`
@@ -230,6 +255,7 @@ pnpm run build
 5. Open a Pull Request
 
 ### **Code Standards**
+
 - **ESLint** for code linting
 - **Prettier** for code formatting
 - **React best practices** for component development
@@ -249,12 +275,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 **Support**
 
-- **Documentation**: [docs.near-viewer.app](https://docs.near-viewer.app)
+- **Documentation**: [docs.NeAR-viewer.app](https://docs.NeAR-viewer.app)
 - **Issues**: [GitHub Issues](https://github.com/your-username/ar-viewer-web/issues)
-- **Discord**: [NeAR Viewer Community](https://discord.gg/near-viewer)
-- **Email**: support@near-viewer.app
+- **Discord**: [NeAR Viewer Community](https://discord.gg/NeAR-viewer)
+- **Email**: support@NeAR-viewer.app
 
 ---
 
 **Built with ❤️ for the future of augmented reality and blockchain interaction**
-
