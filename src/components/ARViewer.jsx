@@ -474,6 +474,83 @@ const ARViewer = () => {
               </div>
             </div>
 
+            {/* Status Cards - Moved to top for better camera view */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="bg-black/50 border-purple-500/30 backdrop-blur-sm">
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-2">
+                      <MapPin className="w-8 h-8 text-purple-400" />
+                      {rtkStatus.isRTKEnhanced && (
+                        <Satellite className="w-4 h-4 text-green-400" />
+                      )}
+                    </div>
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <p className="text-sm text-purple-200">Location</p>
+                        {rtkStatus.isRTKEnhanced && (
+                          <Badge
+                            variant="outline"
+                            className="text-xs bg-green-500/20 border-green-500 text-green-300"
+                          >
+                            RTK Enhanced
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="font-semibold text-white">
+                        {currentLocation
+                          ? `${currentLocation.latitude.toFixed(
+                              6
+                            )}, ${currentLocation.longitude.toFixed(6)}`
+                          : "Unknown"}
+                      </p>
+                      {currentLocation && (
+                        <div className="text-xs text-purple-300 mt-1">
+                          <div>
+                            Alt: {(currentLocation.altitude || 0).toFixed(1)}m
+                          </div>
+                          <div>
+                            ±{(rtkStatus.accuracy || 10).toFixed(2)}m •{" "}
+                            {rtkStatus.source}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-black/50 border-purple-500/30 backdrop-blur-sm">
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-3">
+                    <Users className="w-8 h-8 text-purple-400" />
+                    <div>
+                      <p className="text-sm text-purple-200">Nearby Objects</p>
+                      <p className="font-semibold text-white">
+                        {nearbyObjects.length}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-black/50 border-purple-500/30 backdrop-blur-sm">
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-3">
+                    <Globe className="w-8 h-8 text-purple-400" />
+                    <div>
+                      <p className="text-sm text-purple-200">Database</p>
+                      <p className="font-semibold text-white">
+                        {connectionStatus === "connected"
+                          ? "Connected"
+                          : "Offline"}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
             {/* AR View Container */}
             <div className="relative">
               {viewMode === "2d" ? (
@@ -559,83 +636,6 @@ const ARViewer = () => {
                   </div>
                 </div>
               )}
-            </div>
-
-            {/* Status Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="bg-black/50 border-purple-500/30 backdrop-blur-sm">
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="flex items-center space-x-2">
-                      <MapPin className="w-8 h-8 text-purple-400" />
-                      {rtkStatus.isRTKEnhanced && (
-                        <Satellite className="w-4 h-4 text-green-400" />
-                      )}
-                    </div>
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <p className="text-sm text-purple-200">Location</p>
-                        {rtkStatus.isRTKEnhanced && (
-                          <Badge
-                            variant="outline"
-                            className="text-xs bg-green-500/20 border-green-500 text-green-300"
-                          >
-                            RTK Enhanced
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="font-semibold text-white">
-                        {currentLocation
-                          ? `${currentLocation.latitude.toFixed(
-                              6
-                            )}, ${currentLocation.longitude.toFixed(6)}`
-                          : "Unknown"}
-                      </p>
-                      {currentLocation && (
-                        <div className="text-xs text-purple-300 mt-1">
-                          <div>
-                            Alt: {(currentLocation.altitude || 0).toFixed(1)}m
-                          </div>
-                          <div>
-                            ±{(rtkStatus.accuracy || 10).toFixed(2)}m •{" "}
-                            {rtkStatus.source}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-black/50 border-purple-500/30 backdrop-blur-sm">
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-3">
-                    <Users className="w-8 h-8 text-purple-400" />
-                    <div>
-                      <p className="text-sm text-purple-200">Nearby Objects</p>
-                      <p className="font-semibold text-white">
-                        {nearbyObjects.length}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-black/50 border-purple-500/30 backdrop-blur-sm">
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-3">
-                    <Globe className="w-8 h-8 text-purple-400" />
-                    <div>
-                      <p className="text-sm text-purple-200">Database</p>
-                      <p className="font-semibold text-white">
-                        {connectionStatus === "connected"
-                          ? "Connected"
-                          : "Offline"}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
             </div>
           </div>
         )}

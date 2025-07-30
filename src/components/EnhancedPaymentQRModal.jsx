@@ -25,9 +25,11 @@ import {
 } from "lucide-react";
 import QRCode from "react-qr-code";
 import { USBDGToken, ContractAddresses } from "../config/blockdag-chain";
+import { MorphUSDTToken } from "../config/morph-holesky-chain";
 import ARQRCode from "./ARQRCode";
 import qrCodeService from "../services/qrCodeService";
 import solanaPaymentService from "../services/solanaPaymentService";
+import morphPaymentService from "../services/morphPaymentService";
 
 const EnhancedPaymentQRModal = ({
   agent,
@@ -45,15 +47,18 @@ const EnhancedPaymentQRModal = ({
   const [arQRCodes, setArQRCodes] = useState([]);
   const [showARView, setShowARView] = useState(false);
   const [isGeneratingAR, setIsGeneratingAR] = useState(false);
-  const [selectedNetwork, setSelectedNetwork] = useState("blockdag"); // "blockdag" or "solana"
+  const [selectedNetwork, setSelectedNetwork] = useState("blockdag"); // "blockdag", "solana", or "morph"
 
   // Generate payment QR code data
   useEffect(() => {
     if (isOpen && agent) {
-      const payment = generatePaymentData(agent, selectedNetwork);
-      setPaymentData(payment);
-      setTimeLeft(300);
-      setShowARView(false); // Reset AR view when network changes
+      const generatePayment = async () => {
+        const payment = await generatePaymentData(agent, selectedNetwork);
+        setPaymentData(payment);
+        setTimeLeft(300);
+        setShowARView(false); // Reset AR view when network changes
+      };
+      generatePayment();
     }
   }, [isOpen, agent, selectedNetwork]);
 
@@ -75,7 +80,7 @@ const EnhancedPaymentQRModal = ({
   }, [isOpen, timeLeft]);
 
   // Generate payment data with BlockDAG configuration
-  const generatePaymentData = (agent, network = "blockdag") => {
+  const generatePaymentData = async (agent, network = "blockdag") => {
     if (network === "solana") {
       // Generate Solana payment data
       const solanaPayment = solanaPaymentService.generateSolanaAgentPayment(
@@ -101,6 +106,42 @@ const EnhancedPaymentQRModal = ({
         explorerUrl: `https://explorer.solana.com/?cluster=testnet`,
         networkName: "Solana Testnet",
         network: "solana",
+      };
+    } else if (network === "morph") {
+      // Generate Morph Holesky payment data (async to get connected wallet)
+      const morphPayment = await morphPaymentService.generateMorphAgentPayment(
+        agent,
+        1
+      );
+      const qrData =
+        morphPaymentService.generateMorphPaymentQRData(morphPayment);
+
+      // Generate all QR formats for testing
+      const allFormats =
+        morphPaymentService.generateMorphQRFormats(morphPayment);
+      console.log("🧪 Testing all QR formats:");
+      console.log("📱 Try these in your wallet if the main one doesn't work:");
+      console.log("1. Wallet-friendly:", allFormats.walletFriendly);
+      console.log("2. Standard EIP-681:", allFormats.standard);
+      console.log("3. Basic format:", allFormats.basic);
+      console.log("4. Function call:", allFormats.functionCall);
+
+      // Test and validate the QR code
+      const testResult = await morphPaymentService.testMorphPaymentQR(agent);
+      console.log("🧪 Morph QR Test Result:", testResult);
+
+      // Generate comprehensive test report
+      morphPaymentService.generateMorphQRTestReport(agent).then((report) => {
+        console.log("📋 Morph Test Report:", report);
+      });
+
+      return {
+        ...morphPayment,
+        qrData,
+        transactionId: `morph_tx_${Date.now()}_${agent.id}`,
+        explorerUrl: `https://explorer-holesky.morphl2.io`,
+        networkName: "Morph Holesky",
+        network: "morph",
       };
     } else {
       // Generate BlockDAG payment data (original)
@@ -289,7 +330,7 @@ const EnhancedPaymentQRModal = ({
                 onValueChange={setSelectedNetwork}
                 className="w-full"
               >
-                <TabsList className="grid w-full grid-cols-2 bg-slate-800/50">
+                <TabsList className="grid w-full grid-cols-3 bg-slate-800/50">
                   <TabsTrigger
                     value="blockdag"
                     className="flex items-center gap-2"
@@ -304,6 +345,13 @@ const EnhancedPaymentQRModal = ({
                     <Wallet className="w-4 h-4" />
                     Solana
                   </TabsTrigger>
+                  <TabsTrigger
+                    value="morph"
+                    className="flex items-center gap-2"
+                  >
+                    <Network className="w-4 h-4" />
+                    Morph
+                  </TabsTrigger>
                 </TabsList>
               </Tabs>
             </div>
@@ -315,6 +363,8 @@ const EnhancedPaymentQRModal = ({
                 <span className="text-white font-semibold">
                   {selectedNetwork === "solana"
                     ? `${paymentData?.amount} SOL`
+                    : selectedNetwork === "morph"
+                    ? `${paymentData?.amount} USDT`
                     : `${paymentData?.amount} USBDG+`}
                 </span>
               </div>
@@ -418,6 +468,8 @@ const EnhancedPaymentQRModal = ({
                 className={`rounded-lg p-3 ${
                   selectedNetwork === "solana"
                     ? "bg-blue-900/20 border border-blue-500/30"
+                    : selectedNetwork === "morph"
+                    ? "bg-green-900/20 border border-green-500/30"
                     : "bg-purple-900/20 border border-purple-500/30"
                 }`}
               >
@@ -426,17 +478,23 @@ const EnhancedPaymentQRModal = ({
                     className={`text-sm font-medium ${
                       selectedNetwork === "solana"
                         ? "text-blue-200"
+                        : selectedNetwork === "morph"
+                        ? "text-green-200"
                         : "text-purple-200"
                     }`}
                   >
                     {selectedNetwork === "solana"
                       ? "🦄 Solana Payment Instructions"
+                      : selectedNetwork === "morph"
+                      ? "🦊 Morph Holesky Payment Instructions"
                       : "⚡ BlockDAG Payment Instructions"}
                   </p>
                   <ul
                     className={`text-xs space-y-1 ${
                       selectedNetwork === "solana"
                         ? "text-blue-300"
+                        : selectedNetwork === "morph"
+                        ? "text-green-300"
                         : "text-purple-300"
                     }`}
                   >
@@ -448,6 +506,15 @@ const EnhancedPaymentQRModal = ({
                         <li>• Connect to Solana Testnet network</li>
                         <li>• Ensure you have SOL for transaction fees</li>
                         <li>• Scan with Solana Pay compatible app</li>
+                      </>
+                    ) : selectedNetwork === "morph" ? (
+                      <>
+                        <li>• Use MetaMask or EVM-compatible wallet</li>
+                        <li>
+                          • Connect to Morph Holesky testnet (Chain ID: 2810)
+                        </li>
+                        <li>• Ensure you have USDT tokens for payment</li>
+                        <li>• Scan with EIP-681 compatible wallet</li>
                       </>
                     ) : (
                       <>
