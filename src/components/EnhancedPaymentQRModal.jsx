@@ -26,7 +26,7 @@ import {
 import QRCode from "react-qr-code";
 import { USBDGToken, ContractAddresses } from "../config/blockdag-chain";
 import { MorphUSDTToken } from "../config/morph-holesky-chain";
-import ARQRCodeEnhanced from "./ARQRCodeEnhanced";
+import ARQRCodeFixed from "./ARQRCodeFixed";
 import qrCodeService from "../services/qrCodeService";
 import arQRManager from "../services/arQRManager";
 import solanaPaymentService from "../services/solanaPaymentService";
@@ -199,7 +199,7 @@ const EnhancedPaymentQRModal = ({
         transactionId: paymentData.transactionId,
         amount: paymentData.amount,
         createdAt: Date.now(),
-        expiresAt: Date.now() + (timeLeft * 1000)
+        expiresAt: Date.now() + timeLeft * 1000,
       };
 
       // 3. IMMEDIATELY show in AR using AR QR Manager (don't wait for database)
@@ -214,8 +214,8 @@ const EnhancedPaymentQRModal = ({
           metadata: {
             agent: agent,
             amount: paymentData.amount,
-            transactionId: paymentData.transactionId
-          }
+            transactionId: paymentData.transactionId,
+          },
         }
       );
 
@@ -223,7 +223,10 @@ const EnhancedPaymentQRModal = ({
       setArQRCodes([localQRData]);
       setShowARView(true);
 
-      console.log("✅ AR QR Code displayed immediately via AR Manager:", arQRId);
+      console.log(
+        "✅ AR QR Code displayed immediately via AR Manager:",
+        arQRId
+      );
 
       // 4. Notify parent component (AR is now active)
       if (onARQRGenerated) {
@@ -233,7 +236,7 @@ const EnhancedPaymentQRModal = ({
       // 5. BACKGROUND DATABASE SAVE (non-blocking)
       try {
         console.log("🔄 Attempting background save to Supabase...");
-        
+
         const qrCodeData = {
           transactionId: paymentData.transactionId,
           data: paymentData.qrData,
@@ -244,23 +247,25 @@ const EnhancedPaymentQRModal = ({
         };
 
         const createdQR = await qrCodeService.createQRCode(qrCodeData);
-        
+
         if (createdQR) {
           // Update local QR with database ID if save succeeded
           localQRData.id = createdQR.id || localQRData.id;
-          localQRData.dbSaveStatus = createdQR.dbSaveStatus || 'saved';
-          
+          localQRData.dbSaveStatus = createdQR.dbSaveStatus || "saved";
+
           console.log("✅ AR QR background save completed:", {
             id: localQRData.id,
-            dbStatus: localQRData.dbSaveStatus
+            dbStatus: localQRData.dbSaveStatus,
           });
         }
       } catch (dbError) {
-        console.warn("⚠️ AR QR database save failed (QR remains active in AR):", dbError);
-        localQRData.dbSaveStatus = 'failed';
+        console.warn(
+          "⚠️ AR QR database save failed (QR remains active in AR):",
+          dbError
+        );
+        localQRData.dbSaveStatus = "failed";
         localQRData.dbError = dbError.message;
       }
-
     } catch (error) {
       console.error("❌ Error generating AR QR code:", error);
       // Even if there's an error, we should still try to show something
@@ -271,12 +276,12 @@ const EnhancedPaymentQRModal = ({
         size: 1.5,
         status: "active",
         agent: agent,
-        error: error.message
+        error: error.message,
       };
-      
+
       setArQRCodes([fallbackQR]);
       setShowARView(true);
-      
+
       if (onARQRGenerated) {
         onARQRGenerated(fallbackQR);
       }
@@ -294,23 +299,27 @@ const EnhancedPaymentQRModal = ({
 
     // Important: QR codes remain active in AR QR Manager even after modal closes
     // The user can now see and interact with the floating QR code in AR space
-    
+
     onClose(); // Close the modal
 
     // Log current AR QR status for debugging
     const activeQRs = arQRManager.getActiveQRs();
-    console.log(`✅ ${activeQRs.length} AR QR codes remain active after modal close`);
-    
-    activeQRs.forEach(qr => {
-      console.log(`🔍 Active QR: ${qr.id} at position [${qr.position.join(', ')}]`);
+    console.log(
+      `✅ ${activeQRs.length} AR QR codes remain active after modal close`
+    );
+
+    activeQRs.forEach((qr) => {
+      console.log(
+        `🔍 Active QR: ${qr.id} at position [${qr.position.join(", ")}]`
+      );
     });
 
     // Optional: Show a toast notification that QR is still available
     if (window.showNotification) {
       window.showNotification({
-        type: 'info',
-        message: 'AR QR Code is now floating in space. Tap it to scan!',
-        duration: 3000
+        type: "info",
+        message: "AR QR Code is now floating in space. Tap it to scan!",
+        duration: 3000,
       });
     }
   };
@@ -636,7 +645,7 @@ const EnhancedPaymentQRModal = ({
       {/* AR QR Code Overlay */}
       {showARView && arQRCodes.length > 0 && (
         <div className="fixed inset-0 z-40 pointer-events-none">
-          <ARQRCodeEnhanced
+          <ARQRCodeFixed
             qrCodes={arQRCodes}
             onQRScanned={handleARQRScanned}
             className="pointer-events-auto"

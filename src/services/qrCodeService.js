@@ -68,9 +68,12 @@ export const createQRCode = async (qrCodeData) => {
       .single();
 
     if (error) {
-      console.warn("Supabase save failed, but AR QR remains active locally:", error);
+      console.warn(
+        "Supabase save failed, but AR QR remains active locally:",
+        error
+      );
       // Update local QR with note about DB failure
-      localQR.dbSaveStatus = 'failed';
+      localQR.dbSaveStatus = "failed";
       localQR.dbError = error.message;
       return localQR;
     }
@@ -78,12 +81,11 @@ export const createQRCode = async (qrCodeData) => {
     console.log("✅ AR QR saved to Supabase successfully:", data);
     // Update local QR with Supabase ID
     localQR.id = data.id;
-    localQR.dbSaveStatus = 'saved';
+    localQR.dbSaveStatus = "saved";
     return localQR;
-
   } catch (error) {
     console.warn("AR QR Supabase save error (QR still active locally):", error);
-    localQR.dbSaveStatus = 'error';
+    localQR.dbSaveStatus = "error";
     localQR.dbError = error.message;
     return localQR;
   }

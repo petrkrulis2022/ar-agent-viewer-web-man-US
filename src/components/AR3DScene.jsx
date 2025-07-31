@@ -9,7 +9,7 @@ import Enhanced3DAgent from "./Enhanced3DAgent";
 import AgentInteractionModal from "./AgentInteractionModal";
 import EnhancedPaymentQRModal from "./EnhancedPaymentQRModal";
 import QRScannerOverlay from "./QRScannerOverlay";
-import ARQRCodeEnhanced from "./ARQRCodeEnhanced";
+import ARQRCodeFixed from "./ARQRCodeFixed";
 import arQRManager from "../services/arQRManager";
 
 const AR3DScene = ({
@@ -34,6 +34,11 @@ const AR3DScene = ({
   // AR QR states for notifications and display
   const [arQRNotifications, setArQRNotifications] = useState([]);
   const [persistentQRs, setPersistentQRs] = useState([]);
+
+  // Enhanced QR scanning detection states
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanningStatus, setScanningStatus] = useState("idle"); // idle, scanning, found, error
+  const [qrDetectionTimeout, setQrDetectionTimeout] = useState(null);
 
   // Handle agent click
   const handleAgentClick = (agent) => {
@@ -84,8 +89,8 @@ const AR3DScene = ({
     console.log("🌐 AR QR Code generated for 3D agent:", arQRCode);
 
     // Add to persistent QRs for display in 3D scene
-    setPersistentQRs(prev => {
-      const exists = prev.find(qr => qr.id === arQRCode.id);
+    setPersistentQRs((prev) => {
+      const exists = prev.find((qr) => qr.id === arQRCode.id);
       if (exists) return prev;
       return [...prev, arQRCode];
     });
@@ -108,6 +113,83 @@ const AR3DScene = ({
     }, 5000);
 
     console.log("✅ AR QR Code added to 3D scene display");
+
+    // Start enhanced QR detection
+    startQRDetection();
+  };
+
+  // Enhanced QR Detection System
+  const startQRDetection = () => {
+    console.log("🔍 Starting enhanced QR detection...");
+    setIsScanning(true);
+    setScanningStatus("scanning");
+
+    // Clear any existing timeout
+    if (qrDetectionTimeout) {
+      clearTimeout(qrDetectionTimeout);
+    }
+
+    // Check for active QRs immediately
+    checkForActiveQRs();
+
+    // Set up periodic checking
+    const checkInterval = setInterval(checkForActiveQRs, 1000);
+
+    // Set timeout to stop scanning after 10 seconds
+    const timeout = setTimeout(() => {
+      clearInterval(checkInterval);
+      if (scanningStatus === "scanning") {
+        setScanningStatus("error");
+        setIsScanning(false);
+        console.log("⏰ QR detection timeout - no QRs found");
+      }
+    }, 10000);
+
+    setQrDetectionTimeout(timeout);
+  };
+
+  const checkForActiveQRs = () => {
+    const activeQRs = arQRManager.getActiveQRs();
+    console.log(`🔍 Checking for QRs... Found: ${activeQRs.length}`);
+
+    if (activeQRs.length > 0) {
+      setScanningStatus("found");
+      setIsScanning(false);
+
+      // Clear timeout
+      if (qrDetectionTimeout) {
+        clearTimeout(qrDetectionTimeout);
+      }
+
+      console.log("✅ QR codes detected! Ready for scanning.");
+
+      // Update UI to show scan interface
+      showQRScanInterface(activeQRs);
+    }
+  };
+
+  const showQRScanInterface = (qrCodes) => {
+    console.log("📱 Showing QR scan interface for", qrCodes.length, "QR codes");
+
+    // Add notification about scannable QRs
+    const scanNotification = {
+      id: Date.now(),
+      message: `${qrCodes.length} QR Code${
+        qrCodes.length > 1 ? "s" : ""
+      } ready to scan!`,
+      type: "scan-ready",
+      qrCodes: qrCodes,
+      timestamp: new Date().toISOString(),
+    };
+
+    setArQRNotifications((prev) => [...prev, scanNotification]);
+
+    // Auto-remove scan notification after 8 seconds
+    setTimeout(() => {
+      setArQRNotifications((prev) =>
+        prev.filter((n) => n.id !== scanNotification.id)
+      );
+    }, 8000);
   };
 
   // Handle QR code scanned
@@ -411,7 +493,7 @@ const AR3DScene = ({
         displayQRCode={currentQRData}
       />
 
-      {/* AR QR Notifications */}
+      {/* Enhanced AR QR Notifications with scan status */}
       {arQRNotifications.length > 0 && (
         <div className="absolute top-20 right-4 z-50 space-y-2">
           {arQRNotifications.map((notification) => (
@@ -420,6 +502,8 @@ const AR3DScene = ({
               className={`bg-black/80 backdrop-blur-sm rounded-lg p-3 text-white text-sm border ${
                 notification.type === "payment"
                   ? "border-green-500/30 bg-green-500/20"
+                  : notification.type === "scan-ready"
+                  ? "border-purple-500/30 bg-purple-500/20 animate-pulse"
                   : "border-blue-500/30 bg-blue-500/20"
               } animate-fade-in`}
               style={{ minWidth: "250px" }}
@@ -429,6 +513,8 @@ const AR3DScene = ({
                   className={`w-2 h-2 rounded-full ${
                     notification.type === "payment"
                       ? "bg-green-400"
+                      : notification.type === "scan-ready"
+                      ? "bg-purple-400 animate-pulse"
                       : "bg-blue-400"
                   }`}
                 ></div>
@@ -440,22 +526,65 @@ const AR3DScene = ({
                   to {notification.scanData.agent?.name}
                 </div>
               )}
+              {notification.type === "scan-ready" && (
+                <div className="text-xs text-purple-300 mt-1 animate-pulse">
+                  👆 Tap the floating QR code to pay
+                </div>
+              )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Enhanced QR Scanning Status Indicator */}
+      {(isScanning || scanningStatus === "found") && (
+        <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-50">
+          <div
+            className={`bg-black/90 backdrop-blur-sm rounded-full px-6 py-3 text-white text-sm border ${
+              scanningStatus === "scanning"
+                ? "border-yellow-500/50 bg-yellow-500/10"
+                : scanningStatus === "found"
+                ? "border-green-500/50 bg-green-500/10"
+                : "border-red-500/50 bg-red-500/10"
+            }`}
+          >
+            <div className="flex items-center space-x-3">
+              {scanningStatus === "scanning" && (
+                <>
+                  <div className="w-3 h-3 bg-yellow-400 rounded-full animate-ping"></div>
+                  <span>Scanning for QR codes...</span>
+                </>
+              )}
+              {scanningStatus === "found" && (
+                <>
+                  <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                  <span>📱 Tap to Scan & Pay</span>
+                </>
+              )}
+              {scanningStatus === "error" && (
+                <>
+                  <div className="w-3 h-3 bg-red-400 rounded-full"></div>
+                  <span>No QR codes found</span>
+                </>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
       {/* Persistent AR QR Code Overlay */}
       {persistentQRs.length > 0 && (
         <div className="absolute inset-0 z-30 pointer-events-none">
-          <ARQRCodeEnhanced
+          <ARQRCodeFixed
             qrCodes={persistentQRs}
             onQRScanned={(scanData) => {
               console.log("🎯 Persistent AR QR scanned in 3D:", scanData);
-              
+
               // Remove from persistent QRs
-              setPersistentQRs(prev => prev.filter(qr => qr.id !== scanData.id));
-              
+              setPersistentQRs((prev) =>
+                prev.filter((qr) => qr.id !== scanData.id)
+              );
+
               // Handle payment
               if (scanData.qrObject?.agent) {
                 const paymentNotification = {
@@ -465,12 +594,12 @@ const AR3DScene = ({
                   scanData: scanData,
                   timestamp: Date.now(),
                 };
-                
-                setArQRNotifications(prev => [...prev, paymentNotification]);
-                
+
+                setArQRNotifications((prev) => [...prev, paymentNotification]);
+
                 setTimeout(() => {
-                  setArQRNotifications(prev => 
-                    prev.filter(n => n.id !== paymentNotification.id)
+                  setArQRNotifications((prev) =>
+                    prev.filter((n) => n.id !== paymentNotification.id)
                   );
                 }, 5000);
               }

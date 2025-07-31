@@ -11,15 +11,25 @@ import MainLandingScreen from "./components/MainLandingScreen";
 import CameraActivationScreen from "./components/CameraActivationScreen";
 import UnifiedWalletConnect from "./components/UnifiedWalletConnect";
 import ThirdWebProviderWrapper from "./providers/ThirdWebProvider";
+import NotificationProvider, {
+  useNotifications,
+  createGlobalNotificationFunctions,
+} from "./components/NotificationProvider";
 import "./App.css";
 
 function AppContent() {
   const navigate = useNavigate();
+  const notifications = useNotifications();
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [walletConnection, setWalletConnection] = useState({
     isConnected: false,
     address: null,
   });
+
+  // Create global notification functions
+  React.useEffect(() => {
+    createGlobalNotificationFunctions(notifications);
+  }, [notifications]);
 
   const handleWalletConnectionChange = (connection) => {
     setWalletConnection(connection);
@@ -107,9 +117,11 @@ function AppContent() {
 function App() {
   return (
     <ThirdWebProviderWrapper>
-      <Router>
-        <AppContent />
-      </Router>
+      <NotificationProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </NotificationProvider>
     </ThirdWebProviderWrapper>
   );
 }

@@ -7,7 +7,7 @@ class ARQRManager {
     this.qrHistory = [];
     this.maxQRsPerAgent = 3;
     this.defaultTTL = 5 * 60 * 1000; // 5 minutes
-    
+
     console.log("🚀 AR QR Manager initialized");
   }
 
@@ -22,18 +22,18 @@ class ARQRManager {
         agentId: options.agentId,
         createdAt: Date.now(),
         expiresAt: Date.now() + (options.ttl || this.defaultTTL),
-        status: 'active',
+        status: "active",
         scanned: false,
-        dbSaveStatus: options.dbSaveStatus || 'pending',
-        metadata: options.metadata || {}
+        dbSaveStatus: options.dbSaveStatus || "pending",
+        metadata: options.metadata || {},
       };
 
       this.activeQRs.set(qrId, qrObject);
-      
+
       console.log(`✅ AR QR added to manager: ${qrId}`, {
         position: qrObject.position,
         agentId: qrObject.agentId,
-        expiresIn: Math.round((qrObject.expiresAt - Date.now()) / 1000) + 's'
+        expiresIn: Math.round((qrObject.expiresAt - Date.now()) / 1000) + "s",
       });
 
       // Schedule auto-cleanup
@@ -44,13 +44,13 @@ class ARQRManager {
 
       return qrObject;
     } catch (error) {
-      console.error('Error adding QR to AR manager:', error);
+      console.error("Error adding QR to AR manager:", error);
       return null;
     }
   }
 
   // Remove QR from AR scene
-  removeQR(qrId, reason = 'manual') {
+  removeQR(qrId, reason = "manual") {
     const qrObject = this.activeQRs.get(qrId);
     if (!qrObject) {
       console.warn(`QR ${qrId} not found for removal`);
@@ -61,7 +61,7 @@ class ARQRManager {
     this.qrHistory.push({
       ...qrObject,
       removedAt: Date.now(),
-      removeReason: reason
+      removeReason: reason,
     });
 
     // Keep history limited
@@ -70,9 +70,9 @@ class ARQRManager {
     }
 
     this.activeQRs.delete(qrId);
-    
+
     console.log(`🗑️ AR QR removed: ${qrId} (${reason})`);
-    
+
     // Emit event for AR components
     this.emitQRRemoved(qrId, reason);
 
@@ -89,16 +89,16 @@ class ARQRManager {
 
     qrObject.scanned = true;
     qrObject.scannedAt = Date.now();
-    qrObject.status = 'scanned';
+    qrObject.status = "scanned";
 
     console.log(`📱 AR QR scanned: ${qrId}`);
-    
+
     // Emit scan event
     this.emitQRScanned(qrObject);
 
     // Auto-remove after scan (with delay)
     setTimeout(() => {
-      this.removeQR(qrId, 'scanned');
+      this.removeQR(qrId, "scanned");
     }, 2000);
 
     return qrObject;
@@ -106,14 +106,14 @@ class ARQRManager {
 
   // Get all active QRs
   getActiveQRs() {
-    return Array.from(this.activeQRs.values()).filter(qr => 
-      qr.status === 'active' && qr.expiresAt > Date.now()
+    return Array.from(this.activeQRs.values()).filter(
+      (qr) => qr.status === "active" && qr.expiresAt > Date.now()
     );
   }
 
   // Get QRs for specific agent
   getQRsForAgent(agentId) {
-    return this.getActiveQRs().filter(qr => qr.agentId === agentId);
+    return this.getActiveQRs().filter((qr) => qr.agentId === agentId);
   }
 
   // Clean up expired QRs
@@ -123,7 +123,7 @@ class ARQRManager {
 
     for (const [qrId, qrObject] of this.activeQRs.entries()) {
       if (qrObject.expiresAt <= now) {
-        this.removeQR(qrId, 'expired');
+        this.removeQR(qrId, "expired");
         cleanedCount++;
       }
     }
@@ -139,7 +139,7 @@ class ARQRManager {
   scheduleCleanup(qrId, delayMs) {
     setTimeout(() => {
       if (this.activeQRs.has(qrId)) {
-        this.removeQR(qrId, 'expired');
+        this.removeQR(qrId, "expired");
       }
     }, delayMs);
   }
@@ -159,33 +159,43 @@ class ARQRManager {
     const active = this.getActiveQRs().length;
     const total = this.activeQRs.size;
     const history = this.qrHistory.length;
-    
+
     return {
       active,
       total,
       history,
-      dbSaved: Array.from(this.activeQRs.values()).filter(qr => qr.dbSaveStatus === 'saved').length,
-      dbFailed: Array.from(this.activeQRs.values()).filter(qr => qr.dbSaveStatus === 'failed').length
+      dbSaved: Array.from(this.activeQRs.values()).filter(
+        (qr) => qr.dbSaveStatus === "saved"
+      ).length,
+      dbFailed: Array.from(this.activeQRs.values()).filter(
+        (qr) => qr.dbSaveStatus === "failed"
+      ).length,
     };
   }
 
   // Event emitters for AR components
   emitQRAdded(qrObject) {
-    window.dispatchEvent(new CustomEvent('arQRAdded', { 
-      detail: qrObject 
-    }));
+    window.dispatchEvent(
+      new CustomEvent("arQRAdded", {
+        detail: qrObject,
+      })
+    );
   }
 
   emitQRRemoved(qrId, reason) {
-    window.dispatchEvent(new CustomEvent('arQRRemoved', { 
-      detail: { qrId, reason } 
-    }));
+    window.dispatchEvent(
+      new CustomEvent("arQRRemoved", {
+        detail: { qrId, reason },
+      })
+    );
   }
 
   emitQRScanned(qrObject) {
-    window.dispatchEvent(new CustomEvent('arQRScanned', { 
-      detail: qrObject 
-    }));
+    window.dispatchEvent(
+      new CustomEvent("arQRScanned", {
+        detail: qrObject,
+      })
+    );
   }
 
   // Clear all QRs (for testing/reset)
@@ -193,22 +203,22 @@ class ARQRManager {
     const count = this.activeQRs.size;
     this.activeQRs.clear();
     console.log(`🗑️ Cleared all ${count} AR QRs`);
-    
-    window.dispatchEvent(new CustomEvent('arQRCleared'));
+
+    window.dispatchEvent(new CustomEvent("arQRCleared"));
   }
 
   // Debug information
   debug() {
     const stats = this.getStats();
-    console.log('🔍 AR QR Manager Debug:', {
+    console.log("🔍 AR QR Manager Debug:", {
       ...stats,
       activeQRs: Array.from(this.activeQRs.entries()).map(([id, qr]) => ({
         id,
         agentId: qr.agentId,
         status: qr.status,
         dbStatus: qr.dbSaveStatus,
-        expiresIn: Math.round((qr.expiresAt - Date.now()) / 1000) + 's'
-      }))
+        expiresIn: Math.round((qr.expiresAt - Date.now()) / 1000) + "s",
+      })),
     });
   }
 }
