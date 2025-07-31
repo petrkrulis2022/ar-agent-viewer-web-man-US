@@ -26,8 +26,9 @@ import {
 import QRCode from "react-qr-code";
 import { USBDGToken, ContractAddresses } from "../config/blockdag-chain";
 import { MorphUSDTToken } from "../config/morph-holesky-chain";
-import ARQRCode from "./ARQRCode";
+import ARQRCodeEnhanced from "./ARQRCodeEnhanced";
 import qrCodeService from "../services/qrCodeService";
+import arQRManager from "../services/arQRManager";
 import solanaPaymentService from "../services/solanaPaymentService";
 import morphPaymentService from "../services/morphPaymentService";
 
@@ -172,69 +173,146 @@ const EnhancedPaymentQRModal = ({
     }
   };
 
-  // Generate AR QR Code
+  // Generate AR QR Code with decoupled display logic
   const handleGenerateARQR = async () => {
     if (!paymentData || !agent) return;
 
     setIsGeneratingAR(true);
 
     try {
-      // Generate AR position for the QR code
+      // 1. IMMEDIATE AR DISPLAY - Generate QR locally first
       const arPosition = qrCodeService.generateARPosition(
         agent.position || { x: 0, y: 0, z: 0 },
         userLocation,
         0
       );
 
-      // Create QR code in Supabase
-      const qrCodeData = {
-        transactionId: paymentData.transactionId,
-        data: paymentData.qrData,
-        position: arPosition,
-        size: 1.5,
-        agentId: agent.id,
-        ttl: timeLeft * 1000, // Convert to milliseconds
-      };
-
-      const createdQR = await qrCodeService.createQRCode(qrCodeData);
-
-      // Add to local AR QR codes array
-      const newARQR = {
-        id: createdQR.id,
+      // 2. Create QR data for immediate AR display
+      const localQRData = {
+        id: `ar_qr_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         data: paymentData.qrData,
         position: arPosition,
         size: 1.5,
         status: "active",
         agent: agent,
+        agentId: agent.id,
+        transactionId: paymentData.transactionId,
+        amount: paymentData.amount,
+        createdAt: Date.now(),
+        expiresAt: Date.now() + (timeLeft * 1000)
       };
 
-      setArQRCodes([newARQR]);
+      // 3. IMMEDIATELY show in AR using AR QR Manager (don't wait for database)
+      const arQRId = arQRManager.addQR(
+        localQRData.id,
+        paymentData.qrData,
+        arPosition,
+        {
+          size: 1.5,
+          agentId: agent.id,
+          ttl: timeLeft * 1000,
+          metadata: {
+            agent: agent,
+            amount: paymentData.amount,
+            transactionId: paymentData.transactionId
+          }
+        }
+      );
+
+      // 4. Update local state for modal display
+      setArQRCodes([localQRData]);
       setShowARView(true);
 
-      // Notify parent component
+      console.log("✅ AR QR Code displayed immediately via AR Manager:", arQRId);
+
+      // 4. Notify parent component (AR is now active)
       if (onARQRGenerated) {
-        onARQRGenerated(newARQR);
+        onARQRGenerated(localQRData);
       }
+
+      // 5. BACKGROUND DATABASE SAVE (non-blocking)
+      try {
+        console.log("🔄 Attempting background save to Supabase...");
+        
+        const qrCodeData = {
+          transactionId: paymentData.transactionId,
+          data: paymentData.qrData,
+          position: arPosition,
+          size: 1.5,
+          agentId: agent.id,
+          ttl: timeLeft * 1000,
+        };
+
+        const createdQR = await qrCodeService.createQRCode(qrCodeData);
+        
+        if (createdQR) {
+          // Update local QR with database ID if save succeeded
+          localQRData.id = createdQR.id || localQRData.id;
+          localQRData.dbSaveStatus = createdQR.dbSaveStatus || 'saved';
+          
+          console.log("✅ AR QR background save completed:", {
+            id: localQRData.id,
+            dbStatus: localQRData.dbSaveStatus
+          });
+        }
+      } catch (dbError) {
+        console.warn("⚠️ AR QR database save failed (QR remains active in AR):", dbError);
+        localQRData.dbSaveStatus = 'failed';
+        localQRData.dbError = dbError.message;
+      }
+
     } catch (error) {
-      console.error("Error generating AR QR code:", error);
+      console.error("❌ Error generating AR QR code:", error);
+      // Even if there's an error, we should still try to show something
+      const fallbackQR = {
+        id: `fallback_${Date.now()}`,
+        data: paymentData.qrData,
+        position: [0, 1, -2],
+        size: 1.5,
+        status: "active",
+        agent: agent,
+        error: error.message
+      };
+      
+      setArQRCodes([fallbackQR]);
+      setShowARView(true);
+      
+      if (onARQRGenerated) {
+        onARQRGenerated(fallbackQR);
+      }
     } finally {
       setIsGeneratingAR(false);
     }
   };
 
-  // Handle scanning of floating AR QR code
+  // Handle scanning of floating AR QR code (enhanced persistence)
   const handleScanARQR = () => {
     if (!paymentData || !showARView) return;
 
-    // Close modal to reveal the floating AR QR code
-    onClose();
+    console.log("🎯 Closing modal to reveal persistent AR QR code");
+    console.log("📊 AR QR Manager stats:", arQRManager.getStats());
 
-    // Show instructions for scanning the floating QR code
-    // The AR QR code is already visible and clickable
-    console.log("🎯 Modal closed, AR QR code is now visible for scanning");
+    // Important: QR codes remain active in AR QR Manager even after modal closes
+    // The user can now see and interact with the floating QR code in AR space
+    
+    onClose(); // Close the modal
 
-    // Note: The actual scanning happens when user taps the floating QR code
-    // which triggers the onQRScanned callback in ARQRViewer
+    // Log current AR QR status for debugging
+    const activeQRs = arQRManager.getActiveQRs();
+    console.log(`✅ ${activeQRs.length} AR QR codes remain active after modal close`);
+    
+    activeQRs.forEach(qr => {
+      console.log(`🔍 Active QR: ${qr.id} at position [${qr.position.join(', ')}]`);
+    });
+
+    // Optional: Show a toast notification that QR is still available
+    if (window.showNotification) {
+      window.showNotification({
+        type: 'info',
+        message: 'AR QR Code is now floating in space. Tap it to scan!',
+        duration: 3000
+      });
+    }
   };
 
   // Handle AR QR Code scanning
@@ -558,7 +636,7 @@ const EnhancedPaymentQRModal = ({
       {/* AR QR Code Overlay */}
       {showARView && arQRCodes.length > 0 && (
         <div className="fixed inset-0 z-40 pointer-events-none">
-          <ARQRCode
+          <ARQRCodeEnhanced
             qrCodes={arQRCodes}
             onQRScanned={handleARQRScanned}
             className="pointer-events-auto"

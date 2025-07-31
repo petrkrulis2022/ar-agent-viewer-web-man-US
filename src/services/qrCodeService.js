@@ -34,15 +34,20 @@ export const QR_CODE_STATUS = {
   PAID: "paid",
 };
 
-// Create QR code entry in Supabase
+// Create QR code entry in Supabase with enhanced error handling
 export const createQRCode = async (qrCodeData) => {
+  // ALWAYS create local QR code first for immediate AR display
+  const localQR = createLocalQRCode(qrCodeData);
+  console.log("✅ AR QR Code created locally (always visible):", localQR);
+
   try {
-    // If no Supabase connection, create local QR code
+    // Try to save to Supabase in background (non-blocking)
     if (!supabase) {
-      console.warn("No Supabase connection, creating local AR QR code");
-      return createLocalQRCode(qrCodeData);
+      console.warn("No Supabase connection, AR QR remains local only");
+      return localQR;
     }
 
+    console.log("🔄 Attempting to save AR QR to Supabase...");
     const { data, error } = await supabase
       .from("ar_qr_codes")
       .insert([
@@ -63,16 +68,24 @@ export const createQRCode = async (qrCodeData) => {
       .single();
 
     if (error) {
-      console.warn("Supabase error, falling back to local QR code:", error);
-      return createLocalQRCode(qrCodeData);
+      console.warn("Supabase save failed, but AR QR remains active locally:", error);
+      // Update local QR with note about DB failure
+      localQR.dbSaveStatus = 'failed';
+      localQR.dbError = error.message;
+      return localQR;
     }
-    return data;
+
+    console.log("✅ AR QR saved to Supabase successfully:", data);
+    // Update local QR with Supabase ID
+    localQR.id = data.id;
+    localQR.dbSaveStatus = 'saved';
+    return localQR;
+
   } catch (error) {
-    console.warn(
-      "Error creating QR code in Supabase, using local fallback:",
-      error
-    );
-    return createLocalQRCode(qrCodeData);
+    console.warn("AR QR Supabase save error (QR still active locally):", error);
+    localQR.dbSaveStatus = 'error';
+    localQR.dbError = error.message;
+    return localQR;
   }
 };
 

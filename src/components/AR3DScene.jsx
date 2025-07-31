@@ -9,6 +9,8 @@ import Enhanced3DAgent from "./Enhanced3DAgent";
 import AgentInteractionModal from "./AgentInteractionModal";
 import EnhancedPaymentQRModal from "./EnhancedPaymentQRModal";
 import QRScannerOverlay from "./QRScannerOverlay";
+import ARQRCodeEnhanced from "./ARQRCodeEnhanced";
+import arQRManager from "../services/arQRManager";
 
 const AR3DScene = ({
   agents = [],
@@ -29,8 +31,9 @@ const AR3DScene = ({
   const [scanningForAgent, setScanningForAgent] = useState(null);
   const [currentQRData, setCurrentQRData] = useState(null);
 
-  // AR QR states for notifications only
+  // AR QR states for notifications and display
   const [arQRNotifications, setArQRNotifications] = useState([]);
+  const [persistentQRs, setPersistentQRs] = useState([]);
 
   // Handle agent click
   const handleAgentClick = (agent) => {
@@ -76,9 +79,16 @@ const AR3DScene = ({
     setShowQRScanner(true);
   };
 
-  // Handle AR QR generation
+  // Enhanced AR QR generation with persistent display
   const handleARQRGenerated = (arQRCode) => {
     console.log("🌐 AR QR Code generated for 3D agent:", arQRCode);
+
+    // Add to persistent QRs for display in 3D scene
+    setPersistentQRs(prev => {
+      const exists = prev.find(qr => qr.id === arQRCode.id);
+      if (exists) return prev;
+      return [...prev, arQRCode];
+    });
 
     // Show notification
     const notification = {
@@ -96,6 +106,8 @@ const AR3DScene = ({
         prev.filter((n) => n.id !== notification.id)
       );
     }, 5000);
+
+    console.log("✅ AR QR Code added to 3D scene display");
   };
 
   // Handle QR code scanned
@@ -430,6 +442,41 @@ const AR3DScene = ({
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Persistent AR QR Code Overlay */}
+      {persistentQRs.length > 0 && (
+        <div className="absolute inset-0 z-30 pointer-events-none">
+          <ARQRCodeEnhanced
+            qrCodes={persistentQRs}
+            onQRScanned={(scanData) => {
+              console.log("🎯 Persistent AR QR scanned in 3D:", scanData);
+              
+              // Remove from persistent QRs
+              setPersistentQRs(prev => prev.filter(qr => qr.id !== scanData.id));
+              
+              // Handle payment
+              if (scanData.qrObject?.agent) {
+                const paymentNotification = {
+                  id: Date.now(),
+                  message: `Payment QR scanned for ${scanData.qrObject.agent.name}`,
+                  type: "payment",
+                  scanData: scanData,
+                  timestamp: Date.now(),
+                };
+                
+                setArQRNotifications(prev => [...prev, paymentNotification]);
+                
+                setTimeout(() => {
+                  setArQRNotifications(prev => 
+                    prev.filter(n => n.id !== paymentNotification.id)
+                  );
+                }, 5000);
+              }
+            }}
+            className="pointer-events-auto"
+          />
         </div>
       )}
     </div>

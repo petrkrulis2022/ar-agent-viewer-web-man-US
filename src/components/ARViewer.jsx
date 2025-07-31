@@ -32,6 +32,7 @@ import {
 import { useDatabase } from "../hooks/useDatabase";
 import CameraView from "./CameraView";
 import AR3DScene from "./AR3DScene";
+import ARQRCodeEnhanced from "./ARQRCodeEnhanced";
 import ThirdWebWalletConnect from "./ThirdWebWalletConnect";
 import UnifiedWalletConnect from "./UnifiedWalletConnect";
 import rtkLocationService from "../services/rtkLocation";
