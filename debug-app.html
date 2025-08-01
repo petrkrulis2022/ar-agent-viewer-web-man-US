@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Debug App</title>
+    <style>
+      body {
+        background: #000;
+        color: #fff;
+        font-family: Arial, sans-serif;
+        padding: 20px;
+      }
+      .status {
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 5px;
+      }
+      .success {
+        background: #0a5d0a;
+      }
+      .error {
+        background: #5d0a0a;
+      }
+      .warning {
+        background: #5d5d0a;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>AR Viewer Debug Status</h1>
+    <div id="status">Loading...</div>
+
+    <script>
+      const statusDiv = document.getElementById("status");
+
+      function addStatus(message, type = "success") {
+        const div = document.createElement("div");
+        div.className = `status ${type}`;
+        div.textContent = message;
+        statusDiv.appendChild(div);
+      }
+
+      async function testApp() {
+        addStatus("Starting diagnostic...", "warning");
+
+        try {
+          // Test if React dev server is responding
+          const response = await fetch("http://localhost:5176/");
+          const html = await response.text();
+
+          if (html.includes("root")) {
+            addStatus("✓ HTML structure loaded correctly");
+          } else {
+            addStatus("✗ HTML structure missing", "error");
+          }
+
+          // Test if main.jsx is loading
+          if (html.includes("main.jsx")) {
+            addStatus("✓ main.jsx script tag found");
+          } else {
+            addStatus("✗ main.jsx script tag missing", "error");
+          }
+        } catch (error) {
+          addStatus(`✗ Network error: ${error.message}`, "error");
+        }
+
+        // Test React module loading
+        setTimeout(() => {
+          if (window.React) {
+            addStatus("✓ React loaded successfully");
+          } else {
+            addStatus("✗ React not loaded", "error");
+          }
+        }, 2000);
+      }
+
+      testApp();
+    </script>
+  </body>
+</html>

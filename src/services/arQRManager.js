@@ -11,6 +11,73 @@ class ARQRManager {
     console.log("🚀 AR QR Manager initialized");
   }
 
+  // Generate AR QR Code - Main method for creating QR codes in AR space
+  async generateARQR(agent, paymentData = {}) {
+    try {
+      console.log("🎯 Generating AR QR for agent:", agent.name);
+      console.log("💰 Payment data:", paymentData);
+
+      // Generate unique QR ID
+      const qrId = `qr-${agent.id}-${Date.now()}`;
+
+      // Create payment URI (EIP-681 format)
+      const recipient = paymentData.recipient || agent.wallet_address;
+      const amount = paymentData.amount || "0.01";
+      const chainId = paymentData.chainId || 1; // Ethereum mainnet
+
+      // Convert amount to wei
+      const amountWei = Math.floor(parseFloat(amount) * 1e18).toString();
+
+      const paymentURI = `ethereum:${recipient}@${chainId}?value=${amountWei}`;
+
+      console.log("🔗 Generated payment URI:", paymentURI);
+
+      // Generate QR position using enhanced positioning
+      const qrCodeService = await import("./qrCodeService.js");
+      const qrPosition = qrCodeService.generateARPosition(agent, 2); // Front-center strategy
+
+      console.log("📍 QR Position:", qrPosition);
+
+      // Create QR object
+      const qrData = {
+        id: qrId,
+        agent: agent,
+        uri: paymentURI,
+        rawData: paymentURI,
+        amount: amount,
+        token: paymentData.token || "ETH",
+        recipient: recipient,
+        chainId: chainId,
+        createdAt: Date.now(),
+        position: qrPosition,
+      };
+
+      // Add to AR manager
+      const arQRObject = this.addQR(qrId, paymentURI, qrPosition.position, {
+        agentId: agent.id,
+        metadata: {
+          agent: agent,
+          amount: amount,
+          token: paymentData.token || "ETH",
+          recipient: recipient,
+        },
+      });
+
+      if (arQRObject) {
+        console.log("✅ AR QR Code generated successfully");
+        return {
+          ...qrData,
+          arObject: arQRObject,
+        };
+      } else {
+        throw new Error("Failed to add QR to AR manager");
+      }
+    } catch (error) {
+      console.error("❌ Error generating AR QR:", error);
+      throw error;
+    }
+  }
+
   // Add QR to AR scene (always succeeds)
   addQR(qrId, qrData, position, options = {}) {
     try {

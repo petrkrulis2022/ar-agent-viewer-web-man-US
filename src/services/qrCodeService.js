@@ -250,89 +250,119 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   return R * c; // Distance in meters
 };
 
-// Create optimal AR positions for QR codes
+// Create optimal AR positions for QR codes (enhanced for full visibility)
 export const generateARPosition = (agentPosition, userPosition, index = 0) => {
-  // Enhanced 3D positioning system for better visibility from multiple angles
+  // Enhanced 3D positioning system optimized for QR scanning visibility
   console.log(
     `🎯 Generating AR position ${index} for agent at:`,
     agentPosition
   );
 
-  // Create multiple positioning strategies based on index
+  // Conservative positioning strategies for guaranteed visibility
   const strategies = [
-    // Strategy 0: Forward and slightly right
+    // Strategy 0: Forward center - most scannable
     {
-      distance: 2.5,
-      horizontalAngle: 15 * (Math.PI / 180), // 15 degrees right
-      height: 1.2,
-      description: "Forward-right",
+      distance: 1.5,
+      horizontalAngle: 0,
+      height: 0.0, // Eye level
+      description: "Forward-center",
     },
-    // Strategy 1: Forward and slightly left
-    {
-      distance: 2.8,
-      horizontalAngle: -15 * (Math.PI / 180), // 15 degrees left
-      height: 0.8,
-      description: "Forward-left",
-    },
-    // Strategy 2: Closer and center
+    // Strategy 1: Forward slight right
     {
       distance: 1.8,
-      horizontalAngle: 0,
-      height: 1.5,
-      description: "Center-close",
+      horizontalAngle: 10 * (Math.PI / 180), // 10 degrees right
+      height: 0.2,
+      description: "Forward-right",
     },
-    // Strategy 3: Right side
+    // Strategy 2: Forward slight left
     {
-      distance: 2.2,
-      horizontalAngle: 45 * (Math.PI / 180), // 45 degrees right
-      height: 1.0,
+      distance: 1.8,
+      horizontalAngle: -10 * (Math.PI / 180), // 10 degrees left
+      height: -0.2,
+      description: "Forward-left",
+    },
+    // Strategy 3: Closer center for important QRs
+    {
+      distance: 1.2,
+      horizontalAngle: 0,
+      height: 0.1,
+      description: "Close-center",
+    },
+    // Strategy 4: Right side moderate
+    {
+      distance: 2.0,
+      horizontalAngle: 25 * (Math.PI / 180), // 25 degrees right
+      height: 0.0,
       description: "Right-side",
     },
-    // Strategy 4: Left side
+    // Strategy 5: Left side moderate
     {
-      distance: 2.2,
-      horizontalAngle: -45 * (Math.PI / 180), // 45 degrees left
-      height: 1.3,
+      distance: 2.0,
+      horizontalAngle: -25 * (Math.PI / 180), // 25 degrees left
+      height: 0.1,
       description: "Left-side",
-    },
-    // Strategy 5: Farther back center
-    {
-      distance: 3.5,
-      horizontalAngle: 0,
-      height: 1.1,
-      description: "Back-center",
-    },
-    // Strategy 6: Diagonal forward-right
-    {
-      distance: 2.0,
-      horizontalAngle: 30 * (Math.PI / 180),
-      height: 0.9,
-      description: "Diagonal-right",
-    },
-    // Strategy 7: Diagonal forward-left
-    {
-      distance: 2.0,
-      horizontalAngle: -30 * (Math.PI / 180),
-      height: 1.4,
-      description: "Diagonal-left",
     },
   ];
 
   // Select strategy based on index, cycling through available strategies
   const strategy = strategies[index % strategies.length];
 
-  // Calculate 3D position using the selected strategy
-  const x = Math.sin(strategy.horizontalAngle) * strategy.distance;
-  const y = strategy.height;
-  const z = -strategy.distance * Math.cos(strategy.horizontalAngle);
+  // Calculate 3D position using the selected strategy (enhanced for QR scanning)
+  const baseX =
+    agentPosition.x + Math.sin(strategy.horizontalAngle) * strategy.distance;
+  const baseZ =
+    agentPosition.z - strategy.distance * Math.cos(strategy.horizontalAngle);
+  const baseY = agentPosition.y + strategy.height;
 
-  console.log(
-    `📍 AR Position ${index} (${strategy.description}): [${x.toFixed(
-      2
-    )}, ${y.toFixed(2)}, ${z.toFixed(2)}]`
+  // QR-specific positioning for optimal scanning
+  const qrPosition = {
+    x: Math.round(baseX * 100) / 100, // Round to prevent micro-adjustments
+    y: Math.max(0.3, Math.min(2.5, baseY)), // Clamp height for visibility
+    z: Math.round(baseZ * 100) / 100,
+  };
+
+  // Ensure QR is facing camera for scanning
+  const cameraDirection = {
+    x: userPosition ? userPosition.x - qrPosition.x : 0,
+    y: 0, // Keep level for scanning
+    z: userPosition ? userPosition.z - qrPosition.z : 1,
+  };
+
+  // Normalize direction
+  const dirLength = Math.sqrt(
+    cameraDirection.x * cameraDirection.x +
+      cameraDirection.z * cameraDirection.z
   );
 
-  return [x, y, z];
+  if (dirLength > 0) {
+    cameraDirection.x /= dirLength;
+    cameraDirection.z /= dirLength;
+  }
+
+  // Calculate optimal rotation for QR scanning (face the camera)
+  const qrRotation = {
+    x: 0, // Keep QR upright
+    y: Math.atan2(cameraDirection.x, cameraDirection.z), // Face camera
+    z: 0, // No roll for QR codes
+  };
+
+  console.log(
+    `📍 AR QR Position ${index} (${strategy.description}):`,
+    `Pos: [${qrPosition.x.toFixed(2)}, ${qrPosition.y.toFixed(
+      2
+    )}, ${qrPosition.z.toFixed(2)}]`,
+    `Rot: [${qrRotation.x.toFixed(2)}, ${qrRotation.y.toFixed(
+      2
+    )}, ${qrRotation.z.toFixed(2)}]`
+  );
+
+  return {
+    position: [qrPosition.x, qrPosition.y, qrPosition.z],
+    rotation: qrRotation,
+    scale: { x: 1.2, y: 1.2, z: 1.2 }, // Larger for better scanning
+    strategy: strategy.description,
+    scanDistance: strategy.distance,
+  };
 };
 
 // Clean up expired QR codes

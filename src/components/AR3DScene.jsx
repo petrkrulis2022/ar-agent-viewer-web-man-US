@@ -11,6 +11,7 @@ import EnhancedPaymentQRModal from "./EnhancedPaymentQRModal";
 import QRScannerOverlay from "./QRScannerOverlay";
 import ARQRCodeFixed from "./ARQRCodeFixed";
 import arQRManager from "../services/arQRManager";
+import "../utils/qrVisibilityDiagnostic.js"; // Auto-diagnostic import
 
 const AR3DScene = ({
   agents = [],
@@ -41,9 +42,26 @@ const AR3DScene = ({
   const [qrDetectionTimeout, setQrDetectionTimeout] = useState(null);
 
   // Handle agent click
-  const handleAgentClick = (agent) => {
+  const handleAgentClick = async (agent) => {
     console.log("🤖 3D Agent clicked:", agent.name);
     console.log("🤖 Agent data:", agent);
+
+    // Generate QR immediately for direct testing
+    try {
+      console.log("🚀 Generating QR immediately for clicked agent...");
+      const arQRCode = await arQRManager.generateARQR(agent, {
+        amount: "0.01",
+        token: "ETH",
+        recipient: agent.wallet_address,
+      });
+
+      console.log("✅ QR generated for clicked agent:", arQRCode);
+      handleARQRGenerated(arQRCode);
+    } catch (error) {
+      console.error("❌ Failed to generate QR for clicked agent:", error);
+    }
+
+    // Also show the modal for additional options
     setSelectedAgent(agent);
     setShowAgentModal(true);
 
@@ -320,8 +338,60 @@ const AR3DScene = ({
     console.log("🤖 Full agents data:", agents);
 
     if (agents.length === 0) {
-      console.log("🤖 No agents to render - setting empty array");
-      setAgents3D([]);
+      console.log(
+        "🤖 No agents from database - generating demo agents for testing"
+      );
+
+      // Generate demo agents for testing when no real agents are available
+      const demoAgents = [
+        {
+          id: "demo-agent-1",
+          name: "AI Assistant Demo",
+          type: "assistant",
+          description: "Demo AI Assistant for testing AR QR payments",
+          wallet_address: "0x1234567890123456789012345678901234567890",
+          latitude: null,
+          longitude: null,
+          distance_meters: 25,
+          category: "ai-assistant",
+          avatar_url: "/demo-avatar-1.png",
+          status: "active",
+        },
+        {
+          id: "demo-agent-2",
+          name: "Content Creator Demo",
+          type: "creator",
+          description: "Demo Content Creator for testing AR QR functionality",
+          wallet_address: "0x0987654321098765432109876543210987654321",
+          latitude: null,
+          longitude: null,
+          distance_meters: 35,
+          category: "content-creator",
+          avatar_url: "/demo-avatar-2.png",
+          status: "active",
+        },
+      ];
+
+      const demoAgentsWith3DPositions = demoAgents.map((agent) => {
+        const position3D = convertTo3DPosition(agent, userLocation);
+        console.log(
+          `🎯 Demo Agent ${agent.name} -> Position: (${position3D.position
+            .map((p) => p.toFixed(1))
+            .join(", ")}) Distance: ${position3D.distance.toFixed(0)}m`
+        );
+
+        return {
+          ...agent,
+          position3D,
+        };
+      });
+
+      console.log(
+        "✅ Generated",
+        demoAgentsWith3DPositions.length,
+        "demo agents for testing"
+      );
+      setAgents3D(demoAgentsWith3DPositions);
       return;
     }
 
@@ -389,7 +459,41 @@ const AR3DScene = ({
         <div className="text-xs text-yellow-300 mt-1 animate-pulse">
           � Click spinning agents for payment & QR codes
         </div>
+        <div className="text-xs text-green-300 mt-1">
+          🎯 Persistent QRs: {persistentQRs.length} active
+        </div>
       </div>
+
+      {/* Direct QR Generation Button for Testing */}
+      {agents3D.length > 0 && persistentQRs.length === 0 && (
+        <div className="absolute top-4 right-4 z-50">
+          <button
+            onClick={async () => {
+              console.log("🧪 Testing direct QR generation...");
+              if (agents3D.length > 0) {
+                const testAgent = agents3D[0];
+                console.log("🤖 Using test agent:", testAgent.name);
+
+                try {
+                  const arQRCode = await arQRManager.generateARQR(testAgent, {
+                    amount: "0.01",
+                    token: "ETH",
+                    recipient: testAgent.wallet_address,
+                  });
+
+                  console.log("✅ QR generated:", arQRCode);
+                  handleARQRGenerated(arQRCode);
+                } catch (error) {
+                  console.error("❌ QR generation failed:", error);
+                }
+              }
+            }}
+            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-purple-500"
+          >
+            🧪 Generate Test QR
+          </button>
+        </div>
+      )}
 
       <Canvas
         camera={{

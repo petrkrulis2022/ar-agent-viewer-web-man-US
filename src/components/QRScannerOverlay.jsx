@@ -28,6 +28,11 @@ const QRScannerOverlay = ({
   const [cameraPermission, setCameraPermission] = useState("prompt");
   const [cameraReady, setCameraReady] = useState(false);
 
+  // AR QR scanning states
+  const [isARQRScanning, setIsARQRScanning] = useState(false);
+  const [targetQRData, setTargetQRData] = useState(null);
+  const [scanningMode, setScanningMode] = useState("normal"); // 'normal' or 'ar-positioned'
+
   // Camera permission handling
   const requestCameraPermission = async () => {
     try {
@@ -86,7 +91,42 @@ const QRScannerOverlay = ({
     }
   }, [isOpen]);
 
-  // Handle QR code scan
+  // Listen for AR QR scan requests
+  useEffect(() => {
+    const handleARQRScanRequest = (event) => {
+      const request = event.detail;
+      console.log("📷 AR QR scan request received:", request);
+
+      if (request.targetQROnly && request.qrId) {
+        console.log("🎯 Activating targeted QR scanner for:", request.qrId);
+
+        setTargetQRData(request);
+        setScanningMode(request.scanningMode || "ar-positioned");
+        setIsARQRScanning(true);
+
+        // Auto-open scanner if not already open
+        if (!isOpen) {
+          // The scanner will be opened by the parent component
+          // We just prepare for when it opens
+        } else {
+          // Scanner is already open, start scanning immediately
+          if (cameraPermission === "granted") {
+            setScanning(true);
+          } else {
+            requestCameraPermission();
+          }
+        }
+      }
+    };
+
+    window.addEventListener("arQRScanRequest", handleARQRScanRequest);
+
+    return () => {
+      window.removeEventListener("arQRScanRequest", handleARQRScanRequest);
+    };
+  }, [isOpen, cameraPermission]);
+
+  // Handle QR code scan (enhanced for AR QR scanning)
   const handleScan = async (result) => {
     if (!result || processing) return;
 
@@ -101,7 +141,42 @@ const QRScannerOverlay = ({
         throw new Error("Invalid QR code format");
       }
 
-      // Validate QR code if agent is specified
+      // Special handling for AR QR scanning
+      if (isARQRScanning && targetQRData) {
+        console.log("🎯 Validating AR QR scan:", qrData.rawData);
+
+        // Verify this is the correct QR code
+        if (qrData.rawData === targetQRData.qrData) {
+          console.log("✅ Correct AR QR code scanned!");
+
+          // Emit success event
+          window.dispatchEvent(
+            new CustomEvent("arQRScanResult", {
+              detail: {
+                qrId: targetQRData.qrId,
+                qrData: qrData.rawData,
+                scannedAt: Date.now(),
+                success: true,
+                scanMethod: "professional-scanner",
+              },
+            })
+          );
+
+          setScanResult(qrData);
+
+          // Auto-close after brief success display
+          setTimeout(() => {
+            resetARScanningState();
+            onClose();
+          }, 1500);
+
+          return;
+        } else {
+          throw new Error("Please scan the correct QR code for this payment");
+        }
+      }
+
+      // Regular QR scanning validation
       if (expectedAgent && !validateAgentQR(qrData, expectedAgent)) {
         throw new Error("QR code does not match selected agent");
       }
@@ -119,6 +194,29 @@ const QRScannerOverlay = ({
       }, 2000);
     } catch (err) {
       console.error("QR Scan Error:", err);
+
+      // Special error handling for AR QR scanning
+      if (isARQRScanning && targetQRData) {
+        console.log("❌ AR QR scan failed:", err.message);
+
+        // Emit error event
+        window.dispatchEvent(
+          new CustomEvent("arQRScanError", {
+            detail: {
+              qrId: targetQRData.qrId,
+              message: err.message,
+              timestamp: Date.now(),
+            },
+          })
+        );
+
+        // Close scanner and let fallback handle
+        setTimeout(() => {
+          resetARScanningState();
+          onClose();
+        }, 2000);
+      }
+
       setError(err.message);
       if (onError) {
         onError(err);
@@ -131,6 +229,13 @@ const QRScannerOverlay = ({
         setProcessing(false);
       }, 3000);
     }
+  };
+
+  // Reset AR scanning state
+  const resetARScanningState = () => {
+    setIsARQRScanning(false);
+    setTargetQRData(null);
+    setScanningMode("normal");
   };
 
   // Handle scan error
@@ -279,17 +384,26 @@ const QRScannerOverlay = ({
                   <div className="flex items-center justify-center space-x-3 mb-3">
                     <QrCode className="w-6 h-6 text-purple-400" />
                     <h3 className="text-white font-semibold">
-                      Scan Payment QR Code
+                      {isARQRScanning
+                        ? "Scan AR QR Code"
+                        : "Scan Payment QR Code"}
                     </h3>
                   </div>
                   <p className="text-purple-200 text-sm">
-                    {displayQRCode
+                    {isARQRScanning
+                      ? "Position the floating QR code in your camera view and scan it to complete payment"
+                      : displayQRCode
                       ? "Point your camera at the QR code below to complete payment"
                       : "Point your camera at the agent's QR code to complete payment"}
                   </p>
                   {expectedAgent && (
                     <Badge className="mt-2 bg-purple-500/20 text-purple-300 border-purple-500/30">
                       Paying {expectedAgent.name}
+                    </Badge>
+                  )}
+                  {isARQRScanning && targetQRData && (
+                    <Badge className="mt-2 bg-green-500/20 text-green-300 border-green-500/30">
+                      🎯 AR QR Payment Mode
                     </Badge>
                   )}
                 </CardContent>

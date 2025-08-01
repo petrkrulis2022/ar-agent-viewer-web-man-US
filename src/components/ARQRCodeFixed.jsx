@@ -23,6 +23,43 @@ const FloatingQRCode = ({
   const [hasError, setHasError] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
 
+  // Handle enhanced positioning data from qrCodeService
+  const enhancedPosition = useMemo(() => {
+    // If position is from enhanced generateARPosition (object format)
+    if (position && typeof position === "object" && position.position) {
+      return {
+        pos: [
+          Math.max(-2, Math.min(2, position.position[0])), // Clamp X to visible range
+          Math.max(0.5, Math.min(3, position.position[1])), // Clamp Y to visible range
+          Math.max(-3, Math.min(-1, position.position[2])), // Clamp Z to front of camera
+        ],
+        rotation: { x: 0, y: Math.PI, z: 0 }, // Always face camera
+        scale: { x: 2.0, y: 2.0, z: 2.0 }, // Larger scale for visibility
+        strategy: position.strategy || "enhanced",
+      };
+    }
+    // If position is array format [x, y, z]
+    else if (Array.isArray(position)) {
+      return {
+        pos: [
+          Math.max(-2, Math.min(2, position[0])),
+          Math.max(0.5, Math.min(3, position[1])),
+          Math.max(-3, Math.min(-1, position[2])),
+        ],
+        rotation: { x: 0, y: Math.PI, z: 0 },
+        scale: { x: 2.0, y: 2.0, z: 2.0 },
+        strategy: "array-clamped",
+      };
+    }
+    // Fallback - center front position
+    return {
+      pos: [0, 1.5, -2], // Center front at eye level
+      rotation: { x: 0, y: Math.PI, z: 0 },
+      scale: { x: 2.0, y: 2.0, z: 2.0 },
+      strategy: "fallback-center",
+    };
+  }, [position]);
+
   // Generate QR code texture with enhanced error handling and better visibility
   useEffect(() => {
     if (!qrData) {
@@ -30,6 +67,21 @@ const FloatingQRCode = ({
       setHasError(true);
       return;
     }
+
+    console.log(
+      `🎯 Generating QR texture with enhanced positioning strategy: ${enhancedPosition.strategy}`
+    );
+    console.log(`📍 Position: [${enhancedPosition.pos.join(", ")}]`);
+    console.log(
+      `🔄 Rotation: [${enhancedPosition.rotation.x.toFixed(
+        2
+      )}, ${enhancedPosition.rotation.y.toFixed(
+        2
+      )}, ${enhancedPosition.rotation.z.toFixed(2)}]`
+    );
+    console.log(
+      `📏 Scale: [${enhancedPosition.scale.x}, ${enhancedPosition.scale.y}, ${enhancedPosition.scale.z}]`
+    );
 
     console.log("🎨 Generating enhanced QR texture for AR display");
 
@@ -96,47 +148,157 @@ const FloatingQRCode = ({
 
     const time = state.clock.getElapsedTime();
 
-    // Enhanced floating animation - more noticeable
-    const floatAmplitude = 0.25; // Increased amplitude
-    const floatSpeed = 1.0;
-    meshRef.current.position.y =
-      position[1] + Math.sin(time * floatSpeed) * floatAmplitude;
+    // Set fixed position from enhanced positioning - no floating for visibility
+    meshRef.current.position.x = enhancedPosition.pos[0];
+    meshRef.current.position.y = enhancedPosition.pos[1];
+    meshRef.current.position.z = enhancedPosition.pos[2];
 
-    // Gentle rotation to show it's interactive - face camera more
-    const rotationSpeed = 0.8;
-    meshRef.current.rotation.y = Math.sin(time * rotationSpeed) * 0.2;
+    // Apply camera-facing rotation (critical for QR visibility)
+    meshRef.current.rotation.x = enhancedPosition.rotation.x;
+    meshRef.current.rotation.y = enhancedPosition.rotation.y; // Face camera
+    meshRef.current.rotation.z = enhancedPosition.rotation.z;
 
-    // Slight tilt for 3D effect
-    meshRef.current.rotation.x = Math.sin(time * 0.5) * 0.1;
+    // Fixed large scale for visibility
+    const baseScale = enhancedPosition.scale.x;
+    meshRef.current.scale.setScalar(baseScale);
 
-    // Enhanced pulsing scale for better attention
-    const pulseSpeed = 2.0;
-    const pulseAmplitude = 0.08; // More noticeable pulse
-    const scale = size + Math.sin(time * pulseSpeed) * pulseAmplitude;
-    meshRef.current.scale.setScalar(scale);
-
-    // Enhanced glow effect animation
+    // Subtle glow effect animation for attention
     if (glowRef.current) {
-      const glowIntensity = 0.4 + Math.sin(time * 2.5) * 0.3;
+      const glowIntensity = 0.3 + Math.sin(time * 1.5) * 0.2;
       glowRef.current.material.opacity = glowIntensity;
     }
 
     setAnimationPhase(time);
   });
 
-  // Enhanced click handler with payment processing
+  // Enhanced click handler with professional scanning experience
   const handleClick = async (event) => {
     if (!isActive || isScanning || hasError) return;
 
     event.stopPropagation();
-    console.log("📱 AR QR Code clicked for payment processing");
+    console.log("📱 AR QR Code tapped, initiating professional scan...");
 
     setIsScanning(true);
 
-    // Visual feedback - quick scale animation
+    try {
+      // Step 1: Lock QR in optimal scanning position
+      await lockQRForScanning();
+
+      // Step 2: Activate professional scanner
+      await activateQRScanner();
+    } catch (error) {
+      console.error("💥 Scanner activation failed:", error);
+      // Fallback to direct payment
+      await fallbackToDirectPayment();
+    }
+  };
+
+  // Lock QR in optimal scanning position
+  const lockQRForScanning = async () => {
+    if (!meshRef.current) return;
+
+    console.log("🔒 Locking QR in optimal scanning position...");
+
+    // Calculate optimal position facing camera
+    const optimalPosition = calculateOptimalScanPosition();
+
+    // Smoothly animate to scanning position
+    await animateQRToPosition(optimalPosition);
+
+    // Add scanning frame visual indicator
+    addScanningFrame();
+  };
+
+  // Calculate optimal scanning position (enhanced for better visibility)
+  const calculateOptimalScanPosition = () => {
+    // Use enhanced positioning data for optimal scanning
+    const basePos = enhancedPosition.pos;
+    return [
+      basePos[0], // Maintain X position from enhanced positioning
+      Math.max(0.5, Math.min(2.0, basePos[1])), // Clamp Y for camera visibility
+      Math.max(-1.2, basePos[2] + 0.3), // Bring closer for scanning but respect enhanced Z
+    ];
+  };
+
+  // Animate QR to scanning position
+  const animateQRToPosition = async (targetPosition) => {
+    return new Promise((resolve) => {
+      if (!meshRef.current) {
+        resolve();
+        return;
+      }
+
+      const startPos = meshRef.current.position.clone();
+      const endPos = new THREE.Vector3(...targetPosition);
+      const duration = 800; // ms
+      const startTime = Date.now();
+
+      const animate = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        // Smooth easing function
+        const eased = 1 - Math.pow(1 - progress, 3);
+
+        if (meshRef.current) {
+          meshRef.current.position.lerpVectors(startPos, endPos, eased);
+
+          // Face camera directly
+          meshRef.current.rotation.set(0, 0, 0);
+
+          // Slightly larger for scanning
+          const scale = 1 + eased * 0.3;
+          meshRef.current.scale.setScalar(scale);
+        }
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          console.log("✅ QR positioned for scanning");
+          resolve();
+        }
+      };
+
+      animate();
+    });
+  };
+
+  // Add scanning frame visual
+  const addScanningFrame = () => {
+    console.log("🖼️ Adding scanning frame visual");
+    // Visual indicator handled by CSS classes and scanning state
+  };
+
+  // Activate professional QR scanner
+  const activateQRScanner = async () => {
+    console.log("📷 Activating professional QR scanner...");
+
+    // Dispatch event to activate QR scanner overlay
+    window.dispatchEvent(
+      new CustomEvent("arQRScanRequest", {
+        detail: {
+          qrId: qrObject?.id,
+          qrData: qrData,
+          position: position,
+          qrObject: qrObject,
+          targetQROnly: true, // Only scan this specific QR
+          scanningMode: "ar-positioned", // Indicate this is an AR positioned QR
+        },
+      })
+    );
+
+    // Set scanning state
+    setIsScanning(true);
+  };
+
+  // Fallback to direct payment (if scanner fails)
+  const fallbackToDirectPayment = async () => {
+    console.log("🔄 Falling back to direct payment...");
+
+    // Apply click animation
     if (meshRef.current) {
       const originalScale = meshRef.current.scale.x;
-      meshRef.current.scale.setScalar(originalScale * 1.3);
+      meshRef.current.scale.setScalar(originalScale * 1.2);
 
       // Reset scale after animation
       setTimeout(() => {
@@ -159,12 +321,12 @@ const FloatingQRCode = ({
         agent: qrObject?.agent,
       };
 
-      console.log("💳 Processing payment for QR scan:", scanData);
+      console.log("💳 Processing direct payment for QR:", scanData);
 
       // Process payment using the payment processor
       const paymentResult = await paymentProcessor.processQRPayment(scanData);
 
-      console.log("✅ Payment processing completed:", paymentResult);
+      console.log("✅ Direct payment processing completed:", paymentResult);
 
       // Call scan handler with payment result
       if (onScanned) {
@@ -180,7 +342,7 @@ const FloatingQRCode = ({
         arQRManager.scanQR(qrObject.id);
       }
     } catch (error) {
-      console.error("💥 Payment processing failed:", error);
+      console.error("💥 Direct payment processing failed:", error);
 
       // Show error state visually
       setHasError(true);
@@ -210,11 +372,70 @@ const FloatingQRCode = ({
     }
   };
 
+  // Listen for scanner results
+  useEffect(() => {
+    const handleScannerResult = (event) => {
+      const result = event.detail;
+
+      if (result.qrId === qrObject?.id) {
+        console.log("📱 Scanner result received for QR:", result.qrId);
+
+        if (result.success) {
+          console.log("✅ Scanner successful, processing payment...");
+
+          // Process the scanned result
+          if (onScanned) {
+            onScanned({
+              id: result.qrId,
+              data: result.qrData,
+              payment_uri: result.qrData,
+              position: position,
+              qrObject: qrObject,
+              scannedAt: result.scannedAt,
+              amount: qrObject?.amount,
+              agent: qrObject?.agent,
+              scanMethod: "professional-scanner",
+              paymentSuccess: true,
+            });
+          }
+
+          // Update AR QR Manager
+          if (qrObject?.id) {
+            arQRManager.scanQR(qrObject.id);
+          }
+        } else {
+          console.log("❌ Scanner failed, falling back to direct payment...");
+          fallbackToDirectPayment();
+        }
+
+        // Reset scanning state
+        setIsScanning(false);
+      }
+    };
+
+    const handleScannerError = (event) => {
+      const error = event.detail;
+
+      if (error.qrId === qrObject?.id) {
+        console.log("💥 Scanner error for QR:", error.qrId, error.message);
+        fallbackToDirectPayment();
+      }
+    };
+
+    window.addEventListener("arQRScanResult", handleScannerResult);
+    window.addEventListener("arQRScanError", handleScannerError);
+
+    return () => {
+      window.removeEventListener("arQRScanResult", handleScannerResult);
+      window.removeEventListener("arQRScanError", handleScannerError);
+    };
+  }, [qrObject?.id]);
+
   // Loading state with better visibility
   if (!qrTexture) {
     return (
       <Billboard follow={true} lockX={false} lockY={false} lockZ={false}>
-        <mesh position={position}>
+        <mesh position={enhancedPosition.pos}>
           <planeGeometry args={[size, size]} />
           <meshBasicMaterial color="#444444" transparent opacity={0.7} />
           <Html center position={[0, 0, 0.01]}>
@@ -231,179 +452,211 @@ const FloatingQRCode = ({
   }
 
   return (
-    <Billboard follow={true} lockX={false} lockY={false} lockZ={false}>
-      <group ref={meshRef} position={position}>
-        {/* Enhanced main QR Code Plane with better materials */}
-        <mesh onClick={handleClick}>
-          <planeGeometry args={[size, size]} />
-          <meshBasicMaterial
-            map={qrTexture}
-            transparent={true}
-            opacity={isActive ? (hasError ? 0.8 : 1.0) : 0.5}
-            side={THREE.DoubleSide}
-          />
-        </mesh>
+    <group ref={meshRef} position={enhancedPosition.pos}>
+      {/* Enhanced main QR Code Plane with better materials */}
+      <mesh
+        onClick={handleClick}
+        rotation={[
+          enhancedPosition.rotation.x,
+          enhancedPosition.rotation.y,
+          enhancedPosition.rotation.z,
+        ]}
+      >
+        <planeGeometry
+          args={[enhancedPosition.scale.x, enhancedPosition.scale.y]}
+        />
+        <meshBasicMaterial
+          map={qrTexture}
+          transparent={true}
+          opacity={isActive ? (hasError ? 0.8 : 1.0) : 0.5}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
 
-        {/* Enhanced multi-layer glowing border effect */}
-        <mesh ref={glowRef} position={[0, 0, -0.002]}>
-          <planeGeometry args={[size * 1.2, size * 1.2]} />
-          <meshBasicMaterial
-            color={
-              hasError
-                ? "#FF4444"
-                : isScanning
-                ? "#00FF88"
-                : isActive
-                ? "#8B5CF6"
-                : "#666666"
-            }
-            transparent={true}
-            opacity={0.4}
-            side={THREE.DoubleSide}
-          />
-        </mesh>
+      {/* Enhanced multi-layer glowing border effect */}
+      <mesh
+        ref={glowRef}
+        position={[0, 0, -0.002]}
+        rotation={[
+          enhancedPosition.rotation.x,
+          enhancedPosition.rotation.y,
+          enhancedPosition.rotation.z,
+        ]}
+      >
+        <planeGeometry
+          args={[
+            enhancedPosition.scale.x * 1.2,
+            enhancedPosition.scale.y * 1.2,
+          ]}
+        />
+        <meshBasicMaterial
+          color={
+            hasError
+              ? "#FF4444"
+              : isScanning
+              ? "#00FF88"
+              : isActive
+              ? "#8B5CF6"
+              : "#666666"
+          }
+          transparent={true}
+          opacity={0.4}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
 
-        {/* Outer glow ring */}
-        <mesh position={[0, 0, -0.003]}>
-          <planeGeometry args={[size * 1.35, size * 1.35]} />
-          <meshBasicMaterial
-            color={
-              hasError
-                ? "#FF1744"
-                : isScanning
-                ? "#00E676"
-                : isActive
-                ? "#7C3AED"
-                : "#424242"
-            }
-            transparent={true}
-            opacity={0.2 + Math.sin(animationPhase * 3) * 0.15}
-            side={THREE.DoubleSide}
-          />
-        </mesh>
+      {/* Outer glow ring */}
+      <mesh
+        position={[0, 0, -0.003]}
+        rotation={[
+          enhancedPosition.rotation.x,
+          enhancedPosition.rotation.y,
+          enhancedPosition.rotation.z,
+        ]}
+      >
+        <planeGeometry
+          args={[
+            enhancedPosition.scale.x * 1.35,
+            enhancedPosition.scale.y * 1.35,
+          ]}
+        />
+        <meshBasicMaterial
+          color={
+            hasError
+              ? "#FF1744"
+              : isScanning
+              ? "#00E676"
+              : isActive
+              ? "#7C3AED"
+              : "#424242"
+          }
+          transparent={true}
+          opacity={0.2 + Math.sin(animationPhase * 3) * 0.15}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
 
-        {/* Enhanced status indicator ring with better visibility */}
-        <mesh position={[0, 0, 0.002]}>
-          <ringGeometry args={[size * 0.52, size * 0.58, 64]} />
-          <meshBasicMaterial
-            color={
-              hasError
-                ? "#FF1744"
-                : isScanning
-                ? "#00E676"
-                : isActive
-                ? "#00C853"
-                : "#FF9800"
-            }
-            transparent={true}
-            opacity={0.8 + Math.sin(animationPhase * 4) * 0.2}
-            side={THREE.DoubleSide}
-          />
-        </mesh>
+      {/* Enhanced status indicator ring with better visibility */}
+      <mesh position={[0, 0, 0.002]}>
+        <ringGeometry args={[size * 0.52, size * 0.58, 64]} />
+        <meshBasicMaterial
+          color={
+            hasError
+              ? "#FF1744"
+              : isScanning
+              ? "#00E676"
+              : isActive
+              ? "#00C853"
+              : "#FF9800"
+          }
+          transparent={true}
+          opacity={0.8 + Math.sin(animationPhase * 4) * 0.2}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
 
-        {/* Corner indicators for better depth perception */}
-        {isActive && !hasError && (
-          <>
-            <mesh position={[size * 0.4, size * 0.4, 0.001]}>
-              <boxGeometry args={[0.05, 0.05, 0.01]} />
-              <meshBasicMaterial color="#00E676" transparent opacity={0.8} />
-            </mesh>
-            <mesh position={[-size * 0.4, size * 0.4, 0.001]}>
-              <boxGeometry args={[0.05, 0.05, 0.01]} />
-              <meshBasicMaterial color="#00E676" transparent opacity={0.8} />
-            </mesh>
-            <mesh position={[size * 0.4, -size * 0.4, 0.001]}>
-              <boxGeometry args={[0.05, 0.05, 0.01]} />
-              <meshBasicMaterial color="#00E676" transparent opacity={0.8} />
-            </mesh>
-            <mesh position={[-size * 0.4, -size * 0.4, 0.001]}>
-              <boxGeometry args={[0.05, 0.05, 0.01]} />
-              <meshBasicMaterial color="#00E676" transparent opacity={0.8} />
-            </mesh>
-          </>
-        )}
+      {/* Corner indicators for better depth perception */}
+      {isActive && !hasError && (
+        <>
+          <mesh position={[size * 0.4, size * 0.4, 0.001]}>
+            <boxGeometry args={[0.05, 0.05, 0.01]} />
+            <meshBasicMaterial color="#00E676" transparent opacity={0.8} />
+          </mesh>
+          <mesh position={[-size * 0.4, size * 0.4, 0.001]}>
+            <boxGeometry args={[0.05, 0.05, 0.01]} />
+            <meshBasicMaterial color="#00E676" transparent opacity={0.8} />
+          </mesh>
+          <mesh position={[size * 0.4, -size * 0.4, 0.001]}>
+            <boxGeometry args={[0.05, 0.05, 0.01]} />
+            <meshBasicMaterial color="#00E676" transparent opacity={0.8} />
+          </mesh>
+          <mesh position={[-size * 0.4, -size * 0.4, 0.001]}>
+            <boxGeometry args={[0.05, 0.05, 0.01]} />
+            <meshBasicMaterial color="#00E676" transparent opacity={0.8} />
+          </mesh>
+        </>
+      )}
 
-        {/* Interactive scan instruction */}
+      {/* Interactive scan instruction */}
+      <Html
+        position={[0, -size / 2 - 0.4, 0]}
+        center
+        distanceFactor={10}
+        occlude
+      >
+        <div
+          className={`px-3 py-2 rounded-full text-sm font-medium border ${
+            hasError
+              ? "bg-red-500/90 text-white border-red-400 animate-pulse"
+              : isScanning
+              ? "bg-green-500/90 text-white border-green-400 animate-pulse"
+              : "bg-black/90 text-white border-purple-500/50 animate-pulse"
+          }`}
+        >
+          {hasError ? (
+            <span>❌ QR Error</span>
+          ) : isScanning ? (
+            <span>� Opening Scanner...</span>
+          ) : (
+            <span>📱 Tap to Scan & Pay</span>
+          )}
+        </div>
+      </Html>
+
+      {/* Payment amount indicator */}
+      {qrObject?.amount && !hasError && (
         <Html
-          position={[0, -size / 2 - 0.4, 0]}
+          position={[0, size / 2 + 0.3, 0]}
           center
           distanceFactor={10}
           occlude
         >
-          <div
-            className={`px-3 py-2 rounded-full text-sm font-medium border ${
-              hasError
-                ? "bg-red-500/90 text-white border-red-400 animate-pulse"
-                : isScanning
-                ? "bg-green-500/90 text-white border-green-400 animate-pulse"
-                : "bg-black/90 text-white border-purple-500/50 animate-pulse"
-            }`}
-          >
-            {hasError ? (
-              <span>❌ QR Error</span>
-            ) : isScanning ? (
-              <span>🔄 Scanning...</span>
-            ) : (
-              <span>📱 Tap to Scan & Pay</span>
-            )}
+          <div className="bg-purple-500/90 text-white px-2 py-1 rounded text-xs font-bold border border-purple-400">
+            {qrObject.amount} USBDG+
           </div>
         </Html>
+      )}
 
-        {/* Payment amount indicator */}
-        {qrObject?.amount && !hasError && (
-          <Html
-            position={[0, size / 2 + 0.3, 0]}
-            center
-            distanceFactor={10}
-            occlude
-          >
-            <div className="bg-purple-500/90 text-white px-2 py-1 rounded text-xs font-bold border border-purple-400">
-              {qrObject.amount} USBDG+
-            </div>
-          </Html>
-        )}
+      {/* Agent name indicator */}
+      {qrObject?.agent?.name && !hasError && (
+        <Html
+          position={[size / 2 + 0.2, 0, 0]}
+          center
+          distanceFactor={12}
+          occlude
+        >
+          <div className="bg-blue-500/90 text-white px-2 py-1 rounded-l text-xs font-medium">
+            {qrObject.agent.name}
+          </div>
+        </Html>
+      )}
 
-        {/* Agent name indicator */}
-        {qrObject?.agent?.name && !hasError && (
-          <Html
-            position={[size / 2 + 0.2, 0, 0]}
-            center
-            distanceFactor={12}
-            occlude
-          >
-            <div className="bg-blue-500/90 text-white px-2 py-1 rounded-l text-xs font-medium">
-              {qrObject.agent.name}
-            </div>
-          </Html>
-        )}
-
-        {/* Database status indicator (debug) */}
-        {qrObject?.dbSaveStatus && (
-          <Html
-            position={[-size / 2 - 0.2, 0, 0]}
-            center
-            distanceFactor={15}
-            occlude
-          >
-            <div
-              className={`px-1 py-0.5 rounded text-xs ${
-                qrObject.dbSaveStatus === "saved"
-                  ? "bg-green-500/80 text-white"
-                  : qrObject.dbSaveStatus === "failed"
-                  ? "bg-red-500/80 text-white"
-                  : "bg-yellow-500/80 text-black"
-              }`}
-            >
-              {qrObject.dbSaveStatus === "saved"
-                ? "✓"
+      {/* Database status indicator (debug) */}
+      {qrObject?.dbSaveStatus && (
+        <Html
+          position={[-size / 2 - 0.2, 0, 0]}
+          center
+          distanceFactor={15}
+          occlude
+        >
+          <div
+            className={`px-1 py-0.5 rounded text-xs ${
+              qrObject.dbSaveStatus === "saved"
+                ? "bg-green-500/80 text-white"
                 : qrObject.dbSaveStatus === "failed"
-                ? "✗"
-                : "⏳"}
-            </div>
-          </Html>
-        )}
-      </group>
-    </Billboard>
+                ? "bg-red-500/80 text-white"
+                : "bg-yellow-500/80 text-black"
+            }`}
+          >
+            {qrObject.dbSaveStatus === "saved"
+              ? "✓"
+              : qrObject.dbSaveStatus === "failed"
+              ? "✗"
+              : "⏳"}
+          </div>
+        </Html>
+      )}
+    </group>
   );
 };
 
