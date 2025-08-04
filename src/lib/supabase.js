@@ -4,24 +4,32 @@ import { createClient } from "@supabase/supabase-js";
 const SUPABASE_URL =
   import.meta.env.VITE_SUPABASE_URL ||
   "https://ncjbwzibnqrbrvicdmec.supabase.co";
-const SUPABASE_ANON_KEY =
+
+// Use service role key for enhanced database access if available, otherwise use anon key
+const SUPABASE_KEY =
+  import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY ||
   import.meta.env.VITE_SUPABASE_ANON_KEY ||
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5jamJ3emlibnFyYnJ2aWNkbWVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2ODAxNTksImV4cCI6MjA2NjI1NjE1OX0.R7rx4jOPt9oOafcyJr3x-nEvGk5-e4DP7MbfCVOCHHI";
 
 // Check if we have valid Supabase credentials
 const hasValidCredentials =
   SUPABASE_URL &&
-  SUPABASE_ANON_KEY &&
+  SUPABASE_KEY &&
   SUPABASE_URL !== "your_supabase_project_url_here" &&
-  SUPABASE_ANON_KEY !== "your_supabase_anon_key_here" &&
+  SUPABASE_KEY !== "your_supabase_anon_key_here" &&
   SUPABASE_URL.startsWith("https://");
 
-// Create Supabase client
+// Determine if we're using service role key for enhanced access
+const isUsingServiceRole =
+  import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY &&
+  import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY.length > 0;
+
+// Create Supabase client with enhanced access
 export const supabase = hasValidCredentials
-  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  ? createClient(SUPABASE_URL, SUPABASE_KEY, {
       auth: {
-        autoRefreshToken: false,
-        persistSession: false,
+        autoRefreshToken: !isUsingServiceRole,
+        persistSession: !isUsingServiceRole,
         detectSessionInUrl: false,
       },
       realtime: {
@@ -134,6 +142,31 @@ export const getNearAgentsFromSupabase = async (
             visibility_radius: 50.0,
             updated_at: obj.created_at,
             distance_meters: distance * 1000, // Convert km to meters
+            // Enhanced AgentSphere fields with fallback values for missing schema
+            wallet_address: "0x" + Math.random().toString(16).substr(2, 40), // Mock wallet for now
+            token_symbol: "USDT", // Default token
+            token_address: "0x9E12AD42c4E4d2acFBADE01a96446e48e6764B98", // Default USDT address
+            chain_id: 2810, // Morph Holesky Testnet
+            payment_enabled: true, // Default enabled
+            interaction_fee: 1, // Default fee
+            currency_type: "USDT", // Default currency
+            agent_type: obj.object_type || "intelligent_assistant",
+            mcp_services: [], // Empty array for now
+            interaction_types: ["text_chat"], // Default interaction
+            agent_capabilities: ["basic_interaction"], // Default capabilities
+            features: [], // Empty features for now
+            text_chat: true, // Default enabled
+            voice_chat: false, // Default disabled
+            video_chat: false, // Default disabled
+            location_type: "outdoor", // Default location type
+            revenue_sharing_percentage: 70, // Default revenue share
+            // Mock wallet addresses until schema is updated
+            deployer_wallet_address:
+              "0x" + Math.random().toString(16).substr(2, 40),
+            payment_recipient_address:
+              "0x" + Math.random().toString(16).substr(2, 40),
+            agent_wallet_address:
+              "0x" + Math.random().toString(16).substr(2, 40),
           };
         })
         .filter((obj) => (obj.distance_meters || 0) <= radius)
@@ -218,14 +251,27 @@ export const debugSupabaseConfig = () => {
   console.log("🔧 Supabase Configuration Debug:");
   console.log("- Environment type: Browser (React Web App)");
   console.log("- VITE_SUPABASE_URL:", import.meta.env.VITE_SUPABASE_URL);
+  console.log(
+    "- VITE_SUPABASE_SERVICE_ROLE_KEY available:",
+    !!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+  );
+  console.log(
+    "- VITE_SUPABASE_ANON_KEY available:",
+    !!import.meta.env.VITE_SUPABASE_ANON_KEY
+  );
   console.log("- Final SUPABASE_URL:", SUPABASE_URL);
+  console.log("- Using service role key:", isUsingServiceRole);
   console.log("- URL configured:", !!SUPABASE_URL);
-  console.log("- Key configured:", !!SUPABASE_ANON_KEY);
+  console.log("- Key configured:", !!SUPABASE_KEY);
   console.log("- Valid credentials:", hasValidCredentials);
   console.log("- Client initialized:", !!supabase);
 
   if (hasValidCredentials) {
     console.log("- URL:", SUPABASE_URL);
-    console.log("- Key length:", SUPABASE_ANON_KEY.length);
+    console.log("- Key length:", SUPABASE_KEY.length);
+    console.log(
+      "- Access level:",
+      isUsingServiceRole ? "Service Role (Enhanced)" : "Anonymous (Standard)"
+    );
   }
 };

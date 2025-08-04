@@ -9,6 +9,7 @@ import {
 import ARViewer from "./components/ARViewer";
 import MainLandingScreen from "./components/MainLandingScreen";
 import CameraActivationScreen from "./components/CameraActivationScreen";
+import NeARAgentsMarketplace from "./components/NeARAgentsMarketplace";
 import UnifiedWalletConnect from "./components/UnifiedWalletConnect";
 import ThirdWebProviderWrapper from "./providers/ThirdWebProvider";
 import NotificationProvider, {
@@ -53,6 +54,22 @@ function AppContent() {
             <MainLandingScreen
               onEnterAgentWorld={() => navigate("/camera-activation")}
               onShowWallet={handleShowWallet}
+              onShowMarketplace={() => navigate("/marketplace")}
+            />
+          }
+        />
+
+        {/* NeAR Agents Marketplace Route */}
+        <Route
+          path="/marketplace"
+          element={
+            <NeARAgentsMarketplace
+              onGoBack={() => navigate("/")}
+              userLocation={{
+                latitude: 37.7749,
+                longitude: -122.4194,
+                radius_meters: 5000,
+              }}
             />
           }
         />

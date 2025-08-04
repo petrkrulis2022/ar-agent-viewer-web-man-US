@@ -16,7 +16,11 @@ import {
 } from "lucide-react";
 import { useDatabase } from "../hooks/useDatabase";
 
-const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
+const MainLandingScreen = ({
+  onEnterAgentWorld,
+  onShowWallet,
+  onShowMarketplace,
+}) => {
   const { agents, isLoading } = useDatabase();
   const [activeAgentCount, setActiveAgentCount] = useState(0);
 
@@ -48,6 +52,16 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
           <button className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 transition-colors">
             <Bell className="w-5 h-5 text-slate-400" />
           </button>
+
+          {/* EXPERIMENTAL QR Scanning Badge */}
+          <Badge className="bg-orange-500/20 text-orange-400 border-orange-400/30 px-3 py-1">
+            <div className="flex items-center space-x-1">
+              <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></div>
+              <span className="text-sm font-medium">
+                EXPERIMENTAL QR Scanning
+              </span>
+            </div>
+          </Badge>
 
           {/* NeAR Protocol Badge */}
           <Badge className="bg-green-500/20 text-green-400 border-green-400/30 px-3 py-1">
@@ -187,7 +201,10 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
               <span className="text-xs font-medium">NeAR Viewer</span>
             </button>
 
-            <button className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors">
+            <button
+              onClick={onShowMarketplace}
+              className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors"
+            >
               <Users className="w-5 h-5" />
               <span className="text-xs font-medium">NeAR Agents</span>
             </button>
