@@ -5,6 +5,82 @@ All notable changes to the AR Viewer project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2025-08-02
+
+### 🔧 Fixed - Critical Database Connection Issues
+
+- **Fixed** critical fallback logic preventing real agent display
+  - Issue: Marketplace showing only 3 mock agents instead of 56 real database agents
+  - Solution: Enhanced `useDatabase.js` to attempt Supabase queries even when configuration check fails
+  - Result: All 56 real agents now load successfully from database
+- **Enhanced** location radius from 50km to 100km for global agent coverage
+- **Improved** debug logging to track database connection status and fallback triggers
+
+### 🚀 Enhanced Database Schema Integration
+
+- **Added** comprehensive support for 25+ new database fields:
+  - `deployer_wallet_address` - Real wallet addresses instead of mock data
+  - `payment_recipient_address` - Payment destination addresses
+  - `agent_wallet_address` - Agent-specific wallet information
+  - `token_address`, `token_symbol` - Multi-token support (USDT, USDC, USDs, USBDG+)
+  - `interaction_fee` - Dynamic pricing per agent interaction
+  - `text_chat`, `voice_chat`, `video_chat` - Communication capability flags
+  - `mcp_services` - Model Context Protocol services integration
+  - `features` - Extended agent capabilities storage
+- **Enhanced** agent type categorization with 11+ new categories:
+  - Intelligent Assistant, Local Services, Payment Terminal
+  - Game Agent, 3D World Builder, Home Security, Content Creator
+  - Tutor Teacher, Social Media, E-commerce, Travel Guide
+
+### 🔗 Multi-Chain Payment System
+
+- **Added** Morph Holesky testnet support (Chain ID: 2810)
+  - USDT, USDC, USDs stablecoin integration
+  - Decimal precision handling for stablecoins
+  - EIP-681 compliant payment URIs
+- **Enhanced** wallet display system with copyable addresses
+  - Complete wallet information display in `AgentDetailModal.jsx`
+  - CopyableField component for easy address copying
+  - Real-time wallet balance detection
+
+### 🌍 Location & RTK Integration
+
+- **Added** RTK location service integration (`rtkLocation.js`)
+  - GPS device location detection
+  - Intelligent fallback to default coordinates (50.64°, 13.83°)
+  - 100km radius ensures global agent coverage
+- **Enhanced** `getCurrentLocation()` function with comprehensive error handling
+- **Fixed** location filtering issues that excluded valid agents
+
+### 🧪 Testing & Development Tools
+
+- **Added** `test-agents-browser.html` for direct database testing
+  - Browser-based Supabase connection testing
+  - Real-time agent data visualization
+  - Enhanced field display including wallet and token information
+- **Enhanced** development server configuration
+  - Auto-port selection (5177+ range)
+  - Environment variable validation
+  - Hot module replacement for rapid development
+
+### 📚 Documentation Updates
+
+- **Updated** comprehensive `AR_QR_SYSTEM_README.md` with latest changes
+- **Enhanced** troubleshooting guides with database connection solutions
+- **Added** multi-chain configuration examples
+- **Documented** enhanced schema fields and their purposes
+
+### 🔐 Technical Improvements
+
+- **Enhanced** environment variable configuration
+  - Verified `.env` file with Supabase credentials
+  - ThirdWeb client integration
+  - Assembly AI API key for voice features
+- **Improved** error handling and retry logic
+- **Optimized** database queries for enhanced schema fields
+
+---
+
 ## [1.3.1] - 2025-01-30
 
 ### 📚 Documentation

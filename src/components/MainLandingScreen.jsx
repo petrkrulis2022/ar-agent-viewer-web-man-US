@@ -13,13 +13,56 @@ import {
   CheckCircle,
   Zap,
   Satellite,
+  Database,
 } from "lucide-react";
 import { useDatabase } from "../hooks/useDatabase";
+import NeARAgentsMarketplace from "./NeARAgentsMarketplace";
+import ARQRTestRunner from "./ARQRTestRunner";
+import DatabaseStatusComponent from "./DatabaseStatusComponent";
 
 const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
-  const { agents, isLoading } = useDatabase();
+  const { getNearAgents, getCurrentLocation, isLoading, refreshConnection } =
+    useDatabase();
+  const [agents, setAgents] = useState([]);
   const [activeAgentCount, setActiveAgentCount] = useState(0);
+  const [showMarketplace, setShowMarketplace] = useState(false);
+  const [showTestRunner, setShowTestRunner] = useState(false);
+  const [showDatabaseStatus, setShowDatabaseStatus] = useState(false);
+  const [currentLocation, setCurrentLocation] = useState(null);
 
+  // Get current device location and fetch agents on component mount
+  useEffect(() => {
+    const fetchAgentsForCurrentLocation = async () => {
+      try {
+        console.log("📍 Getting device location and fetching agents...");
+        const deviceLocation = await getCurrentLocation();
+        setCurrentLocation(deviceLocation);
+
+        console.log("🔍 Fetching agents for location:", deviceLocation);
+        const agentsData = await getNearAgents(deviceLocation);
+
+        if (agentsData && agentsData.length > 0) {
+          setAgents(agentsData);
+          setActiveAgentCount(agentsData.length);
+          console.log(
+            `✅ Found ${agentsData.length} agents near current location`
+          );
+        } else {
+          console.log("⚠️ No agents found near current location");
+          setAgents([]);
+          setActiveAgentCount(0);
+        }
+      } catch (error) {
+        console.error("❌ Error fetching agents for current location:", error);
+        setAgents([]);
+        setActiveAgentCount(0);
+      }
+    };
+
+    fetchAgentsForCurrentLocation();
+  }, [getNearAgents, getCurrentLocation]);
+
+  // Update active agent count when agents data changes (keep legacy behavior)
   useEffect(() => {
     // Update active agent count when agents data changes
     if (agents && agents.length > 0) {
@@ -187,14 +230,30 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
               <span className="text-xs font-medium">NeAR Viewer</span>
             </button>
 
-            <button className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors">
-              <Users className="w-5 h-5" />
-              <span className="text-xs font-medium">NeAR Agents</span>
+            <button
+              onClick={() => setShowMarketplace(true)}
+              className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors group"
+            >
+              <Users className="w-5 h-5 group-hover:text-green-400 transition-colors" />
+              <span className="text-xs font-medium">
+                NeAR Agents Marketplace
+              </span>
+              <span className="text-xs text-green-400 opacity-75">
+                {activeAgentCount}
+              </span>
             </button>
 
             <button className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors">
               <MapPin className="w-5 h-5" />
               <span className="text-xs font-medium">NeAR Map</span>
+            </button>
+
+            <button
+              onClick={() => setShowDatabaseStatus(true)}
+              className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors"
+            >
+              <Database className="w-5 h-5" />
+              <span className="text-xs font-medium">Database</span>
             </button>
 
             <button className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors">
@@ -211,9 +270,95 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
               <Info className="w-5 h-5" />
               <span className="text-xs font-medium">About</span>
             </button>
+
+            {/* Test Runner Button (Development Only) */}
+            {process.env.NODE_ENV === "development" && (
+              <button
+                onClick={() => setShowTestRunner(true)}
+                className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors"
+              >
+                <Zap className="w-5 h-5" />
+                <span className="text-xs font-medium">QR Tests</span>
+              </button>
+            )}
           </nav>
         </div>
       </footer>
+
+      {/* NeAR Agents Marketplace Modal */}
+      <NeARAgentsMarketplace
+        isOpen={showMarketplace}
+        onClose={() => setShowMarketplace(false)}
+        userLocation={currentLocation}
+      />
+
+      {/* Database Status Modal */}
+      <div
+        className={`fixed inset-0 z-50 ${
+          showDatabaseStatus ? "block" : "hidden"
+        }`}
+      >
+        <div
+          className="fixed inset-0 bg-black/80"
+          onClick={() => setShowDatabaseStatus(false)}
+        />
+        <div className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 sm:rounded-lg">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Database Connection</h2>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowDatabaseStatus(false)}
+            >
+              ✕
+            </Button>
+          </div>
+          <DatabaseStatusComponent
+            onRefresh={async () => {
+              await refreshConnection();
+              // Re-fetch agents after refresh
+              try {
+                if (currentLocation) {
+                  const refreshedAgents = await getNearAgents(currentLocation);
+                  setAgents(refreshedAgents || []);
+                  setActiveAgentCount(refreshedAgents?.length || 0);
+                }
+              } catch (error) {
+                console.error("Error refreshing agents:", error);
+              }
+            }}
+          />
+        </div>
+      </div>
+
+      {/* AR QR Test Runner Modal (Development Only) */}
+      {process.env.NODE_ENV === "development" && (
+        <div
+          className={`fixed inset-0 z-50 ${
+            showTestRunner ? "block" : "hidden"
+          }`}
+        >
+          <div
+            className="fixed inset-0 bg-black/80"
+            onClick={() => setShowTestRunner(false)}
+          />
+          <div className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-6xl translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 sm:rounded-lg">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">
+                AR QR Payment Test Runner
+              </h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowTestRunner(false)}
+              >
+                ✕
+              </Button>
+            </div>
+            <ARQRTestRunner />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

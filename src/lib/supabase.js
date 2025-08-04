@@ -57,13 +57,58 @@ export const testConnection = async () => {
 
     if (error) {
       console.error("❌ Supabase connection test failed:", error);
+      console.error("Database connection issue details:", {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+      });
+
+      // Check if it's a table missing error
+      if (error.message && error.message.includes("does not exist")) {
+        console.warn(
+          "⚠️ Database table missing. Using fallback mode with mock data."
+        );
+        console.info(
+          "📋 To fix this, create the required tables in your Supabase project:"
+        );
+        console.info("   1. Go to https://supabase.com/dashboard");
+        console.info("   2. Open SQL Editor");
+        console.info("   3. Run the scripts in the sql/ folder");
+        return "table_missing";
+      }
       return false;
     }
 
     console.log("✅ Supabase connection successful");
+
+    // Test ar_qr_codes table specifically
+    try {
+      const { error: qrError } = await supabase
+        .from("ar_qr_codes")
+        .select("id")
+        .limit(1);
+
+      if (qrError) {
+        console.warn(
+          "⚠️ ar_qr_codes table missing - QR features will use local storage"
+        );
+        console.info(
+          "💡 To enable full QR functionality, run sql/ar_qr_codes_schema.sql in Supabase"
+        );
+      } else {
+        console.log("✅ ar_qr_codes table verified");
+      }
+    } catch (qrTestError) {
+      console.warn(
+        "⚠️ QR table test failed, continuing with basic functionality"
+      );
+    }
+
     return true;
   } catch (error) {
     console.error("❌ Supabase connection test failed:", error);
+    console.error("Full error details:", error);
     return false;
   }
 };
@@ -86,6 +131,28 @@ export const getNearAgentsFromSupabase = async (
       )}, ${longitude.toFixed(6)} within ${radius}m`
     );
 
+    // First, let's try a simple query to see if we can get any data at all
+    console.log("🔍 Step 1: Testing basic table access...");
+    const { data: basicData, error: basicError } = await supabase
+      .from("deployed_objects")
+      .select("id, name, latitude, longitude")
+      .limit(5);
+
+    if (basicError) {
+      console.error("❌ Basic query failed:", basicError);
+      return null;
+    }
+
+    console.log(
+      "✅ Basic query successful, found records:",
+      basicData?.length || 0
+    );
+    if (basicData && basicData.length > 0) {
+      console.log("📊 Sample records:", basicData);
+    }
+
+    // Now try the full query
+    console.log("🔍 Step 2: Full query with all fields...");
     const { data, error } = await supabase
       .from("deployed_objects")
       .select(
@@ -97,17 +164,118 @@ export const getNearAgentsFromSupabase = async (
         longitude,
         altitude,
         object_type,
+        agent_type,
         user_id,
         created_at,
-        is_active
+        is_active,
+        token_address,
+        token_symbol,
+        chain_id,
+        deployer_wallet_address,
+        payment_recipient_address,
+        agent_wallet_address,
+        text_chat,
+        voice_chat,
+        video_chat,
+        interaction_fee,
+        interaction_fee_usdfc,
+        interaction_range,
+        currency_type,
+        network,
+        mcp_services,
+        features
       `
       )
-      .eq("is_active", true)
       .limit(100);
 
     if (error) {
-      console.error("❌ Error fetching objects from Supabase:", error);
+      console.error("❌ Full query failed:", error);
+      console.error("Query error details:", {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+      });
+
+      // If full query fails but basic query worked, try without problematic fields
+      if (basicData && basicData.length > 0) {
+        console.log("🔄 Retrying with basic fields only...");
+        const { data: retryData, error: retryError } = await supabase
+          .from("deployed_objects")
+          .select(
+            `
+            id,
+            name,
+            description,
+            latitude,
+            longitude,
+            altitude,
+            object_type,
+            agent_type,
+            user_id,
+            created_at
+            `
+          )
+          .limit(100);
+
+        if (retryError) {
+          console.error("❌ Retry query also failed:", retryError);
+          return null;
+        } else {
+          console.log("✅ Retry successful with basic fields");
+          // Use the retry data and continue processing
+          const processedData = retryData.map((obj) => ({
+            ...obj,
+            // Add default values for missing fields
+            is_active: true,
+            mcp_services: [],
+            token_symbol: "USDT",
+            chain_id: "2810",
+            text_chat: true,
+            voice_chat: false,
+            video_chat: false,
+            interaction_fee: 1.0,
+            features: [],
+            interaction_range: 50.0,
+            currency_type: "USDT",
+            network: "Morph",
+          }));
+
+          console.log(
+            `✅ Processed ${processedData.length} objects with defaults`
+          );
+          return processedData.length > 0 ? processedData : null;
+        }
+      }
+
+      // Check if it's a table/column missing error
+      if (
+        error.message &&
+        (error.message.includes("does not exist") ||
+          error.message.includes("column") ||
+          error.message.includes("relation"))
+      ) {
+        console.warn("📋 Database schema issue detected:");
+        console.warn("   - Table or columns may be missing");
+        console.warn(
+          "   - Check that deployed_objects table has all required columns"
+        );
+        console.warn("   - Run database migration scripts if needed");
+      }
+
       return null;
+    }
+
+    console.log(`✅ Raw data from Supabase: ${data?.length || 0} records`);
+
+    if (!data || data.length === 0) {
+      console.warn("⚠️ No agents found in database");
+      console.info("💡 This could mean:");
+      console.info("   - No agents deployed in this area");
+      console.info("   - Database is empty");
+      console.info("   - Location permissions not granted");
+      console.info("   - Search radius too small");
+      return [];
     }
 
     // Calculate distances manually and filter by radius
@@ -143,9 +311,25 @@ export const getNearAgentsFromSupabase = async (
     console.log(
       `✅ Found ${objectsWithDistance.length} objects using direct query`
     );
+
+    if (objectsWithDistance.length > 0) {
+      console.log("📊 Sample agent data:", {
+        id: objectsWithDistance[0].id,
+        name: objectsWithDistance[0].name,
+        distance: `${objectsWithDistance[0].distance_meters}m`,
+        type: objectsWithDistance[0].agent_type,
+      });
+    }
+
     return objectsWithDistance;
   } catch (error) {
     console.error("❌ Error in getNearAgentsFromSupabase:", error);
+    console.error("Full error context:", {
+      error: error.message,
+      stack: error.stack,
+      location: `${latitude}, ${longitude}`,
+      radius: radius,
+    });
     return null;
   }
 };

@@ -162,7 +162,7 @@ const ARViewer = () => {
         console.log(`📊 First object details:`, objects[0]);
         console.log(
           `📊 Object types:`,
-          objects.map((o) => o.agent_type).join(", ")
+          objects.map((o) => o.agent_type || o.object_type).join(", ")
         );
       }
 
@@ -179,7 +179,7 @@ const ARViewer = () => {
           console.log(`Agent ${i + 1}:`, {
             id: obj.id,
             name: obj.name,
-            type: obj.agent_type,
+            type: obj.agent_type || obj.object_type,
             lat: obj.latitude,
             lng: obj.longitude,
             distance: obj.distance_meters,
@@ -670,7 +670,7 @@ const ARViewer = () => {
                           </p>
                           <p className="text-xs text-slate-400 mt-1">
                             {obj.distance_meters?.toFixed(1)}m away •{" "}
-                            {obj.object_type}
+                            {obj.agent_type || obj.object_type}
                           </p>
                         </div>
                         <Badge variant="secondary">Active</Badge>

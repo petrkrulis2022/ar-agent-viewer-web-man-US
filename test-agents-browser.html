@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test Real Agents Loading</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      .agent {
+        border: 1px solid #ccc;
+        margin: 10px 0;
+        padding: 15px;
+        border-radius: 8px;
+        background: #f9f9f9;
+      }
+      .error {
+        color: red;
+      }
+      .success {
+        color: green;
+      }
+      .loading {
+        color: blue;
+      }
+      .wallet-info {
+        background: #e8f4ff;
+        padding: 10px;
+        border-radius: 4px;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🔍 AR Viewer - Real Agents Test</h1>
+    <div id="status" class="loading">Loading agents...</div>
+    <div id="agents"></div>
+
+    <script>
+      const SUPABASE_URL = "https://ncjbwzibnqrbrvicdmec.supabase.co";
+      const SUPABASE_ANON_KEY =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5jamJ3emlibnFyYnJ2aWNkbWVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2ODAxNTksImV4cCI6MjA2NjI1NjE1OX0.R7rx4jOPt9oOafcyJr3x-nEvGk5-e4DP7MbfCVOCHHI";
+
+      const supabase = window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY
+      );
+
+      async function loadRealAgents() {
+        try {
+          console.log("🔍 Testing direct Supabase connection...");
+
+          // Test 1: Basic connection
+          const { data: connectionTest, error: connectionError } =
+            await supabase.from("deployed_objects").select("count").limit(1);
+
+          if (connectionError) {
+            throw new Error(`Connection failed: ${connectionError.message}`);
+          }
+
+          console.log("✅ Supabase connection successful");
+
+          // Test 2: Get all agents with enhanced fields
+          const { data: agents, error: agentsError } = await supabase
+            .from("deployed_objects")
+            .select(
+              `
+                        id, name, description, agent_type, location_lat, location_lng,
+                        deployer_wallet_address, payment_recipient_address, agent_wallet_address,
+                        token_address, token_symbol, interaction_fee,
+                        text_chat, voice_chat, video_chat,
+                        mcp_services, features, created_at
+                    `
+            )
+            .eq("is_active", true)
+            .order("created_at", { ascending: false })
+            .limit(20);
+
+          if (agentsError) {
+            throw new Error(`Agents query failed: ${agentsError.message}`);
+          }
+
+          console.log(`✅ Found ${agents.length} real agents in database`);
+
+          const statusDiv = document.getElementById("status");
+          const agentsDiv = document.getElementById("agents");
+
+          statusDiv.innerHTML = `<span class="success">✅ Successfully loaded ${agents.length} real agents from database!</span>`;
+          statusDiv.className = "success";
+
+          if (agents.length === 0) {
+            agentsDiv.innerHTML = "<p>No active agents found in database.</p>";
+            return;
+          }
+
+          agentsDiv.innerHTML = agents
+            .map(
+              (agent) => `
+                    <div class="agent">
+                        <h3>🤖 ${agent.name || "Unnamed Agent"}</h3>
+                        <p><strong>Type:</strong> ${
+                          agent.agent_type || "Unknown"
+                        }</p>
+                        <p><strong>Description:</strong> ${
+                          agent.description || "No description"
+                        }</p>
+                        <p><strong>Location:</strong> ${agent.location_lat}, ${
+                agent.location_lng
+              }</p>
+                        
+                        <div class="wallet-info">
+                            <h4>💳 Wallet Information:</h4>
+                            <p><strong>Deployer:</strong> ${
+                              agent.deployer_wallet_address || "Not set"
+                            }</p>
+                            <p><strong>Payment Recipient:</strong> ${
+                              agent.payment_recipient_address || "Not set"
+                            }</p>
+                            <p><strong>Agent Wallet:</strong> ${
+                              agent.agent_wallet_address || "Not set"
+                            }</p>
+                            <p><strong>Token:</strong> ${
+                              agent.token_symbol || "Not set"
+                            } (${agent.token_address || "No address"})</p>
+                            <p><strong>Interaction Fee:</strong> ${
+                              agent.interaction_fee || 0
+                            } ${agent.token_symbol || "tokens"}</p>
+                        </div>
+                        
+                        <p><strong>Communication:</strong> 
+                            ${agent.text_chat ? "💬" : ""} 
+                            ${agent.voice_chat ? "🎤" : ""} 
+                            ${agent.video_chat ? "📹" : ""}
+                        </p>
+                        
+                        <p><strong>Created:</strong> ${new Date(
+                          agent.created_at
+                        ).toLocaleString()}</p>
+                    </div>
+                `
+            )
+            .join("");
+        } catch (error) {
+          console.error("❌ Error loading agents:", error);
+          document.getElementById(
+            "status"
+          ).innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+          document.getElementById("status").className = "error";
+        }
+      }
+
+      // Load agents when page loads
+      loadRealAgents();
+    </script>
+  </body>
+</html>

@@ -6,19 +6,23 @@ import {
   isSupabaseConfigured,
   debugSupabaseConfig,
 } from "../lib/supabase.js";
+import rtkLocationService from "../services/rtkLocation.js";
 
 // Mock data generator for fallback
 const generateMockObjects = (location) => {
   const { latitude, longitude, radius_meters = 100, limit = 10 } = location;
-  console.log("🎯 Generating enhanced mock objects at", latitude, longitude);
+  console.log("🎯 Generating enhanced objects at", latitude, longitude);
 
   // Create more diverse mock agents with better spatial distribution
   const agentTypes = [
-    "Intelligent Assistant",
-    "Content Creator",
-    "Local Services",
-    "Tutor/Teacher",
-    "Game Agent",
+    "intelligent_assistant",
+    "content_creator",
+    "local_services",
+    "tutor_teacher",
+    "game_agent",
+    "payment_terminal",
+    "data_analyst",
+    "customer_support",
   ];
 
   const agentNames = [
@@ -27,6 +31,9 @@ const generateMockObjects = (location) => {
     ["Service Connector", "Local Guide", "Business Helper", "Community Link"],
     ["Learning Guide", "Study Buddy", "Skill Trainer", "Knowledge Helper"],
     ["Game Buddy", "Entertainment Bot", "Challenge Master", "Fun Companion"],
+    ["Payment Hub", "Transaction Helper", "Crypto Assistant", "Pay Agent"],
+    ["Data Insights", "Analytics Bot", "Report Generator", "Stats Helper"],
+    ["Support Agent", "Help Desk", "Customer Care", "Service Helper"],
   ];
 
   const descriptions = [
@@ -60,6 +67,24 @@ const generateMockObjects = (location) => {
       "Challenge creator and gaming companion",
       "Fun and interactive entertainment helper",
     ],
+    [
+      "Secure payment processing and cryptocurrency transaction helper",
+      "Multi-currency payment terminal for digital transactions",
+      "Blockchain payment specialist for secure transfers",
+      "Digital wallet and payment gateway assistant",
+    ],
+    [
+      "Advanced data analysis and insights generation specialist",
+      "Statistical analysis and reporting assistant",
+      "Business intelligence and data visualization expert",
+      "Predictive analytics and trend analysis helper",
+    ],
+    [
+      "24/7 customer support and service assistance",
+      "Help desk and technical support specialist",
+      "Customer care and issue resolution expert",
+      "Service quality and satisfaction assistant",
+    ],
   ];
 
   const mockObjects = [];
@@ -79,6 +104,16 @@ const generateMockObjects = (location) => {
     const lngOffset =
       (Math.sin(angle) * distance) /
       (111000 * Math.cos((latitude * Math.PI) / 180));
+
+    // Generate enhanced fee structure
+    const feeTypes = [
+      "fee_usdt",
+      "fee_usdc",
+      "fee_usds",
+      "interaction_fee_usdfc",
+    ];
+    const selectedFeeType = feeTypes[i % feeTypes.length];
+    const feeAmount = 1 + (i % 3); // Vary fees: 1, 2, 3
 
     const agent = {
       id: `mock-${i + 1}`,
@@ -103,6 +138,16 @@ const generateMockObjects = (location) => {
       created_at: new Date(Date.now() - i * 60000).toISOString(), // Stagger creation times
       updated_at: new Date().toISOString(),
       distance_meters: distance,
+      // Enhanced schema fee fields
+      [selectedFeeType]: feeAmount,
+      currency_type:
+        selectedFeeType === "interaction_fee_usdfc"
+          ? "USDFC"
+          : selectedFeeType === "fee_usdt"
+          ? "USDT"
+          : selectedFeeType === "fee_usdc"
+          ? "USDC"
+          : "USDs",
     };
 
     mockObjects.push(agent);
@@ -159,19 +204,37 @@ export const useDatabase = () => {
       const supabaseData = await getNearAgentsFromSupabase(
         location.latitude,
         location.longitude,
-        location.radius_meters || 100
+        location.radius_meters || 100000 // Use 100km default radius for wide coverage
+      );
+
+      console.log(
+        "🗄️ DATABASE HOOK DEBUG: Supabase raw response:",
+        supabaseData
+      );
+      console.log(
+        "🗄️ DATABASE HOOK DEBUG: Supabase data type:",
+        typeof supabaseData
+      );
+      console.log(
+        "🗄️ DATABASE HOOK DEBUG: Supabase data length:",
+        supabaseData?.length
+      );
+      console.log(
+        "🗄️ DATABASE HOOK DEBUG: Array.isArray(supabaseData):",
+        Array.isArray(supabaseData)
       );
 
       let objects;
 
       if (supabaseData && supabaseData.length > 0) {
-        // Process Supabase data
+        console.log("✅ DATABASE HOOK: Using Supabase data");
+        // Process Supabase data with enhanced schema fields
         objects = supabaseData.map((obj) => ({
           id: obj.id,
           user_id: obj.user_id || "unknown",
           object_type: obj.object_type || "agent",
           agent_type:
-            obj.agent_type || obj.object_type || "Intelligent Assistant",
+            obj.agent_type || obj.object_type || "intelligent_assistant",
           name: obj.name || "Unnamed Agent",
           description: obj.description || "No description available",
           latitude: parseFloat(obj.latitude || 0),
@@ -188,15 +251,42 @@ export const useDatabase = () => {
           rotation_y: parseFloat(obj.rotation_y || 0),
           rotation_z: parseFloat(obj.rotation_z || 0),
           is_active: obj.is_active !== false,
-          visibility_radius: parseInt(obj.visibility_radius || 100),
+          visibility_radius: parseInt(
+            obj.visibility_radius || obj.interaction_range || 100
+          ),
           created_at: obj.created_at || new Date().toISOString(),
-          updated_at: obj.created_at || new Date().toISOString(),
+          updated_at:
+            obj.updated_at || obj.created_at || new Date().toISOString(),
           distance_meters:
             typeof obj.distance_meters === "number"
               ? obj.distance_meters
               : typeof obj.distance_meters === "string"
               ? parseFloat(obj.distance_meters)
               : 0,
+          // Enhanced AgentSphere Schema Fields
+          mcp_services: obj.mcp_services || [],
+          token_address: obj.token_address || null,
+          token_symbol: obj.token_symbol || "USDT",
+          chain_id: obj.chain_id || 2810, // Morph Holesky Testnet
+          deployer_wallet_address: obj.deployer_wallet_address || null,
+          payment_recipient_address:
+            obj.payment_recipient_address ||
+            obj.deployer_wallet_address ||
+            null,
+          agent_wallet_address: obj.agent_wallet_address || null,
+          text_chat: obj.text_chat !== false,
+          voice_chat: obj.voice_chat || false,
+          video_chat: obj.video_chat || false,
+          interaction_fee: obj.interaction_fee
+            ? parseFloat(obj.interaction_fee)
+            : obj.interaction_fee_usdfc
+            ? parseFloat(obj.interaction_fee_usdfc)
+            : 1.0,
+          features: obj.features || [],
+          // Use existing columns or fallback values
+          currency_type: obj.currency_type || "USDT",
+          network: obj.network || "Morph",
+          // RTK precision fields (if available)
           preciselatitude: obj.preciselatitude
             ? parseFloat(obj.preciselatitude)
             : undefined,
@@ -218,6 +308,9 @@ export const useDatabase = () => {
         console.warn(
           "⚠️ Supabase returned null data but is configured - check your connection"
         );
+        console.log(
+          "🗄️ DATABASE HOOK DEBUG: Falling back to mock data (null response)"
+        );
         objects = generateMockObjects(location);
         console.log(
           `🔄 Using ${objects.length} mock objects due to Supabase data issue`
@@ -226,10 +319,30 @@ export const useDatabase = () => {
           console.log("Sample object:", objects[0]);
         }
       } else {
-        objects = generateMockObjects(location);
         console.log(
-          `⚠️ Using ${objects.length} mock objects (Supabase not available or not configured)`
+          "🗄️ DATABASE HOOK DEBUG: Falling back to mock data (not configured)"
         );
+        console.log(
+          "🗄️ DATABASE HOOK DEBUG: isSupabaseConfigured:",
+          isSupabaseConfigured
+        );
+        console.log(
+          "🗄️ DATABASE HOOK DEBUG: Will try to query Supabase anyway..."
+        );
+
+        // Try to query Supabase even if not "configured" to see what happens
+        try {
+          objects = await getNearAgentsFromSupabase(location);
+          console.log(
+            `✅ Successfully got ${objects.length} real agents despite config issue!`
+          );
+        } catch (error) {
+          console.error("❌ Supabase query failed:", error);
+          objects = generateMockObjects(location);
+          console.log(
+            `⚠️ Using ${objects.length} mock objects (Supabase query failed)`
+          );
+        }
       }
 
       if (isMountedRef.current) {
@@ -340,6 +453,44 @@ export const useDatabase = () => {
     }
   }, []);
 
+  // Get current device location using RTK service
+  const getCurrentLocation = useCallback(async () => {
+    try {
+      console.log("📍 Getting current device location...");
+      const position = await rtkLocationService.getEnhancedLocation();
+
+      const location = {
+        latitude: position.latitude,
+        longitude: position.longitude,
+        altitude: position.altitude || 0,
+        accuracy: position.accuracy || 10.0,
+        isRTKEnhanced: position.isRTKEnhanced || false,
+        source: position.source || "GPS",
+        timestamp: position.timestamp || Date.now(),
+        radius_meters: 10000, // Default 10km search radius
+      };
+
+      console.log("✅ Current location:", location);
+      return location;
+    } catch (error) {
+      console.warn(
+        "⚠️ Failed to get device location, using default:",
+        error.message
+      );
+      // Fallback to a default location with wide radius
+      return {
+        latitude: 50.64, // Center of Europe (compromise location)
+        longitude: 13.83,
+        altitude: 0,
+        accuracy: 1000,
+        isRTKEnhanced: false,
+        source: "Default (location unavailable)",
+        timestamp: Date.now(),
+        radius_meters: 100000, // 100km radius to catch all real agents globally
+      };
+    }
+  }, []);
+
   // Clear error
   const clearError = useCallback(() => {
     if (isMountedRef.current) {
@@ -361,6 +512,7 @@ export const useDatabase = () => {
     ...state,
     getNearAgents,
     getObjectById,
+    getCurrentLocation,
     refreshConnection,
     clearError,
   };

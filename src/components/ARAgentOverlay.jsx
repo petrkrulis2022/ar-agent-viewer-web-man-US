@@ -23,6 +23,20 @@ const ARAgentOverlay = ({
   // Agent type icons
   const getAgentIcon = (agentType) => {
     const icons = {
+      // Enhanced AgentSphere types
+      intelligent_assistant: Bot,
+      local_services: Wrench,
+      payment_terminal: Bot,
+      content_creator: User,
+      tutor_teacher: GraduationCap,
+      game_agent: Gamepad2,
+      threed_world_modelling: Briefcase,
+      social_media_manager: User,
+      data_analyst: Bot,
+      customer_support: MessageCircle,
+      marketplace_vendor: Briefcase,
+
+      // Legacy object_type compatibility
       "Intelligent Assistant": Bot,
       "Content Creator": User,
       "Local Services": Wrench,
@@ -35,6 +49,20 @@ const ARAgentOverlay = ({
   // Agent type colors
   const getAgentColor = (agentType) => {
     const colors = {
+      // Enhanced AgentSphere types
+      intelligent_assistant: "from-blue-500 to-purple-500",
+      local_services: "from-green-500 to-teal-500",
+      payment_terminal: "from-yellow-500 to-orange-500",
+      content_creator: "from-pink-500 to-red-500",
+      tutor_teacher: "from-yellow-500 to-orange-500",
+      game_agent: "from-purple-500 to-indigo-500",
+      threed_world_modelling: "from-cyan-500 to-blue-500",
+      social_media_manager: "from-pink-500 to-purple-500",
+      data_analyst: "from-indigo-500 to-blue-500",
+      customer_support: "from-green-500 to-emerald-500",
+      marketplace_vendor: "from-orange-500 to-red-500",
+
+      // Legacy object_type compatibility
       "Intelligent Assistant": "from-blue-500 to-purple-500",
       "Content Creator": "from-pink-500 to-red-500",
       "Local Services": "from-green-500 to-teal-500",
@@ -211,8 +239,10 @@ const ARAgentOverlay = ({
   return (
     <div className="absolute inset-0 pointer-events-none">
       {visibleAgents.map((agent, index) => {
-        const IconComponent = getAgentIcon(agent.agent_type);
-        const colorClass = getAgentColor(agent.agent_type);
+        const IconComponent = getAgentIcon(
+          agent.agent_type || agent.object_type
+        );
+        const colorClass = getAgentColor(agent.agent_type || agent.object_type);
 
         return (
           <div
@@ -258,7 +288,7 @@ const ARAgentOverlay = ({
                       {agent.name}
                     </h4>
                     <p className="text-purple-200 text-xs mb-2">
-                      {agent.agent_type}
+                      {agent.agent_type || agent.object_type}
                     </p>
                     <p className="text-slate-300 text-xs mb-3 line-clamp-2">
                       {agent.description}

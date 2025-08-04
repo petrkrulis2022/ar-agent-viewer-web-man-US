@@ -46,7 +46,7 @@ const Agent3DModel = ({
 
   // Get 3D model based on agent type
   const getAgentModel = useCallback(() => {
-    const baseColor = getAgentColor(agent.agent_type);
+    const baseColor = getAgentColor(agent.agent_type || agent.object_type);
     const emissiveColor = new THREE.Color(baseColor).multiplyScalar(0.2);
 
     const commonMaterial = {
@@ -57,7 +57,10 @@ const Agent3DModel = ({
       roughness: 0.3,
     };
 
-    switch (agent.agent_type) {
+    const agentType = agent.agent_type || agent.object_type;
+
+    switch (agentType) {
+      case "intelligent_assistant":
       case "Intelligent Assistant":
         return (
           <group>
@@ -80,6 +83,7 @@ const Agent3DModel = ({
           </group>
         );
 
+      case "content_creator":
       case "Content Creator":
         return (
           <group>
@@ -101,6 +105,7 @@ const Agent3DModel = ({
           </group>
         );
 
+      case "local_services":
       case "Local Services":
         return (
           <group>
@@ -119,6 +124,7 @@ const Agent3DModel = ({
           </group>
         );
 
+      case "tutor_teacher":
       case "Tutor/Teacher":
         return (
           <group>
@@ -140,6 +146,7 @@ const Agent3DModel = ({
           </group>
         );
 
+      case "game_agent":
       case "Game Agent":
         return (
           <group>
@@ -166,11 +173,25 @@ const Agent3DModel = ({
           </Box>
         );
     }
-  }, [agent.agent_type, hovered]);
+  }, [agent.agent_type, agent.object_type, hovered]);
 
   // Get agent color based on type
   const getAgentColor = (agentType) => {
     const colors = {
+      // Enhanced AgentSphere types
+      intelligent_assistant: "#3b82f6", // Blue
+      local_services: "#10b981", // Green
+      payment_terminal: "#f59e0b", // Orange
+      content_creator: "#ec4899", // Pink
+      tutor_teacher: "#f59e0b", // Orange
+      game_agent: "#8b5cf6", // Purple
+      threed_world_modelling: "#06b6d4", // Cyan
+      social_media_manager: "#d946ef", // Purple
+      data_analyst: "#4f46e5", // Indigo
+      customer_support: "#059669", // Emerald
+      marketplace_vendor: "#dc2626", // Red
+
+      // Legacy object_type compatibility
       "Intelligent Assistant": "#3b82f6", // Blue
       "Content Creator": "#ec4899", // Pink
       "Local Services": "#10b981", // Green
@@ -241,7 +262,7 @@ const Agent3DModel = ({
       {/* Glow effect */}
       <pointLight
         position={[0, 0, 0]}
-        color={getAgentColor(agent.agent_type)}
+        color={getAgentColor(agent.agent_type || agent.object_type)}
         intensity={hovered ? 0.5 : 0.2}
         distance={2}
       />

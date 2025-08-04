@@ -2,7 +2,29 @@
 
 ## 📋 Overview
 
-This document covers all backend operations, services, and integrations used in the AR Viewer project. The backend architecture primarily uses Supabase as the main database and real-time service provider.
+This document covers all backend operations, services, and integrations used in the AR Viewer project. The backend architecture primarily uses Supabase as the main database and real-time service provider, with enhanced schema support for 56+ live agents and comprehensive wallet integration.
+
+## 🔄 Recent Updates (August 2025)
+
+### ✅ Database Connection Fixes
+
+- **Issue Resolved**: Fixed critical fallback logic preventing real agent display
+- **Result**: Successfully loading 56 real agents instead of 3 mock agents
+- **Enhancement**: Improved retry mechanisms and error handling
+
+### ✅ Enhanced Schema Integration
+
+- **New Fields**: 25+ additional database fields for enhanced agent capabilities
+- **Wallet Support**: Complete wallet address system (deployer, payment recipient, agent)
+- **Multi-Token**: USDT, USDC, USDs, USBDG+ token integration
+- **Communication**: Text, voice, video chat capability flags
+- **MCP Services**: Model Context Protocol integration
+
+### ✅ Location Services
+
+- **RTK Integration**: GPS positioning with intelligent fallbacks
+- **Global Coverage**: 100km radius for worldwide agent discovery
+- **Dynamic Updates**: Real-time location-based agent filtering
 
 ## 🏗️ Backend Architecture
 
@@ -19,16 +41,45 @@ This document covers all backend operations, services, and integrations used in 
 ```
 Frontend (React)
     ↓
-Service Layer (Custom JS Services)
+Enhanced Service Layer (Custom JS Services + RTK Location)
     ↓
-Supabase Client
+Supabase Client (Enhanced Queries)
     ↓
-Supabase Backend (PostgreSQL + Realtime)
+Supabase Backend (PostgreSQL + Enhanced Schema + Realtime)
+    ↓
+Live Agent Database (56+ Real Agents)
 ```
 
-## 🗄️ Database Operations
+## 🗄️ Enhanced Database Operations
 
 ### Supabase Configuration
+
+```javascript
+// Enhanced configuration with real agent support
+const supabaseUrl = "https://ncjbwzibnqrbrvicdmec.supabase.co";
+const supabaseAnonKey = "your_anon_key";
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Enhanced query with 25+ fields
+export const getNearAgentsFromSupabase = async (location) => {
+  const { data, error } = await supabase
+    .from("deployed_objects")
+    .select(
+      `
+      id, name, description, agent_type, location_lat, location_lng,
+      deployer_wallet_address, payment_recipient_address, agent_wallet_address,
+      token_address, token_symbol, interaction_fee,
+      text_chat, voice_chat, video_chat,
+      mcp_services, features, created_at, is_active
+    `
+    )
+    .eq("is_active", true)
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  return data || [];
+};
+```
 
 - **Project URL**: Configured via environment variables
 - **API Key**: Anon public key for client access

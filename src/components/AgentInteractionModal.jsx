@@ -123,7 +123,8 @@ const AgentInteractionModal = ({
     };
 
     const agentResponses =
-      responses[agent.agent_type] || responses["Intelligent Assistant"];
+      responses[agent.agent_type || agent.object_type] ||
+      responses["Intelligent Assistant"];
     return agentResponses[Math.floor(Math.random() * agentResponses.length)];
   };
 
@@ -169,7 +170,8 @@ const AgentInteractionModal = ({
                   {agent.name}
                 </CardTitle>
                 <CardDescription className="text-purple-100">
-                  {agent.agent_type} • {agent.distance_meters?.toFixed(0)}m away
+                  {agent.agent_type || agent.object_type} •{" "}
+                  {agent.distance_meters?.toFixed(0)}m away
                 </CardDescription>
               </div>
             </div>
