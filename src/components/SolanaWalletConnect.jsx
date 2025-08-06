@@ -28,32 +28,82 @@ import {
 import "@solana/wallet-adapter-react-ui/styles.css";
 import solanaPaymentService from "../services/solanaPaymentService";
 
-// Solana Testnet Configuration
-const SOLANA_TESTNET_RPC = "https://api.testnet.solana.com";
-const SOLANA_NETWORK = WalletAdapterNetwork.Testnet;
+// Network Configuration
+const NETWORK_CONFIG = {
+  testnet: {
+    network: WalletAdapterNetwork.Testnet,
+    rpc: "https://api.testnet.solana.com",
+    name: "Solana Testnet",
+    currency: "SOL",
+    color: "blue",
+    explorerCluster: "testnet",
+  },
+  devnet: {
+    network: WalletAdapterNetwork.Devnet,
+    rpc: "https://api.devnet.solana.com",
+    name: "Solana Devnet",
+    currency: "USDC",
+    color: "purple",
+    explorerCluster: "devnet",
+  },
+};
 
 // Wallet Component that uses the Solana wallet context
-const SolanaWalletContent = ({ onConnectionChange }) => {
+const SolanaWalletContent = ({ onConnectionChange, network = "testnet" }) => {
   const { publicKey, connected, connecting, disconnect, wallet } = useWallet();
   const [balance, setBalance] = useState(null);
+  const [usdcBalance, setUsdcBalance] = useState(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // Create connection to Solana testnet
-  const connection = useMemo(() => new Connection(SOLANA_TESTNET_RPC), []);
+  const networkConfig = NETWORK_CONFIG[network];
 
-  // Fetch wallet balance
+  // Create connection to the specified network
+  const connection = useMemo(
+    () => new Connection(networkConfig.rpc),
+    [networkConfig.rpc]
+  );
+
+  // Fetch wallet balance (SOL for testnet, SOL + USDC for devnet)
   const fetchBalance = async () => {
     if (!publicKey || !connected) return;
 
     setLoading(true);
     try {
-      const balance = await connection.getBalance(publicKey);
-      // Convert lamports to SOL (1 SOL = 1,000,000,000 lamports)
-      setBalance(balance / 1e9);
+      // Always fetch SOL balance
+      const solBalance = await connection.getBalance(publicKey);
+      setBalance(solBalance / 1e9);
+
+      // For devnet, also fetch USDC balance
+      if (network === "devnet") {
+        try {
+          const { getAccount, getAssociatedTokenAddress } = await import(
+            "@solana/spl-token"
+          );
+          const usdcMint = new PublicKey(
+            "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"
+          );
+          const usdcTokenAccount = await getAssociatedTokenAddress(
+            usdcMint,
+            publicKey
+          );
+
+          const usdcAccountInfo = await getAccount(
+            connection,
+            usdcTokenAccount
+          );
+          setUsdcBalance(Number(usdcAccountInfo.amount) / 1e6); // USDC has 6 decimals
+        } catch (usdcError) {
+          console.log(
+            "No USDC token account found or error fetching USDC balance"
+          );
+          setUsdcBalance(0);
+        }
+      }
     } catch (error) {
       console.error("Error fetching balance:", error);
       setBalance(null);
+      setUsdcBalance(null);
     } finally {
       setLoading(false);
     }
@@ -79,65 +129,120 @@ const SolanaWalletContent = ({ onConnectionChange }) => {
         isConnected: connected,
         publicKey: publicKey?.toBase58(),
         wallet: wallet?.adapter?.name,
-        network: "Solana Testnet",
+        network: networkConfig.name,
+        networkType: network,
         balance,
+        usdcBalance,
       });
     }
-  }, [connected, publicKey, wallet, balance, onConnectionChange]);
+  }, [
+    connected,
+    publicKey,
+    wallet,
+    balance,
+    usdcBalance,
+    onConnectionChange,
+    network,
+    networkConfig.name,
+  ]);
 
-  // Fetch balance when wallet connects
+  // Fetch balance when wallet connects and switch network
   useEffect(() => {
     if (connected && publicKey) {
       fetchBalance();
-      // Validate testnet connection
-      solanaPaymentService.validateTestnetConnection();
+      // Switch the payment service to the correct network
+      solanaPaymentService.switchSolanaNetwork(network.toUpperCase());
     } else {
       setBalance(null);
+      setUsdcBalance(null);
     }
-  }, [connected, publicKey]);
+  }, [connected, publicKey, network]);
 
   const handleDisconnect = async () => {
     try {
       await disconnect();
       setBalance(null);
-      console.log("🔌 Solana wallet disconnected");
+      setUsdcBalance(null);
+      console.log(`🔌 Solana ${networkConfig.name} wallet disconnected`);
     } catch (error) {
       console.error("❌ Disconnect error:", error);
     }
   };
 
   if (connected && publicKey) {
+    const cardClass =
+      network === "testnet"
+        ? "w-full bg-gradient-to-br from-blue-900/80 to-slate-900/80 border-blue-500/30 text-white"
+        : "w-full bg-gradient-to-br from-purple-900/80 to-slate-900/80 border-purple-500/30 text-white";
+
+    const badgeClass =
+      network === "testnet"
+        ? "border-blue-400 text-blue-400"
+        : "border-purple-400 text-purple-400";
+
+    const containerClass =
+      network === "testnet"
+        ? "bg-blue-800/30 rounded-lg p-4 space-y-3"
+        : "bg-purple-800/30 rounded-lg p-4 space-y-3";
+
+    const textClass =
+      network === "testnet"
+        ? "text-blue-200 text-sm"
+        : "text-purple-200 text-sm";
+
+    const iconClass =
+      network === "testnet"
+        ? "w-5 h-5 text-blue-300"
+        : "w-5 h-5 text-purple-300";
+
+    const buttonClass =
+      network === "testnet"
+        ? "text-blue-300 hover:bg-blue-700/50"
+        : "text-purple-300 hover:bg-purple-700/50";
+
+    const buttonOutlineClass =
+      network === "testnet"
+        ? "flex-1 border-blue-400 text-blue-300 hover:bg-blue-700/50"
+        : "flex-1 border-purple-400 text-purple-300 hover:bg-purple-700/50";
+
+    const linkClass =
+      network === "testnet"
+        ? "text-blue-300 hover:text-blue-200"
+        : "text-purple-300 hover:text-purple-200";
+
+    const networkColorClass =
+      network === "testnet" ? "text-blue-400" : "text-purple-400";
+
     return (
-      <Card className="w-full bg-gradient-to-br from-purple-900/80 to-blue-900/80 border-purple-500/30 text-white">
+      <Card className={cardClass}>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <CheckCircle className="w-5 h-5 text-green-400" />
-              <CardTitle className="text-lg">Solana Wallet Connected</CardTitle>
+              <CardTitle className="text-lg">
+                {networkConfig.name} Connected
+              </CardTitle>
             </div>
-            <Badge
-              variant="outline"
-              className="border-green-400 text-green-400"
-            >
-              Testnet
+            <Badge variant="outline" className={badgeClass}>
+              {network.charAt(0).toUpperCase() + network.slice(1)}
             </Badge>
           </div>
         </CardHeader>
 
         <CardContent className="space-y-4">
           {/* Wallet Info */}
-          <div className="bg-purple-800/30 rounded-lg p-4 space-y-3">
+          <div className={containerClass}>
             {/* Wallet Type */}
             <div className="flex items-center gap-2">
-              <Wallet className="w-5 h-5 text-purple-300" />
-              <span className="text-purple-200 text-sm">
+              <Wallet className={iconClass} />
+              <span className={textClass}>
                 {wallet?.adapter?.name || "Phantom Wallet"}
               </span>
             </div>
 
             {/* Address */}
             <div className="space-y-1">
-              <p className="text-purple-200 text-sm">Wallet Address</p>
+              <p className={textClass}>Wallet Address</p>
               <div className="flex items-center gap-2">
                 <code className="text-white text-sm bg-black/30 px-2 py-1 rounded flex-1 break-all">
                   {publicKey.toBase58()}
@@ -146,7 +251,7 @@ const SolanaWalletContent = ({ onConnectionChange }) => {
                   onClick={copyAddress}
                   variant="ghost"
                   size="sm"
-                  className="text-purple-300 hover:bg-purple-700/50"
+                  className={buttonClass}
                 >
                   {copied ? (
                     <CheckCircle className="w-4 h-4" />
@@ -157,43 +262,63 @@ const SolanaWalletContent = ({ onConnectionChange }) => {
               </div>
             </div>
 
-            {/* Balance */}
+            {/* Balances */}
             <div className="space-y-1">
-              <p className="text-purple-200 text-sm">Balance</p>
-              <div className="flex items-center gap-2">
-                <span className="text-white font-mono">
-                  {loading ? (
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                  ) : balance !== null ? (
-                    `${balance.toFixed(4)} SOL`
-                  ) : (
-                    "Unable to fetch"
-                  )}
-                </span>
-                <Button
-                  onClick={fetchBalance}
-                  variant="ghost"
-                  size="sm"
-                  disabled={loading}
-                  className="text-purple-300 hover:bg-purple-700/50"
-                >
-                  <RefreshCw
-                    className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
-                  />
-                </Button>
+              <p className={textClass}>Balance</p>
+              <div className="space-y-2">
+                {/* SOL Balance */}
+                <div className="flex items-center gap-2">
+                  <span className="text-white font-mono">
+                    {loading ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : balance !== null ? (
+                      `${balance.toFixed(4)} SOL`
+                    ) : (
+                      "Unable to fetch SOL"
+                    )}
+                  </span>
+                  <Button
+                    onClick={fetchBalance}
+                    variant="ghost"
+                    size="sm"
+                    disabled={loading}
+                    className={buttonClass}
+                  >
+                    <RefreshCw
+                      className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+                    />
+                  </Button>
+                </div>
+
+                {/* USDC Balance for Devnet */}
+                {network === "devnet" && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-white font-mono">
+                      {loading ? (
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                      ) : usdcBalance !== null ? (
+                        `${usdcBalance.toFixed(2)} USDC`
+                      ) : (
+                        "0.00 USDC"
+                      )}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Network */}
             <div className="space-y-1">
-              <p className="text-purple-200 text-sm">Network</p>
+              <p className={textClass}>Network</p>
               <div className="flex items-center gap-2">
-                <span className="text-green-400">Solana Testnet</span>
+                <span className={networkColorClass}>{networkConfig.name}</span>
                 <a
-                  href={`https://explorer.solana.com/address/${publicKey.toBase58()}?cluster=testnet`}
+                  href={`https://explorer.solana.com/address/${publicKey.toBase58()}?cluster=${
+                    networkConfig.explorerCluster
+                  }`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-purple-300 hover:text-purple-200"
+                  className={linkClass}
                 >
                   <ExternalLink className="w-4 h-4" />
                 </a>
@@ -207,7 +332,7 @@ const SolanaWalletContent = ({ onConnectionChange }) => {
               onClick={fetchBalance}
               variant="outline"
               disabled={loading}
-              className="flex-1 border-purple-400 text-purple-300 hover:bg-purple-700/50"
+              className={buttonOutlineClass}
             >
               {loading ? (
                 <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
@@ -230,12 +355,50 @@ const SolanaWalletContent = ({ onConnectionChange }) => {
     );
   }
 
+  const cardClass =
+    network === "testnet"
+      ? "w-full bg-gradient-to-br from-slate-900/80 to-blue-900/80 border-blue-500/30 text-white"
+      : "w-full bg-gradient-to-br from-slate-900/80 to-purple-900/80 border-purple-500/30 text-white";
+
+  const iconClass =
+    network === "testnet" ? "w-5 h-5 text-blue-400" : "w-5 h-5 text-purple-400";
+
+  const connectingIconClass =
+    network === "testnet"
+      ? "w-5 h-5 animate-spin text-blue-400"
+      : "w-5 h-5 animate-spin text-purple-400";
+
+  const connectingTextClass =
+    network === "testnet" ? "text-blue-200" : "text-purple-200";
+
+  const buttonClass =
+    network === "testnet"
+      ? "!bg-gradient-to-r !from-blue-500 !to-slate-500 hover:!from-blue-600 hover:!to-slate-600 !border-none !rounded-lg !px-6 !py-3 !text-white !font-medium !transition-all !duration-200"
+      : "!bg-gradient-to-r !from-purple-500 !to-slate-500 hover:!from-purple-600 hover:!to-slate-600 !border-none !rounded-lg !px-6 !py-3 !text-white !font-medium !transition-all !duration-200";
+
+  const instructionClass =
+    network === "testnet"
+      ? "bg-blue-900/20 border border-blue-500/30 rounded-lg p-3"
+      : "bg-purple-900/20 border border-purple-500/30 rounded-lg p-3";
+
+  const instructionTextClass =
+    network === "testnet"
+      ? "text-blue-200 text-sm font-medium"
+      : "text-purple-200 text-sm font-medium";
+
+  const instructionListClass =
+    network === "testnet"
+      ? "text-blue-300 text-sm space-y-1"
+      : "text-purple-300 text-sm space-y-1";
+
   return (
-    <Card className="w-full bg-gradient-to-br from-slate-900/80 to-purple-900/80 border-purple-500/30 text-white">
+    <Card className={cardClass}>
       <CardHeader>
         <div className="flex items-center gap-2">
-          <Wallet className="w-5 h-5 text-purple-400" />
-          <CardTitle className="text-lg">Connect Solana Wallet</CardTitle>
+          <Wallet className={iconClass} />
+          <CardTitle className="text-lg">
+            Connect to {networkConfig.name}
+          </CardTitle>
         </div>
       </CardHeader>
 
@@ -245,8 +408,8 @@ const SolanaWalletContent = ({ onConnectionChange }) => {
           <div className="flex items-center justify-center gap-2">
             {connecting ? (
               <>
-                <RefreshCw className="w-5 h-5 animate-spin text-purple-400" />
-                <span className="text-purple-200">Connecting...</span>
+                <RefreshCw className={connectingIconClass} />
+                <span className={connectingTextClass}>Connecting...</span>
               </>
             ) : (
               <>
@@ -256,33 +419,39 @@ const SolanaWalletContent = ({ onConnectionChange }) => {
             )}
           </div>
           <p className="text-slate-400 text-sm">
-            Connect your Phantom wallet to interact with Solana testnet
+            Connect your Phantom wallet to {networkConfig.name.toLowerCase()}{" "}
+            for {networkConfig.currency} payments
           </p>
         </div>
 
         {/* Connect Button */}
         <div className="flex justify-center">
-          <WalletMultiButton className="!bg-gradient-to-r !from-purple-500 !to-blue-500 hover:!from-purple-600 hover:!to-blue-600 !border-none !rounded-lg !px-6 !py-3 !text-white !font-medium !transition-all !duration-200" />
+          <WalletMultiButton className={buttonClass} />
         </div>
 
         {/* Instructions */}
-        <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3">
+        <div className={instructionClass}>
           <div className="space-y-2">
-            <p className="text-blue-200 text-sm font-medium">
-              🦄 Connect with Phantom Wallet
+            <p className={instructionTextClass}>
+              🦄 Connect to {networkConfig.name}
             </p>
-            <ul className="text-blue-300 text-sm space-y-1">
+            <ul className={instructionListClass}>
               <li>• Install Phantom wallet extension</li>
-              <li>• Switch to Solana Testnet network</li>
-              <li>• Get testnet SOL from faucet if needed</li>
+              <li>• Switch to {networkConfig.name} network</li>
+              {network === "devnet" && <li>• Get USDC tokens for payments</li>}
+              {network === "testnet" && (
+                <li>• Get testnet SOL from faucet if needed</li>
+              )}
             </ul>
           </div>
         </div>
 
         {/* Network Info */}
         <div className="text-center space-y-1">
-          <p className="text-slate-400 text-xs">Network: Solana Testnet</p>
-          <p className="text-slate-500 text-xs">RPC: {SOLANA_TESTNET_RPC}</p>
+          <p className="text-slate-400 text-xs">
+            Network: {networkConfig.name}
+          </p>
+          <p className="text-slate-500 text-xs">RPC: {networkConfig.rpc}</p>
         </div>
       </CardContent>
     </Card>
@@ -290,7 +459,7 @@ const SolanaWalletContent = ({ onConnectionChange }) => {
 };
 
 // Main Solana Wallet Provider Component
-const SolanaWalletConnect = ({ onConnectionChange }) => {
+const SolanaWalletConnect = ({ onConnectionChange, network = "testnet" }) => {
   // Configure supported wallets
   const wallets = useMemo(
     () => [
@@ -300,11 +469,16 @@ const SolanaWalletConnect = ({ onConnectionChange }) => {
     []
   );
 
+  const networkConfig = NETWORK_CONFIG[network];
+
   return (
-    <ConnectionProvider endpoint={SOLANA_TESTNET_RPC}>
+    <ConnectionProvider endpoint={networkConfig.rpc}>
       <WalletProvider wallets={wallets} autoConnect>
         <WalletModalProvider>
-          <SolanaWalletContent onConnectionChange={onConnectionChange} />
+          <SolanaWalletContent
+            onConnectionChange={onConnectionChange}
+            network={network}
+          />
         </WalletModalProvider>
       </WalletProvider>
     </ConnectionProvider>

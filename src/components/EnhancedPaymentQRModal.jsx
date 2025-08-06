@@ -8,7 +8,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   X,
   QrCode,
@@ -48,16 +47,27 @@ const EnhancedPaymentQRModal = ({
   const [arQRCodes, setArQRCodes] = useState([]);
   const [showARView, setShowARView] = useState(false);
   const [isGeneratingAR, setIsGeneratingAR] = useState(false);
-  const [selectedNetwork, setSelectedNetwork] = useState("blockdag"); // "blockdag", "solana", or "morph"
+  const [selectedNetwork, setSelectedNetwork] = useState("blockdag"); // "blockdag", "solana-testnet", "solana-devnet", or "morph"
 
   // Generate payment QR code data
   useEffect(() => {
     if (isOpen && agent) {
       const generatePayment = async () => {
-        const payment = await generatePaymentData(agent, selectedNetwork);
-        setPaymentData(payment);
-        setTimeLeft(300);
-        setShowARView(false); // Reset AR view when network changes
+        try {
+          const payment = await generatePaymentData(agent, selectedNetwork);
+          setPaymentData(payment);
+          setTimeLeft(300);
+          setShowARView(false); // Reset AR view when network changes
+        } catch (error) {
+          console.error("Error generating payment data:", error);
+          // Set fallback payment data to prevent blank page
+          setPaymentData({
+            qrData: "error://payment-generation-failed",
+            networkName: "Error",
+            amount: 0,
+            error: error.message,
+          });
+        }
       };
       generatePayment();
     }
@@ -82,94 +92,138 @@ const EnhancedPaymentQRModal = ({
 
   // Generate payment data with BlockDAG configuration
   const generatePaymentData = async (agent, network = "blockdag") => {
-    if (network === "solana") {
-      // Generate Solana payment data
-      const solanaPayment = solanaPaymentService.generateSolanaAgentPayment(
-        agent,
-        1
+    try {
+      if (network === "solana-testnet") {
+        // Generate Solana Testnet payment data (SOL)
+        solanaPaymentService.switchSolanaNetwork("TESTNET");
+        const solanaPayment = solanaPaymentService.generateSolanaAgentPayment(
+          agent,
+          1,
+          "SOL",
+          "TESTNET"
+        );
+        const qrData =
+          solanaPaymentService.generateSolanaPaymentQRData(solanaPayment);
+
+        // Test and validate the QR code
+        const testResult = solanaPaymentService.testSolanaPayQR(
+          agent,
+          "SOL",
+          "TESTNET"
+        );
+        console.log("🧪 Solana Testnet QR Test Result:", testResult);
+
+        return {
+          ...solanaPayment,
+          qrData,
+          transactionId: `sol_testnet_tx_${Date.now()}_${agent.id}`,
+          explorerUrl: `https://explorer.solana.com/?cluster=testnet`,
+          networkName: "Solana Testnet",
+          network: "solana-testnet",
+        };
+      } else if (network === "solana-devnet") {
+        // Generate Solana Devnet payment data (USDC)
+        console.log("🔍 Debug: About to generate Solana Devnet payment");
+        console.log("- Agent object:", agent);
+        console.log("- Agent ID:", agent?.id);
+        console.log("- Agent name:", agent?.name);
+        console.log("- Agent title:", agent?.title);
+
+        solanaPaymentService.switchSolanaNetwork("DEVNET");
+        const solanaPayment = solanaPaymentService.generateSolanaAgentPayment(
+          agent,
+          1, // 1 USDC
+          "USDC",
+          "DEVNET"
+        );
+        const qrData =
+          solanaPaymentService.generateSolanaPaymentQRData(solanaPayment);
+
+        // Test and validate the QR code
+        const testResult = solanaPaymentService.testSolanaPayQR(
+          agent,
+          "USDC",
+          "DEVNET"
+        );
+        console.log("🧪 Solana Devnet QR Test Result:", testResult);
+
+        return {
+          ...solanaPayment,
+          qrData,
+          transactionId: `sol_devnet_tx_${Date.now()}_${agent.id}`,
+          explorerUrl: `https://explorer.solana.com/?cluster=devnet`,
+          networkName: "Solana Devnet",
+          network: "solana-devnet",
+        };
+      } else if (network === "morph") {
+        // Generate Morph Holesky payment data (async to get connected wallet)
+        const morphPayment =
+          await morphPaymentService.generateMorphAgentPayment(agent, 1);
+        const qrData =
+          morphPaymentService.generateMorphPaymentQRData(morphPayment);
+
+        // Generate all QR formats for testing
+        const allFormats =
+          morphPaymentService.generateMorphQRFormats(morphPayment);
+        console.log("🧪 Testing all QR formats:");
+        console.log(
+          "📱 Try these in your wallet if the main one doesn't work:"
+        );
+        console.log("1. Wallet-friendly:", allFormats.walletFriendly);
+        console.log("2. Standard EIP-681:", allFormats.standard);
+        console.log("3. Basic format:", allFormats.basic);
+        console.log("4. Function call:", allFormats.functionCall);
+
+        // Test and validate the QR code
+        const testResult = await morphPaymentService.testMorphPaymentQR(agent);
+        console.log("🧪 Morph QR Test Result:", testResult);
+
+        // Generate comprehensive test report
+        morphPaymentService.generateMorphQRTestReport(agent).then((report) => {
+          console.log("📋 Morph Test Report:", report);
+        });
+
+        return {
+          ...morphPayment,
+          qrData,
+          transactionId: `morph_tx_${Date.now()}_${agent.id}`,
+          explorerUrl: `https://explorer-holesky.morphl2.io`,
+          networkName: "Morph Holesky",
+          network: "morph",
+        };
+      } else {
+        // Generate BlockDAG payment data (original)
+        const amount = "50"; // 50 USBDG+ tokens
+        const integerAmount = Math.floor(Number(amount));
+
+        const paymentInfo = {
+          amount: integerAmount,
+          recipient:
+            agent.wallet_address ||
+            "0x1234567890123456789012345678901234567890",
+          contractAddress: USBDGToken.address,
+          chainId: "1043", // BlockDAG Primordial Testnet
+          agentId: agent.id,
+          agentName: agent.name || agent.title || `Agent-${agent.id}`,
+        };
+
+        // Generate EIP-681 format QR data
+        const qrData = qrCodeService.generatePaymentQRData(paymentInfo);
+
+        return {
+          ...paymentInfo,
+          qrData,
+          transactionId: `tx_${Date.now()}_${agent.id}`,
+          explorerUrl: `https://test-explorer.primordial.bdagscan.com/`,
+          networkName: "BlockDAG Primordial Testnet",
+          network: "blockdag",
+        };
+      }
+    } catch (error) {
+      console.error("❌ Error generating payment data:", error);
+      throw new Error(
+        `Failed to generate payment data for ${network}: ${error.message}`
       );
-      const qrData =
-        solanaPaymentService.generateSolanaPaymentQRData(solanaPayment);
-
-      // Test and validate the QR code
-      const testResult = solanaPaymentService.testSolanaPayQR(agent);
-      console.log("🧪 Solana QR Test Result:", testResult);
-
-      // Generate comprehensive test report
-      solanaPaymentService.generateQRTestReport(agent).then((report) => {
-        console.log("📋 Comprehensive Test Report:", report);
-      });
-
-      return {
-        ...solanaPayment,
-        qrData,
-        transactionId: `sol_tx_${Date.now()}_${agent.id}`,
-        explorerUrl: `https://explorer.solana.com/?cluster=testnet`,
-        networkName: "Solana Testnet",
-        network: "solana",
-      };
-    } else if (network === "morph") {
-      // Generate Morph Holesky payment data (async to get connected wallet)
-      const morphPayment = await morphPaymentService.generateMorphAgentPayment(
-        agent,
-        1
-      );
-      const qrData =
-        morphPaymentService.generateMorphPaymentQRData(morphPayment);
-
-      // Generate all QR formats for testing
-      const allFormats =
-        morphPaymentService.generateMorphQRFormats(morphPayment);
-      console.log("🧪 Testing all QR formats:");
-      console.log("📱 Try these in your wallet if the main one doesn't work:");
-      console.log("1. Wallet-friendly:", allFormats.walletFriendly);
-      console.log("2. Standard EIP-681:", allFormats.standard);
-      console.log("3. Basic format:", allFormats.basic);
-      console.log("4. Function call:", allFormats.functionCall);
-
-      // Test and validate the QR code
-      const testResult = await morphPaymentService.testMorphPaymentQR(agent);
-      console.log("🧪 Morph QR Test Result:", testResult);
-
-      // Generate comprehensive test report
-      morphPaymentService.generateMorphQRTestReport(agent).then((report) => {
-        console.log("📋 Morph Test Report:", report);
-      });
-
-      return {
-        ...morphPayment,
-        qrData,
-        transactionId: `morph_tx_${Date.now()}_${agent.id}`,
-        explorerUrl: `https://explorer-holesky.morphl2.io`,
-        networkName: "Morph Holesky",
-        network: "morph",
-      };
-    } else {
-      // Generate BlockDAG payment data (original)
-      const amount = "50"; // 50 USBDG+ tokens
-      const integerAmount = Math.floor(Number(amount));
-
-      const paymentInfo = {
-        amount: integerAmount,
-        recipient:
-          agent.wallet_address || "0x1234567890123456789012345678901234567890",
-        contractAddress: USBDGToken.address,
-        chainId: "1043", // BlockDAG Primordial Testnet
-        agentId: agent.id,
-        agentName: agent.name,
-      };
-
-      // Generate EIP-681 format QR data
-      const qrData = qrCodeService.generatePaymentQRData(paymentInfo);
-
-      return {
-        ...paymentInfo,
-        qrData,
-        transactionId: `tx_${Date.now()}_${agent.id}`,
-        explorerUrl: `https://test-explorer.primordial.bdagscan.com/`,
-        networkName: "BlockDAG Primordial Testnet",
-        network: "blockdag",
-      };
     }
   };
 
@@ -385,7 +439,8 @@ const EnhancedPaymentQRModal = ({
               <div className="flex items-center gap-2">
                 <Bot className="w-5 h-5 text-purple-400" />
                 <CardTitle className="text-lg">
-                  Payment to {agent?.name}
+                  Payment to{" "}
+                  {agent?.name || agent?.title || `Agent-${agent?.id}`}
                 </CardTitle>
               </div>
               <Button
@@ -412,35 +467,58 @@ const EnhancedPaymentQRModal = ({
                 </span>
               </div>
 
-              <Tabs
-                value={selectedNetwork}
-                onValueChange={setSelectedNetwork}
-                className="w-full"
-              >
-                <TabsList className="grid w-full grid-cols-3 bg-slate-800/50">
-                  <TabsTrigger
-                    value="blockdag"
-                    className="flex items-center gap-2"
+              <div className="space-y-3">
+                <div className="grid w-full grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setSelectedNetwork("blockdag")}
+                    className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
+                      selectedNetwork === "blockdag"
+                        ? "bg-purple-500/20 border-purple-500 text-purple-200"
+                        : "bg-slate-800/50 border-slate-600 text-slate-300 hover:bg-slate-700/50"
+                    }`}
                   >
                     <Zap className="w-4 h-4" />
-                    BlockDAG
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="solana"
-                    className="flex items-center gap-2"
-                  >
-                    <Wallet className="w-4 h-4" />
-                    Solana
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="morph"
-                    className="flex items-center gap-2"
+                    <span className="text-sm">BlockDAG</span>
+                  </button>
+                  <button
+                    onClick={() => setSelectedNetwork("morph")}
+                    className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
+                      selectedNetwork === "morph"
+                        ? "bg-green-500/20 border-green-500 text-green-200"
+                        : "bg-slate-800/50 border-slate-600 text-slate-300 hover:bg-slate-700/50"
+                    }`}
                   >
                     <Network className="w-4 h-4" />
-                    Morph
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
+                    <span className="text-sm">Morph</span>
+                  </button>
+                </div>
+
+                {/* Solana Networks - Second Row */}
+                <div className="grid w-full grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setSelectedNetwork("solana-testnet")}
+                    className={`flex items-center gap-2 p-2 rounded-lg border transition-all ${
+                      selectedNetwork === "solana-testnet"
+                        ? "bg-blue-500/20 border-blue-500 text-blue-200"
+                        : "bg-slate-800/50 border-slate-600 text-slate-300 hover:bg-slate-700/50"
+                    }`}
+                  >
+                    <Wallet className="w-3 h-3" />
+                    <span className="text-xs">Solana (SOL)</span>
+                  </button>
+                  <button
+                    onClick={() => setSelectedNetwork("solana-devnet")}
+                    className={`flex items-center gap-2 p-2 rounded-lg border transition-all ${
+                      selectedNetwork === "solana-devnet"
+                        ? "bg-blue-500/20 border-blue-500 text-blue-200"
+                        : "bg-slate-800/50 border-slate-600 text-slate-300 hover:bg-slate-700/50"
+                    }`}
+                  >
+                    <Wallet className="w-3 h-3" />
+                    <span className="text-xs">Solana (USDC)</span>
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Payment Info */}
@@ -448,8 +526,10 @@ const EnhancedPaymentQRModal = ({
               <div className="flex justify-between">
                 <span className="text-slate-400">Amount:</span>
                 <span className="text-white font-semibold">
-                  {selectedNetwork === "solana"
+                  {selectedNetwork === "solana-testnet"
                     ? `${paymentData?.amount} SOL`
+                    : selectedNetwork === "solana-devnet"
+                    ? `${paymentData?.amount} USDC`
                     : selectedNetwork === "morph"
                     ? `${paymentData?.amount} USDT`
                     : `${paymentData?.amount} USBDG+`}
@@ -553,7 +633,8 @@ const EnhancedPaymentQRModal = ({
               {/* Network-specific Instructions */}
               <div
                 className={`rounded-lg p-3 ${
-                  selectedNetwork === "solana"
+                  selectedNetwork === "solana-testnet" ||
+                  selectedNetwork === "solana-devnet"
                     ? "bg-blue-900/20 border border-blue-500/30"
                     : selectedNetwork === "morph"
                     ? "bg-green-900/20 border border-green-500/30"
@@ -563,29 +644,33 @@ const EnhancedPaymentQRModal = ({
                 <div className="space-y-2">
                   <p
                     className={`text-sm font-medium ${
-                      selectedNetwork === "solana"
+                      selectedNetwork === "solana-testnet" ||
+                      selectedNetwork === "solana-devnet"
                         ? "text-blue-200"
                         : selectedNetwork === "morph"
                         ? "text-green-200"
                         : "text-purple-200"
                     }`}
                   >
-                    {selectedNetwork === "solana"
-                      ? "🦄 Solana Payment Instructions"
+                    {selectedNetwork === "solana-testnet"
+                      ? "🦄 Solana Testnet Payment Instructions (SOL)"
+                      : selectedNetwork === "solana-devnet"
+                      ? "💰 Solana Devnet Payment Instructions (USDC)"
                       : selectedNetwork === "morph"
                       ? "🦊 Morph Holesky Payment Instructions"
                       : "⚡ BlockDAG Payment Instructions"}
                   </p>
                   <ul
                     className={`text-xs space-y-1 ${
-                      selectedNetwork === "solana"
+                      selectedNetwork === "solana-testnet" ||
+                      selectedNetwork === "solana-devnet"
                         ? "text-blue-300"
                         : selectedNetwork === "morph"
                         ? "text-green-300"
                         : "text-purple-300"
                     }`}
                   >
-                    {selectedNetwork === "solana" ? (
+                    {selectedNetwork === "solana-testnet" ? (
                       <>
                         <li>
                           • Use Phantom wallet or Solana-compatible wallet
@@ -593,6 +678,18 @@ const EnhancedPaymentQRModal = ({
                         <li>• Connect to Solana Testnet network</li>
                         <li>• Ensure you have SOL for transaction fees</li>
                         <li>• Scan with Solana Pay compatible app</li>
+                      </>
+                    ) : selectedNetwork === "solana-devnet" ? (
+                      <>
+                        <li>
+                          • Use Phantom wallet or Solana-compatible wallet
+                        </li>
+                        <li>• Connect to Solana Devnet network</li>
+                        <li>• Ensure you have USDC tokens for payment</li>
+                        <li>
+                          • USDC Address:
+                          4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU
+                        </li>
                       </>
                     ) : selectedNetwork === "morph" ? (
                       <>

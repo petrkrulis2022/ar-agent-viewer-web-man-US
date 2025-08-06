@@ -12,6 +12,12 @@ import QRScannerOverlay from "./QRScannerOverlay";
 import ARQRCodeFixed from "./ARQRCodeFixed";
 import arQRManager from "../services/arQRManager";
 
+// Unique ID generator to avoid React key collisions
+let notificationIdCounter = 0;
+const generateUniqueId = () => {
+  return `${Date.now()}_${++notificationIdCounter}`;
+};
+
 const AR3DScene = ({
   agents = [],
   onAgentClick,
@@ -97,7 +103,7 @@ const AR3DScene = ({
 
     // Show notification
     const notification = {
-      id: Date.now(),
+      id: generateUniqueId(),
       message: `AR QR Code created for ${arQRCode.agent?.name}`,
       type: "success",
       timestamp: new Date().toISOString(),
@@ -173,7 +179,7 @@ const AR3DScene = ({
 
     // Add notification about scannable QRs
     const scanNotification = {
-      id: Date.now(),
+      id: generateUniqueId(),
       message: `${qrCodes.length} QR Code${
         qrCodes.length > 1 ? "s" : ""
       } ready to scan!`,
@@ -588,7 +594,7 @@ const AR3DScene = ({
               // Handle payment
               if (scanData.qrObject?.agent) {
                 const paymentNotification = {
-                  id: Date.now(),
+                  id: generateUniqueId(),
                   message: `Payment QR scanned for ${scanData.qrObject.agent.name}`,
                   type: "payment",
                   scanData: scanData,

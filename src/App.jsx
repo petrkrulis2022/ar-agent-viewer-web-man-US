@@ -15,7 +15,11 @@ import NotificationProvider, {
   useNotifications,
   createGlobalNotificationFunctions,
 } from "./components/NotificationProvider";
+import databaseInspector from "./utils/databaseInspector";
 import "./App.css";
+
+// Make database inspector available globally for debugging
+window.databaseInspector = databaseInspector;
 
 function AppContent() {
   const navigate = useNavigate();

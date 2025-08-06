@@ -26,6 +26,17 @@ const UnifiedWalletConnect = ({ onConnectionChange }) => {
     publicKey: null,
     network: null,
     balance: null,
+    testnet: {
+      isConnected: false,
+      publicKey: null,
+      balance: null,
+    },
+    devnet: {
+      isConnected: false,
+      publicKey: null,
+      balance: null,
+      usdcBalance: null,
+    },
   });
   const [morphConnection, setMorphConnection] = useState({
     isConnected: false,
@@ -68,13 +79,36 @@ const UnifiedWalletConnect = ({ onConnectionChange }) => {
 
   const handleSolanaConnection = useCallback(
     (connection) => {
-      setSolanaConnection(connection);
+      // Update the specific network connection
+      setSolanaConnection((prev) => {
+        const updated = {
+          ...prev,
+          [connection.networkType]: {
+            isConnected: connection.isConnected,
+            publicKey: connection.publicKey,
+            balance: connection.balance,
+            usdcBalance: connection.usdcBalance,
+            wallet: connection.wallet,
+            network: connection.network,
+          },
+        };
+
+        // Update the main connection status
+        updated.isConnected =
+          updated.testnet.isConnected || updated.devnet.isConnected;
+        updated.network = connection.network;
+
+        return updated;
+      });
 
       // Notify parent with combined connection status using refs for latest state
       if (onConnectionChange) {
         onConnectionChange({
           blockdag: blockdagRef.current,
-          solana: connection,
+          solana: {
+            ...connection,
+            hasMultiNetwork: true,
+          },
           morph: morphRef.current,
           hasAnyConnection:
             blockdagRef.current.isConnected ||
@@ -151,28 +185,53 @@ const UnifiedWalletConnect = ({ onConnectionChange }) => {
 
               {/* Solana Status */}
               <div className="space-y-1">
-                <p className="text-slate-400">Solana Network</p>
-                <div className="flex items-center gap-2">
-                  {solanaConnection.isConnected ? (
-                    <>
+                <p className="text-slate-400">Solana Networks</p>
+                <div className="flex flex-col gap-1">
+                  {solanaConnection.testnet.isConnected ? (
+                    <div className="flex items-center gap-2">
                       <Badge
                         variant="outline"
                         className="border-blue-400 text-blue-400"
                       >
-                        Connected
+                        Testnet
                       </Badge>
                       <span className="text-blue-300 text-xs">
-                        {solanaConnection.balance !== null
-                          ? `${solanaConnection.balance.toFixed(2)} SOL`
-                          : "Testnet"}
+                        {solanaConnection.testnet.balance !== null
+                          ? `${solanaConnection.testnet.balance.toFixed(2)} SOL`
+                          : "Connected"}
                       </span>
-                    </>
+                    </div>
                   ) : (
                     <Badge
                       variant="outline"
                       className="border-slate-500 text-slate-500"
                     >
-                      Not Connected
+                      Testnet: Not Connected
+                    </Badge>
+                  )}
+
+                  {solanaConnection.devnet.isConnected ? (
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant="outline"
+                        className="border-purple-400 text-purple-400"
+                      >
+                        Devnet
+                      </Badge>
+                      <span className="text-purple-300 text-xs">
+                        {solanaConnection.devnet.usdcBalance !== null
+                          ? `${solanaConnection.devnet.usdcBalance.toFixed(
+                              2
+                            )} USDC`
+                          : "Connected"}
+                      </span>
+                    </div>
+                  ) : (
+                    <Badge
+                      variant="outline"
+                      className="border-slate-500 text-slate-500"
+                    >
+                      Devnet: Not Connected
                     </Badge>
                   )}
                 </div>
@@ -281,13 +340,52 @@ const UnifiedWalletConnect = ({ onConnectionChange }) => {
         <TabsContent value="solana" className="mt-4 space-y-4">
           <div className="flex items-center gap-2 mb-4">
             <Wallet className="w-5 h-5 text-blue-400" />
-            <h3 className="text-lg font-medium text-white">Solana Wallet</h3>
+            <h3 className="text-lg font-medium text-white">Solana Wallets</h3>
             <Badge variant="outline" className="border-blue-400 text-blue-400">
-              Secondary Network
+              Multi-Network
             </Badge>
           </div>
 
-          <SolanaWalletConnect onConnectionChange={handleSolanaConnection} />
+          {/* Solana Network Selector */}
+          <div className="space-y-4">
+            {/* Solana Testnet */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                <span className="text-blue-200 text-sm font-medium">
+                  Solana Testnet (SOL Payments)
+                </span>
+              </div>
+              <SolanaWalletConnect
+                network="testnet"
+                onConnectionChange={(connection) => {
+                  handleSolanaConnection({
+                    ...connection,
+                    networkType: "testnet",
+                  });
+                }}
+              />
+            </div>
+
+            {/* Solana Devnet */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                <span className="text-purple-200 text-sm font-medium">
+                  Solana Devnet (USDC Payments)
+                </span>
+              </div>
+              <SolanaWalletConnect
+                network="devnet"
+                onConnectionChange={(connection) => {
+                  handleSolanaConnection({
+                    ...connection,
+                    networkType: "devnet",
+                  });
+                }}
+              />
+            </div>
+          </div>
 
           {/* Solana Info */}
           <Card className="bg-blue-900/20 border-blue-500/30">
@@ -296,24 +394,39 @@ const UnifiedWalletConnect = ({ onConnectionChange }) => {
                 <Info className="w-4 h-4 text-blue-400 mt-0.5" />
                 <div className="space-y-1">
                   <p className="text-blue-200 text-sm font-medium">
-                    Alternative Payment Method
+                    Dual Network Support
                   </p>
                   <p className="text-blue-300 text-xs">
-                    Connect Phantom wallet for Solana-based transactions and
-                    future integrations
+                    Connect to both Testnet (SOL) and Devnet (USDC) for
+                    different payment options
                   </p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="text-blue-400 text-xs">
-                      Network: Solana Testnet
-                    </span>
-                    <a
-                      href="https://explorer.solana.com/?cluster=testnet"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-300 hover:text-blue-200"
-                    >
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
+                  <div className="flex flex-col gap-1 mt-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-blue-400 text-xs">
+                        Testnet: SOL payments
+                      </span>
+                      <a
+                        href="https://explorer.solana.com/?cluster=testnet"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-300 hover:text-blue-200"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-purple-400 text-xs">
+                        Devnet: USDC payments
+                      </span>
+                      <a
+                        href="https://explorer.solana.com/?cluster=devnet"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-purple-300 hover:text-purple-200"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
                   </div>
                 </div>
               </div>

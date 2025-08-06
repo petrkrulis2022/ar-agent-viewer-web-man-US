@@ -5,19 +5,80 @@ import {
   SystemProgram,
   LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
+import {
+  createTransferInstruction,
+  getAssociatedTokenAddress,
+  TOKEN_PROGRAM_ID,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+} from "@solana/spl-token";
 
-// Solana Testnet Configuration
-const SOLANA_TESTNET_RPC = "https://api.testnet.solana.com";
-const connection = new Connection(SOLANA_TESTNET_RPC, "confirmed");
+// Solana Network Configurations
+const SOLANA_NETWORKS = {
+  TESTNET: {
+    name: "Solana Testnet",
+    rpc: "https://api.testnet.solana.com",
+    explorerUrl: "https://explorer.solana.com/?cluster=testnet",
+  },
+  DEVNET: {
+    name: "Solana Devnet",
+    rpc: "https://api.devnet.solana.com",
+    explorerUrl: "https://explorer.solana.com/?cluster=devnet",
+  },
+};
 
-// Testnet validation
-export const validateTestnetConnection = async () => {
+// USDC Token Configuration for Devnet
+const USDC_DEVNET_CONFIG = {
+  mintAddress: "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+  symbol: "USDC",
+  decimals: 6,
+  name: "USD Coin (Devnet)",
+};
+
+// Default to Testnet (backward compatibility)
+let currentNetwork = "TESTNET";
+let connection = new Connection(SOLANA_NETWORKS.TESTNET.rpc, "confirmed");
+
+// Switch between networks
+export const switchSolanaNetwork = (networkKey) => {
+  if (!SOLANA_NETWORKS[networkKey]) {
+    throw new Error(`Unsupported network: ${networkKey}`);
+  }
+
+  currentNetwork = networkKey;
+  connection = new Connection(SOLANA_NETWORKS[networkKey].rpc, "confirmed");
+  console.log(`🔄 Switched to ${SOLANA_NETWORKS[networkKey].name}`);
+  return SOLANA_NETWORKS[networkKey];
+};
+
+// Get current network info
+export const getCurrentNetwork = () => {
+  return {
+    key: currentNetwork,
+    ...SOLANA_NETWORKS[currentNetwork],
+  };
+};
+
+// Testnet/Devnet validation
+export const validateNetworkConnection = async (
+  networkKey = currentNetwork
+) => {
   try {
-    const version = await connection.getVersion();
-    console.log("✅ Solana testnet connection successful:", version);
+    const testConnection =
+      networkKey !== currentNetwork
+        ? new Connection(SOLANA_NETWORKS[networkKey].rpc, "confirmed")
+        : connection;
+
+    const version = await testConnection.getVersion();
+    console.log(
+      `✅ ${SOLANA_NETWORKS[networkKey].name} connection successful:`,
+      version
+    );
     return true;
   } catch (error) {
-    console.error("❌ Solana testnet connection failed:", error);
+    console.error(
+      `❌ ${SOLANA_NETWORKS[networkKey].name} connection failed:`,
+      error
+    );
     return false;
   }
 };
@@ -31,15 +92,23 @@ export const SOLANA_PAYMENT_STATUS = {
   CANCELLED: "cancelled",
 };
 
-// Create Solana payment QR data
+// Create Solana payment QR data (supports both SOL and SPL tokens)
 export const generateSolanaPaymentQRData = (paymentInfo) => {
-  const { amount, recipient, memo } = paymentInfo;
+  const {
+    amount,
+    recipient,
+    memo,
+    tokenMint = null,
+    network = currentNetwork,
+  } = paymentInfo;
 
   // Validate inputs
   console.log("🔍 Input validation for Solana QR generation:");
   console.log("- Recipient:", recipient);
   console.log("- Amount:", amount, typeof amount);
   console.log("- Memo:", memo);
+  console.log("- Token Mint:", tokenMint || "Native SOL");
+  console.log("- Network:", network);
 
   // Validate recipient address
   if (!isValidSolanaAddress(recipient)) {
@@ -47,31 +116,82 @@ export const generateSolanaPaymentQRData = (paymentInfo) => {
     throw new Error("Invalid recipient address");
   }
 
-  // Use decimal amount (like Google example) for better wallet compatibility
-  const decimalAmount = Number(amount).toFixed(1); // e.g., "1.0" instead of "1"
+  // Validate token mint if provided
+  if (tokenMint && !isValidSolanaAddress(tokenMint)) {
+    console.error("❌ Invalid token mint address:", tokenMint);
+    throw new Error("Invalid token mint address");
+  }
+
+  // Use decimal amount for better wallet compatibility
+  const decimalAmount = Number(amount).toFixed(tokenMint ? 6 : 1); // 6 decimals for USDC, 1 for SOL
   console.log("- Decimal amount:", decimalAmount);
 
-  // Create Solana Pay URL format (following Google's example format)
-  // Format: solana:<recipient>?amount=<amount>&label=<label>&message=<message>
-  // NOTE: No token address needed for native SOL transfers
-  let qrData = `solana:${recipient}?amount=${decimalAmount}`;
+  // Create Solana Pay URL format
+  let qrData = `solana:${recipient}`;
 
-  // Add label parameter (similar to Google example)
-  qrData += `&label=AR Agent Payment`;
+  // Add SPL token parameter if it's a token transfer
+  if (tokenMint) {
+    qrData += `?spl-token=${tokenMint}`;
+    qrData += `&amount=${decimalAmount}`;
+  } else {
+    qrData += `?amount=${decimalAmount}`;
+  }
 
-  // Add message parameter (similar to Google example)
+  // Add label parameter
+  console.log("🔍 Debug: About to define tokenSymbol");
+  console.log("- tokenMint:", tokenMint);
+  console.log(
+    "- USDC_DEVNET_CONFIG.mintAddress:",
+    USDC_DEVNET_CONFIG.mintAddress
+  );
+  console.log(
+    "- tokenMint === USDC_DEVNET_CONFIG.mintAddress:",
+    tokenMint === USDC_DEVNET_CONFIG.mintAddress
+  );
+
+  const tokenSymbol = tokenMint
+    ? tokenMint === USDC_DEVNET_CONFIG.mintAddress
+      ? "USDC"
+      : "Token"
+    : "SOL";
+
+  console.log("✅ tokenSymbol defined as:", tokenSymbol);
+  qrData += `&label=AR Agent ${tokenSymbol} Payment`;
+
+  // Add message parameter
   if (memo) {
     qrData += `&message=${encodeURIComponent(memo)}`;
   }
 
-  console.log("✅ Generated Solana Pay QR data (native SOL):", qrData);
+  console.log(
+    `✅ Generated Solana Pay QR data (${
+      tokenMint ? "SPL Token" : "native SOL"
+    }):`,
+    qrData
+  );
   console.log("📝 Format validation:");
   console.log("- Protocol: solana:");
   console.log("- Recipient address:", recipient);
-  console.log("- Amount (SOL):", decimalAmount);
-  console.log("- Label: AR Agent Payment");
-  console.log("- Message:", memo);
-  console.log("- No token address (native SOL transfer)");
+  console.log("🔍 Debug: About to use tokenSymbol in console.log");
+  console.log("- tokenSymbol type:", typeof tokenSymbol);
+  console.log("- tokenSymbol value:", tokenSymbol);
+  console.log("- Amount:", decimalAmount, tokenSymbol);
+  console.log("- Token mint:", tokenMint || "None (native SOL)");
+  console.log("🔍 Debug: About to access SOLANA_NETWORKS[network].name");
+  console.log("- network parameter:", network);
+  console.log("- SOLANA_NETWORKS keys:", Object.keys(SOLANA_NETWORKS));
+  console.log("- SOLANA_NETWORKS[network]:", SOLANA_NETWORKS[network]);
+
+  if (SOLANA_NETWORKS[network]) {
+    console.log("- Network:", SOLANA_NETWORKS[network].name);
+  } else {
+    console.log("❌ Network not found, using current network:", currentNetwork);
+    console.log(
+      "- Network:",
+      SOLANA_NETWORKS[currentNetwork]?.name || "Unknown"
+    );
+  }
+
   return qrData;
 };
 
@@ -83,6 +203,56 @@ export const isValidSolanaAddress = (address) => {
   } catch {
     return false;
   }
+};
+
+// Get SPL token balance
+export const getSPLTokenBalance = async (walletAddress, tokenMintAddress) => {
+  try {
+    if (!walletAddress || !tokenMintAddress) return null;
+
+    const walletPublicKey = new PublicKey(walletAddress);
+    const mintPublicKey = new PublicKey(tokenMintAddress);
+
+    // Get associated token account address
+    const associatedTokenAddress = await getAssociatedTokenAddress(
+      mintPublicKey,
+      walletPublicKey
+    );
+
+    // Get token account balance
+    const tokenAccountInfo = await connection.getTokenAccountBalance(
+      associatedTokenAddress
+    );
+
+    if (!tokenAccountInfo.value) {
+      return { balance: 0, decimals: 6, exists: false };
+    }
+
+    return {
+      balance: parseFloat(tokenAccountInfo.value.uiAmount || 0),
+      decimals: tokenAccountInfo.value.decimals,
+      exists: true,
+      raw: tokenAccountInfo.value.amount,
+    };
+  } catch (error) {
+    console.error("Error fetching SPL token balance:", error);
+    return { balance: 0, decimals: 6, exists: false };
+  }
+};
+
+// Get USDC balance specifically
+export const getUSDCBalance = async (
+  walletAddress,
+  network = currentNetwork
+) => {
+  if (network === "DEVNET") {
+    return await getSPLTokenBalance(
+      walletAddress,
+      USDC_DEVNET_CONFIG.mintAddress
+    );
+  }
+  // For testnet, return null as USDC might not be available
+  return { balance: 0, decimals: 6, exists: false };
 };
 
 // Get SOL balance for an address
@@ -98,7 +268,62 @@ export const getSolanaBalance = async (publicKey) => {
   }
 };
 
-// Create a basic SOL transfer transaction
+// Create SPL token transfer transaction
+export const createSPLTokenTransfer = async (
+  fromWallet,
+  toWallet,
+  tokenMintAddress,
+  amount,
+  decimals = 6
+) => {
+  try {
+    const fromPublicKey = new PublicKey(fromWallet);
+    const toPublicKey = new PublicKey(toWallet);
+    const mintPublicKey = new PublicKey(tokenMintAddress);
+
+    // Get associated token addresses
+    const fromTokenAccount = await getAssociatedTokenAddress(
+      mintPublicKey,
+      fromPublicKey
+    );
+
+    const toTokenAccount = await getAssociatedTokenAddress(
+      mintPublicKey,
+      toPublicKey
+    );
+
+    // Convert amount to proper decimals
+    const transferAmount = Math.floor(amount * Math.pow(10, decimals));
+
+    // Get the latest blockhash
+    const { blockhash, lastValidBlockHeight } =
+      await connection.getLatestBlockhash();
+
+    // Create transaction
+    const transaction = new Transaction({
+      feePayer: fromPublicKey,
+      blockhash,
+      lastValidBlockHeight,
+    });
+
+    // Add transfer instruction
+    transaction.add(
+      createTransferInstruction(
+        fromTokenAccount,
+        toTokenAccount,
+        fromPublicKey,
+        transferAmount,
+        [],
+        TOKEN_PROGRAM_ID
+      )
+    );
+
+    return transaction;
+  } catch (error) {
+    console.error("Error creating SPL token transfer:", error);
+    throw error;
+  }
+};
 export const createSolanaTransfer = async (
   fromPubkey,
   toPubkey,
@@ -262,27 +487,65 @@ export const monitorSolanaTransaction = async (
   });
 };
 
-// Generate agent payment data for Solana
-export const generateSolanaAgentPayment = (agent, amount = 1) => {
-  // Use the original valid Solana testnet address - this is a proper base58 address
-  const testRecipient = "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM";
+// Generate agent payment data for Solana (supports both SOL and USDC)
+export const generateSolanaAgentPayment = (
+  agent,
+  amount = 1,
+  paymentType = "SOL",
+  network = "TESTNET"
+) => {
+  // Test recipient addresses for different networks - Updated to use Phantom Account 2
+  const testRecipients = {
+    TESTNET: "EzKD7oiANv7GstQgGsxEEdenfMVKsfFkKiZkjpjzQ1QW", // Phantom Account 2
+    DEVNET: "EzKD7oiANv7GstQgGsxEEdenfMVKsfFkKiZkjpjzQ1QW", // Phantom Account 2
+  };
 
-  console.log("🎯 Generating Solana agent payment:");
-  console.log("- Agent:", agent.name, "(ID:", agent.id + ")");
-  console.log("- Test recipient address:", testRecipient);
-  console.log("- Amount:", amount, "SOL");
-  console.log("- Address validation:", isValidSolanaAddress(testRecipient));
+  const testRecipient = testRecipients[network] || testRecipients.TESTNET;
 
-  return {
+  let paymentData = {
     recipient: testRecipient,
     amount: amount,
-    memo: `Payment to AR Agent: ${agent.name} (ID: ${agent.id})`,
+    memo: `Payment to AR Agent: ${
+      agent.name || agent.title || `Agent-${agent.id}`
+    } (ID: ${agent.id})`,
     agentId: agent.id,
-    agentName: agent.name,
-    network: "Solana Testnet",
-    currency: "SOL",
+    agentName: agent.name || agent.title || `Agent-${agent.id}`,
+    network: network, // Keep the network key (TESTNET/DEVNET) for generateSolanaPaymentQRData
+    networkName: SOLANA_NETWORKS[network].name, // Add human-readable name separately
   };
-}; // Parse Solana Pay QR code
+
+  if (paymentType === "USDC" && network === "DEVNET") {
+    paymentData = {
+      ...paymentData,
+      tokenMint: USDC_DEVNET_CONFIG.mintAddress,
+      currency: "USDC",
+      tokenInfo: USDC_DEVNET_CONFIG,
+    };
+  } else {
+    paymentData = {
+      ...paymentData,
+      currency: "SOL",
+      tokenMint: null,
+    };
+  }
+
+  console.log("🎯 Generating Solana agent payment:");
+  console.log(
+    "- Agent:",
+    agent.name || agent.title || `Agent-${agent.id}`,
+    "(ID:",
+    agent.id + ")"
+  );
+  console.log("- Recipient address (Phantom Account 2):", testRecipient);
+  console.log("- Amount:", amount, paymentData.currency);
+  console.log("- Network:", paymentData.networkName);
+  console.log("- Network Key:", paymentData.network);
+  console.log("- Payment type:", paymentType);
+  console.log("- Token mint:", paymentData.tokenMint || "None (native SOL)");
+  console.log("- Address validation:", isValidSolanaAddress(testRecipient));
+
+  return paymentData;
+}; // Parse Solana Pay QR code (supports both SOL and SPL tokens)
 export const parseSolanaPayQR = (qrData) => {
   try {
     const url = new URL(qrData);
@@ -296,6 +559,7 @@ export const parseSolanaPayQR = (qrData) => {
     const memo =
       url.searchParams.get("memo") || url.searchParams.get("message");
     const label = url.searchParams.get("label");
+    const splToken = url.searchParams.get("spl-token");
 
     // Validate the parsed data
     if (!isValidSolanaAddress(recipient)) {
@@ -306,12 +570,24 @@ export const parseSolanaPayQR = (qrData) => {
       throw new Error("Invalid amount");
     }
 
+    // Validate SPL token if present
+    if (splToken && !isValidSolanaAddress(splToken)) {
+      throw new Error("Invalid SPL token address");
+    }
+
     return {
       recipient,
-      amount: Number(amount), // Keep as decimal number
+      amount: Number(amount),
       memo: memo ? decodeURIComponent(memo) : null,
       label: label ? decodeURIComponent(label) : null,
-      network: "testnet", // Always testnet for our use case
+      tokenMint: splToken || null,
+      isToken: !!splToken,
+      currency: splToken
+        ? splToken === USDC_DEVNET_CONFIG.mintAddress
+          ? "USDC"
+          : "Token"
+        : "SOL",
+      network: getCurrentNetwork().key.toLowerCase(),
     };
   } catch (error) {
     console.error("Error parsing Solana Pay QR:", error);
@@ -319,13 +595,27 @@ export const parseSolanaPayQR = (qrData) => {
   }
 };
 
-// Test QR code generation and parsing
-export const testSolanaPayQR = (agent) => {
-  console.log("🧪 Testing Solana Pay QR generation for agent:", agent.name);
+// Test QR code generation and parsing (enhanced for multi-token support)
+export const testSolanaPayQR = (
+  agent,
+  paymentType = "SOL",
+  network = "TESTNET"
+) => {
+  console.log(
+    `🧪 Testing Solana Pay QR generation for agent: ${
+      agent.name || agent.title || `Agent-${agent.id}`
+    }`
+  );
+  console.log(`Payment type: ${paymentType}, Network: ${network}`);
   console.log("==================================================");
 
   // Generate payment data
-  const paymentData = generateSolanaAgentPayment(agent, 1);
+  const paymentData = generateSolanaAgentPayment(
+    agent,
+    1,
+    paymentType,
+    network
+  );
   console.log("📊 Payment data:", paymentData);
 
   // Generate QR code
@@ -340,11 +630,23 @@ export const testSolanaPayQR = (agent) => {
   console.log("🔍 QR Format Validation:");
   console.log("- Starts with 'solana:':", qrData.startsWith("solana:"));
   console.log("- Contains amount parameter:", qrData.includes("amount="));
-  console.log("- Contains memo parameter:", qrData.includes("memo="));
   console.log(
-    "- No token address (native SOL):",
-    !qrData.includes("spl-token")
+    "- Contains memo parameter:",
+    qrData.includes("memo=") || qrData.includes("message=")
   );
+
+  if (paymentType === "USDC") {
+    console.log(
+      "- Contains SPL token parameter:",
+      qrData.includes("spl-token=")
+    );
+    console.log("- USDC token address:", USDC_DEVNET_CONFIG.mintAddress);
+  } else {
+    console.log(
+      "- Native SOL transfer (no token address):",
+      !qrData.includes("spl-token")
+    );
+  }
 
   // Validate against Solana Pay spec
   const isValidFormat = validateSolanaPayFormat(qrData);
@@ -356,10 +658,12 @@ export const testSolanaPayQR = (agent) => {
     parsed,
     isValid: parsed !== null,
     formatValid: isValidFormat,
+    paymentType,
+    network,
   };
 };
 
-// Validate Solana Pay format
+// Validate Solana Pay format (enhanced for SPL token support)
 export const validateSolanaPayFormat = (qrData) => {
   try {
     // Check if it's a valid Solana Pay URL
@@ -385,11 +689,23 @@ export const validateSolanaPayFormat = (qrData) => {
       return false;
     }
 
+    // Check SPL token parameter if present
+    const splToken = url.searchParams.get("spl-token");
+    if (splToken && !isValidSolanaAddress(splToken)) {
+      console.error("❌ Invalid SPL token address:", splToken);
+      return false;
+    }
+
     console.log("✅ Valid Solana Pay format");
     console.log("- Protocol: solana:");
     console.log("- Recipient:", recipient);
-    console.log("- Amount:", amount, "SOL");
-    console.log("- Type: Native SOL transfer (no token address)");
+    console.log("- Amount:", amount, splToken ? "tokens" : "SOL");
+    if (splToken) {
+      console.log("- Token mint:", splToken);
+      console.log("- Type: SPL Token transfer");
+    } else {
+      console.log("- Type: Native SOL transfer");
+    }
 
     return true;
   } catch (error) {
@@ -398,25 +714,55 @@ export const validateSolanaPayFormat = (qrData) => {
   }
 };
 
-// Check if an address has testnet SOL balance
-export const checkTestnetBalance = async (address) => {
+// Check balance for current network and token type
+export const checkNetworkBalance = async (
+  address,
+  tokenType = "SOL",
+  network = currentNetwork
+) => {
   try {
-    const balance = await getSolanaBalance(address);
-    console.log(`💰 Testnet balance for ${address}:`, balance, "SOL");
-    return balance;
+    if (tokenType === "USDC" && network === "DEVNET") {
+      const balance = await getUSDCBalance(address, network);
+      console.log(
+        `💰 USDC balance for ${address} on ${SOLANA_NETWORKS[network].name}:`,
+        balance.balance,
+        "USDC"
+      );
+      return balance.balance;
+    } else {
+      const balance = await getSolanaBalance(address);
+      console.log(
+        `💰 SOL balance for ${address} on ${SOLANA_NETWORKS[network].name}:`,
+        balance,
+        "SOL"
+      );
+      return balance;
+    }
   } catch (error) {
-    console.error("❌ Error checking testnet balance:", error);
+    console.error("❌ Error checking balance:", error);
     return null;
   }
 };
 
-// Generate a comprehensive QR test report
-export const generateQRTestReport = async (agent) => {
+// Generate a comprehensive QR test report (enhanced for multi-network/token support)
+export const generateQRTestReport = async (
+  agent,
+  paymentType = "SOL",
+  network = "TESTNET"
+) => {
   console.log("📊 COMPREHENSIVE SOLANA QR TEST REPORT");
   console.log("=====================================");
+  console.log(
+    `Payment Type: ${paymentType}, Network: ${SOLANA_NETWORKS[network].name}`
+  );
 
   // Test payment generation
-  const paymentData = generateSolanaAgentPayment(agent, 1);
+  const paymentData = generateSolanaAgentPayment(
+    agent,
+    1,
+    paymentType,
+    network
+  );
   const qrData = generateSolanaPaymentQRData(paymentData);
 
   // Test parsing
@@ -426,27 +772,45 @@ export const generateQRTestReport = async (agent) => {
   const isValidFormat = validateSolanaPayFormat(qrData);
 
   // Check recipient balance
-  const recipientBalance = await checkTestnetBalance(paymentData.recipient);
+  const recipientBalance = await checkNetworkBalance(
+    paymentData.recipient,
+    paymentType,
+    network
+  );
 
   // Test example QR formats
   console.log("📱 QR Format Comparison:");
   console.log("- Our format:      ", qrData);
-  console.log(
-    "- Google example:  ",
-    "solana:9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM?amount=0.1&label=Payment&message=AR%20Agent%20Service"
-  );
+
+  if (paymentType === "USDC") {
+    console.log(
+      "- USDC example:    ",
+      `solana:${paymentData.recipient}?spl-token=${USDC_DEVNET_CONFIG.mintAddress}&amount=10.000000&label=USDC%20Payment&message=AR%20Agent%20Service`
+    );
+  } else {
+    console.log(
+      "- SOL example:     ",
+      `solana:${paymentData.recipient}?amount=0.1&label=Payment&message=AR%20Agent%20Service`
+    );
+  }
+
   console.log(
     "- Solana Pay spec: ",
-    "solana:<recipient>?amount=<amount>&label=<label>&message=<message>"
+    `solana:<recipient>?${
+      paymentType === "USDC" ? "spl-token=<mint>&" : ""
+    }amount=<amount>&label=<label>&message=<message>`
   );
 
   const report = {
-    agent: agent.name,
+    agent: agent.name || agent.title || `Agent-${agent.id}`,
+    paymentType,
+    network: SOLANA_NETWORKS[network].name,
     paymentData,
     qrData,
     parsed,
     isValidFormat,
     recipientBalance,
+    tokenInfo: paymentType === "USDC" ? USDC_DEVNET_CONFIG : null,
     status: isValidFormat && parsed ? "✅ VALID" : "❌ INVALID",
     recommendations: [],
   };
@@ -456,32 +820,80 @@ export const generateQRTestReport = async (agent) => {
     report.recommendations.push("Fix QR format validation");
   }
   if (recipientBalance === null || recipientBalance === 0) {
+    const tokenType =
+      paymentType === "USDC" ? "USDC from faucet" : "SOL from faucet";
     report.recommendations.push(
-      "Recipient address needs testnet SOL from faucet"
+      `Recipient address needs ${network.toLowerCase()} ${tokenType}`
     );
   }
   if (!parsed) {
     report.recommendations.push("Fix QR parsing logic");
+  }
+  if (paymentType === "USDC" && network !== "DEVNET") {
+    report.recommendations.push("USDC only available on Devnet");
   }
 
   console.log("📋 Final Report:", report);
   return report;
 };
 
+// Quick test function for USDC on Devnet
+export const testUSDCDevnetQR = (agent) => {
+  console.log("🧪 TESTING USDC ON SOLANA DEVNET");
+  console.log("================================");
+
+  // Switch to Devnet
+  switchSolanaNetwork("DEVNET");
+
+  // Generate USDC payment
+  const usdcTest = testSolanaPayQR(agent, "USDC", "DEVNET");
+
+  console.log("✅ USDC Devnet QR Test Results:");
+  console.log("- QR Data:", usdcTest.qrData);
+  console.log("- USDC Token Address:", USDC_DEVNET_CONFIG.mintAddress);
+  console.log("- Network:", SOLANA_NETWORKS.DEVNET.name);
+  console.log("- Valid:", usdcTest.isValid);
+
+  return usdcTest;
+};
+
+// Named exports for direct imports
+export { SOLANA_NETWORKS, USDC_DEVNET_CONFIG };
+
 export default {
+  // Network management
+  switchSolanaNetwork,
+  getCurrentNetwork,
+  validateNetworkConnection,
+
+  // Payment QR generation
   generateSolanaPaymentQRData,
   generateSolanaAgentPayment,
+
+  // Address and validation
   isValidSolanaAddress,
+  validateSolanaPayFormat,
+
+  // Balance checking
   getSolanaBalance,
+  getSPLTokenBalance,
+  getUSDCBalance,
+  checkNetworkBalance,
+
+  // Transaction creation
   createSolanaTransfer,
+  createSPLTokenTransfer,
   sendSolanaTransaction,
   getSolanaTransaction,
   monitorSolanaTransaction,
+
+  // QR parsing and testing
   parseSolanaPayQR,
   testSolanaPayQR,
-  validateTestnetConnection,
-  validateSolanaPayFormat,
-  checkTestnetBalance,
   generateQRTestReport,
+
+  // Constants
   SOLANA_PAYMENT_STATUS,
+  SOLANA_NETWORKS,
+  USDC_DEVNET_CONFIG,
 };

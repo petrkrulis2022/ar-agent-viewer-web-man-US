@@ -33,8 +33,12 @@ export class PaymentProcessor {
       // 3. Check wallet connection
       await this.ensureWalletConnection();
 
-      // 4. Switch to correct network if needed
-      await this.switchToNetwork(paymentDetails.chainId);
+      // 4. Switch to correct network if needed (only for Ethereum payments)
+      if (paymentDetails.protocol === "ethereum" && paymentDetails.chainId) {
+        await this.switchToNetwork(paymentDetails.chainId);
+      } else if (paymentDetails.protocol === "solana") {
+        console.log("🔗 Solana payment detected - no network switching needed");
+      }
 
       // 5. Prepare and execute transaction
       const txResult = await this.executeTransaction(paymentDetails);
@@ -72,63 +76,109 @@ export class PaymentProcessor {
       throw new Error("No payment URI found in QR data");
     }
 
-    // Check if it's a valid EIP-681 URI
-    if (!paymentUri.startsWith("ethereum:")) {
-      throw new Error("Invalid payment URI format");
+    // Check if it's a valid payment URI (EIP-681 for Ethereum or Solana Pay format)
+    if (
+      !paymentUri.startsWith("ethereum:") &&
+      !paymentUri.startsWith("solana:")
+    ) {
+      throw new Error(
+        "Invalid payment URI format - must start with 'ethereum:' or 'solana:'"
+      );
     }
 
     console.log("✅ Payment data validation passed");
   }
 
-  // Parse EIP-681 payment URI
+  // Parse payment URI (supports both EIP-681 and Solana Pay formats)
   parsePaymentURI(paymentUri) {
     console.log("🔍 Parsing payment URI:", paymentUri);
 
     try {
-      // Parse EIP-681 format: ethereum:contractAddress@chainId/method?params
-      const uriParts = paymentUri.replace("ethereum:", "").split("@");
-      const contractAddress = uriParts[0];
-
-      if (uriParts.length < 2) {
-        throw new Error("Invalid URI format - missing chain ID");
+      if (paymentUri.startsWith("solana:")) {
+        // Parse Solana Pay format: solana:recipient?amount=X&spl-token=Y&label=Z&message=W
+        return this.parseSolanaPayURI(paymentUri);
+      } else if (paymentUri.startsWith("ethereum:")) {
+        // Parse EIP-681 format: ethereum:contractAddress@chainId/method?params
+        return this.parseEthereumPayURI(paymentUri);
+      } else {
+        throw new Error("Unsupported payment URI format");
       }
-
-      const [chainId, methodAndParams] = uriParts[1].split("/");
-
-      if (!methodAndParams) {
-        throw new Error("Invalid URI format - missing method");
-      }
-
-      const [method, paramString] = methodAndParams.split("?");
-
-      if (!paramString) {
-        throw new Error("Invalid URI format - missing parameters");
-      }
-
-      // Parse parameters
-      const params = new URLSearchParams(paramString);
-      const recipientAddress = params.get("address");
-      const amount = params.get("uint256");
-
-      if (!recipientAddress || !amount) {
-        throw new Error("Missing required parameters: address and amount");
-      }
-
-      const parsedData = {
-        contractAddress,
-        chainId: parseInt(chainId),
-        method,
-        recipientAddress,
-        amount: parseInt(amount),
-        rawAmount: amount,
-      };
-
-      console.log("✅ Payment URI parsed successfully:", parsedData);
-      return parsedData;
     } catch (error) {
-      console.error("❌ Failed to parse payment URI:", error);
-      throw new Error(`Payment URI parsing failed: ${error.message}`);
+      console.error("❌ Error parsing payment URI:", error);
+      throw error;
     }
+  }
+
+  // Parse Solana Pay URI
+  parseSolanaPayURI(paymentUri) {
+    console.log("🔍 Parsing Solana Pay URI:", paymentUri);
+
+    const url = new URL(paymentUri);
+    const recipient = url.pathname;
+    const amount = url.searchParams.get("amount");
+    const splToken = url.searchParams.get("spl-token");
+    const label = url.searchParams.get("label");
+    const message =
+      url.searchParams.get("message") || url.searchParams.get("memo");
+
+    return {
+      protocol: "solana",
+      recipient,
+      amount: parseFloat(amount),
+      tokenAddress: splToken,
+      isToken: !!splToken,
+      label: label ? decodeURIComponent(label) : null,
+      message: message ? decodeURIComponent(message) : null,
+      network: "solana",
+    };
+  }
+
+  // Parse Ethereum EIP-681 URI
+  parseEthereumPayURI(paymentUri) {
+    console.log("🔍 Parsing Ethereum EIP-681 URI:", paymentUri);
+
+    // Parse EIP-681 format: ethereum:contractAddress@chainId/method?params
+    const uriParts = paymentUri.replace("ethereum:", "").split("@");
+    const contractAddress = uriParts[0];
+
+    if (uriParts.length < 2) {
+      throw new Error("Invalid URI format - missing chain ID");
+    }
+
+    const [chainId, methodAndParams] = uriParts[1].split("/");
+
+    if (!methodAndParams) {
+      throw new Error("Invalid URI format - missing method");
+    }
+
+    const [method, paramString] = methodAndParams.split("?");
+
+    if (!paramString) {
+      throw new Error("Invalid URI format - missing parameters");
+    }
+
+    // Parse parameters
+    const params = new URLSearchParams(paramString);
+    const recipientAddress = params.get("address");
+    const amount = params.get("uint256");
+
+    if (!recipientAddress || !amount) {
+      throw new Error("Missing required parameters: address and amount");
+    }
+
+    const parsedData = {
+      protocol: "ethereum",
+      contractAddress,
+      chainId: parseInt(chainId),
+      method,
+      recipientAddress,
+      amount: parseInt(amount),
+      rawAmount: amount,
+      network: "ethereum",
+    };
+
+    console.log("✅ Ethereum Payment URI parsed successfully:", parsedData);
+    return parsedData;
   }
 
   // Ensure wallet is connected
@@ -220,6 +270,24 @@ export class PaymentProcessor {
     console.log("🚀 Executing transaction:", paymentDetails);
 
     try {
+      if (paymentDetails.protocol === "ethereum") {
+        return await this.executeEthereumTransaction(paymentDetails);
+      } else if (paymentDetails.protocol === "solana") {
+        return await this.executeSolanaTransaction(paymentDetails);
+      } else {
+        throw new Error(`Unsupported protocol: ${paymentDetails.protocol}`);
+      }
+    } catch (error) {
+      console.error("❌ Transaction execution failed:", error);
+      throw error;
+    }
+  }
+
+  // Execute Ethereum transaction
+  async executeEthereumTransaction(paymentDetails) {
+    console.log("🔷 Executing Ethereum transaction:", paymentDetails);
+
+    try {
       // Prepare transaction parameters for ERC-20 token transfer
       const transactionParams = {
         to: paymentDetails.contractAddress,
@@ -232,7 +300,7 @@ export class PaymentProcessor {
         gasPrice: await this.getGasPrice(),
       };
 
-      console.log("📝 Transaction params:", transactionParams);
+      console.log("📝 Ethereum transaction params:", transactionParams);
 
       // Request transaction from user
       const txHash = await window.ethereum.request({
@@ -240,7 +308,7 @@ export class PaymentProcessor {
         params: [transactionParams],
       });
 
-      console.log("✅ Transaction sent:", txHash);
+      console.log("✅ Ethereum transaction sent:", txHash);
 
       // Wait for transaction confirmation (optional)
       const receipt = await this.waitForTransactionReceipt(txHash);
@@ -251,6 +319,7 @@ export class PaymentProcessor {
         amount: paymentDetails.amount,
         recipient: paymentDetails.recipientAddress,
         networkChainId: paymentDetails.chainId,
+        protocol: "ethereum",
       };
     } catch (error) {
       if (error.code === 4001) {
@@ -258,7 +327,149 @@ export class PaymentProcessor {
       } else if (error.code === -32603) {
         throw new Error("Insufficient funds for transaction");
       }
-      throw new Error(`Transaction failed: ${error.message}`);
+      throw new Error(`Ethereum transaction failed: ${error.message}`);
+    }
+  }
+
+  // Execute Solana transaction
+  async executeSolanaTransaction(paymentDetails) {
+    console.log("🌟 Executing REAL Solana transaction:", paymentDetails);
+
+    try {
+      // Check if Solana wallet is available and connected
+      if (!window.solana || !window.solana.isConnected) {
+        throw new Error(
+          "Solana wallet not connected. Please connect your Phantom or Solflare wallet."
+        );
+      }
+
+      console.log("🔗 Solana payment processing:");
+      console.log("- Recipient:", paymentDetails.recipient);
+      console.log("- Amount:", paymentDetails.amount);
+      console.log("- Token:", paymentDetails.tokenAddress || "SOL");
+
+      // Import Solana Web3 dynamically to handle transactions
+      const {
+        Connection,
+        PublicKey,
+        Transaction,
+        SystemProgram,
+        LAMPORTS_PER_SOL,
+      } = await import("@solana/web3.js");
+
+      // Use Devnet for testing (change to mainnet-beta for production)
+      const connection = new Connection(
+        "https://api.devnet.solana.com",
+        "confirmed"
+      );
+
+      const fromPubkey = new PublicKey(window.solana.publicKey.toString());
+      const toPubkey = new PublicKey(paymentDetails.recipient);
+
+      let transaction;
+
+      if (paymentDetails.tokenAddress) {
+        // SPL Token transfer (like USDC)
+        const {
+          createTransferInstruction,
+          getAssociatedTokenAddress,
+          TOKEN_PROGRAM_ID,
+        } = await import("@solana/spl-token");
+
+        const mintPubkey = new PublicKey(paymentDetails.tokenAddress);
+        const fromTokenAccount = await getAssociatedTokenAddress(
+          mintPubkey,
+          fromPubkey
+        );
+        const toTokenAccount = await getAssociatedTokenAddress(
+          mintPubkey,
+          toPubkey
+        );
+
+        // Convert amount to proper decimals (USDC has 6 decimals)
+        const transferAmount = Math.floor(
+          paymentDetails.amount * Math.pow(10, 6)
+        );
+
+        const { blockhash, lastValidBlockHeight } =
+          await connection.getLatestBlockhash();
+
+        transaction = new Transaction({
+          feePayer: fromPubkey,
+          blockhash,
+          lastValidBlockHeight,
+        });
+
+        transaction.add(
+          createTransferInstruction(
+            fromTokenAccount,
+            toTokenAccount,
+            fromPubkey,
+            transferAmount,
+            [],
+            TOKEN_PROGRAM_ID
+          )
+        );
+      } else {
+        // Native SOL transfer
+        const lamports = Math.floor(paymentDetails.amount * LAMPORTS_PER_SOL);
+
+        const { blockhash, lastValidBlockHeight } =
+          await connection.getLatestBlockhash();
+
+        transaction = new Transaction({
+          feePayer: fromPubkey,
+          blockhash,
+          lastValidBlockHeight,
+        });
+
+        transaction.add(
+          SystemProgram.transfer({
+            fromPubkey,
+            toPubkey,
+            lamports,
+          })
+        );
+      }
+
+      // Sign and send transaction
+      console.log("🔐 Requesting wallet signature...");
+      const signedTransaction = await window.solana.signTransaction(
+        transaction
+      );
+
+      console.log("📡 Broadcasting transaction...");
+      const signature = await connection.sendRawTransaction(
+        signedTransaction.serialize()
+      );
+
+      console.log("⏳ Confirming transaction...");
+      const confirmation = await connection.confirmTransaction({
+        signature,
+        blockhash: transaction.recentBlockhash,
+        lastValidBlockHeight: transaction.lastValidBlockHeight,
+      });
+
+      if (confirmation.value.err) {
+        throw new Error(`Transaction failed: ${confirmation.value.err}`);
+      }
+
+      console.log("✅ Solana transaction confirmed:", signature);
+
+      return {
+        txHash: signature,
+        amount: paymentDetails.amount,
+        recipient: paymentDetails.recipient,
+        tokenAddress: paymentDetails.tokenAddress,
+        protocol: "solana",
+        network: paymentDetails.tokenAddress
+          ? "solana-devnet"
+          : "solana-testnet",
+        explorerUrl: `https://explorer.solana.com/tx/${signature}?cluster=devnet`,
+      };
+    } catch (error) {
+      console.error("❌ Solana transaction failed:", error);
+      throw new Error(`Solana transaction failed: ${error.message}`);
     }
   }
 
