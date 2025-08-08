@@ -18,7 +18,7 @@ const NeARAgentsList = ({
 }) => {
   const getAgentTypeIcon = (type) => {
     const iconMap = {
-      // Enhanced AgentSphere Agent Types
+      // AgentSphere New Types (from deployments)
       intelligent_assistant: "🤖",
       local_services: "🏪",
       payment_terminal: "💳",
@@ -30,6 +30,13 @@ const NeARAgentsList = ({
       content_creator: "🎨",
       real_estate_broker: "🏠",
       bus_stop_agent: "🚌",
+      tutor_teacher: "👨‍🏫",
+      study_buddy: "📖",
+      social_media_manager: "📱",
+      data_analyst: "📊",
+      customer_support: "🎧",
+      marketplace_vendor: "🛒",
+
       // Legacy types for backward compatibility
       "Intelligent Assistant": "🤖",
       "Local Services": "🛠️",
@@ -37,6 +44,15 @@ const NeARAgentsList = ({
       "Tutor/Teacher": "📚",
       "Game Agent": "🎮",
       "3D World Modelling": "🏗️",
+      "Study Buddy": "📖",
+      "Bus Stop Agent": "🚌",
+      "Home Security": "🔒",
+      "Real Estate Broker": "🏠",
+      "Payment Terminal": "💳",
+      "World Builder 3D": "🏗️",
+      "My Ghost": "👻",
+
+      // Generic fallbacks
       study_buddy: "📖",
       tutor: "👨‍🏫",
       landmark: "🏛️",

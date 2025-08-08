@@ -47,11 +47,40 @@ const Enhanced3DAgent = ({
   // Get agent color based on type
   const getAgentColor = (agentType) => {
     const colors = {
+      // AgentSphere New Types (from deployments)
+      intelligent_assistant: "#00bfff", // Bright cyan
+      local_services: "#32cd32", // Lime green
+      payment_terminal: "#ffa500", // Orange
+      trailing_payment_terminal: "#ffa500", // Orange
+      my_ghost: "#9370db", // Medium purple
+      game_agent: "#9370db", // Medium purple
+      world_builder_3d: "#00ced1", // Dark turquoise
+      home_security: "#dc143c", // Crimson
+      content_creator: "#ff1493", // Deep pink
+      real_estate_broker: "#32cd32", // Lime green
+      bus_stop_agent: "#00ff00", // Pure green
+      tutor_teacher: "#ffa500", // Orange
+      study_buddy: "#ffd700", // Gold
+      social_media_manager: "#da70d6", // Orchid
+      data_analyst: "#4169e1", // Royal blue
+      customer_support: "#20b2aa", // Light sea green
+      marketplace_vendor: "#dc143c", // Crimson
+
+      // Legacy object_type compatibility
       "Intelligent Assistant": "#00bfff", // Bright cyan
       "Content Creator": "#ff1493", // Deep pink
       "Local Services": "#32cd32", // Lime green
       "Tutor/Teacher": "#ffa500", // Orange
       "Game Agent": "#9370db", // Medium purple
+      "Bus Stop Agent": "#00ff00", // Pure green
+      "Study Buddy": "#ffd700", // Gold
+      "Home Security": "#dc143c", // Crimson
+      "Real Estate Broker": "#32cd32", // Lime green
+      "Payment Terminal": "#ffa500", // Orange
+      "World Builder 3D": "#00ced1", // Dark turquoise
+      "My Ghost": "#9370db", // Medium purple
+
+      // Fallback
       default: "#ffffff", // White fallback
     };
     return colors[agentType] || colors.default;
@@ -97,6 +126,7 @@ const Enhanced3DAgent = ({
     const time = animationTime.current;
 
     switch (agent.agent_type) {
+      case "intelligent_assistant":
       case "Intelligent Assistant":
         return (
           <group>
@@ -155,6 +185,7 @@ const Enhanced3DAgent = ({
           </group>
         );
 
+      case "content_creator":
       case "Content Creator":
         return (
           <group>
@@ -212,6 +243,7 @@ const Enhanced3DAgent = ({
           </group>
         );
 
+      case "local_services":
       case "Local Services":
         return (
           <group>
@@ -270,7 +302,10 @@ const Enhanced3DAgent = ({
           </group>
         );
 
+      case "tutor_teacher":
+      case "study_buddy":
       case "Tutor/Teacher":
+      case "Study Buddy":
         return (
           <group>
             {/* Knowledge repository base */}
@@ -319,6 +354,7 @@ const Enhanced3DAgent = ({
           </group>
         );
 
+      case "game_agent":
       case "Game Agent":
         return (
           <group>
@@ -386,6 +422,238 @@ const Enhanced3DAgent = ({
                 emissiveIntensity={1.2 + Math.sin(time * 4) * 0.3}
               />
             </Sphere>
+          </group>
+        );
+
+      case "payment_terminal":
+      case "trailing_payment_terminal":
+      case "Payment Terminal":
+        return (
+          <group>
+            {/* Payment kiosk structure */}
+            <Box ref={meshRef} args={[0.8, 1.4, 0.6]} position={[0, 0, 0]}>
+              <meshStandardMaterial {...commonMaterial} />
+            </Box>
+
+            {/* Screen */}
+            <Box args={[0.6, 0.4, 0.1]} position={[0, 0.3, 0.35]}>
+              <meshStandardMaterial
+                color="#000000"
+                emissive="#00ff00"
+                emissiveIntensity={0.5}
+              />
+            </Box>
+
+            {/* Payment indicator lights */}
+            {[...Array(4)].map((_, i) => (
+              <Sphere
+                key={i}
+                args={[0.05]}
+                position={[0.3 - i * 0.2, -0.5, 0.35]}
+              >
+                <meshStandardMaterial
+                  color="#00ff00"
+                  emissive="#00ff00"
+                  emissiveIntensity={Math.sin(time * 3 + i) > 0 ? 1.0 : 0.2}
+                />
+              </Sphere>
+            ))}
+          </group>
+        );
+
+      case "bus_stop_agent":
+      case "Bus Stop Agent":
+        return (
+          <group>
+            {/* Bus stop pole */}
+            <Cylinder
+              ref={meshRef}
+              args={[0.1, 0.1, 2.0, 8]}
+              position={[0, 0, 0]}
+            >
+              <meshStandardMaterial {...commonMaterial} />
+            </Cylinder>
+
+            {/* Sign board */}
+            <Box args={[1.2, 0.6, 0.1]} position={[0, 0.8, 0]}>
+              <meshStandardMaterial {...commonMaterial} />
+            </Box>
+
+            {/* Bus arrival indicator */}
+            <Sphere args={[0.1]} position={[0, 0.8, 0.15]}>
+              <meshStandardMaterial
+                color="#ff0000"
+                emissive="#ff0000"
+                emissiveIntensity={Math.sin(time * 4) > 0 ? 1.0 : 0.3}
+              />
+            </Sphere>
+          </group>
+        );
+
+      case "home_security":
+      case "Home Security":
+        return (
+          <group>
+            {/* Security camera dome */}
+            <Sphere ref={meshRef} args={[0.6]} position={[0, 0, 0]}>
+              <meshStandardMaterial {...commonMaterial} />
+            </Sphere>
+
+            {/* Camera lens */}
+            <Cylinder args={[0.2, 0.25, 0.4, 12]} position={[0, 0, 0.5]}>
+              <meshStandardMaterial color="#000000" />
+            </Cylinder>
+
+            {/* Security lights */}
+            {[...Array(6)].map((_, i) => {
+              const angle = (i / 6) * Math.PI * 2;
+              return (
+                <Sphere
+                  key={i}
+                  args={[0.06]}
+                  position={[Math.cos(angle) * 0.7, 0, Math.sin(angle) * 0.7]}
+                >
+                  <meshStandardMaterial
+                    color="#ff0000"
+                    emissive="#ff0000"
+                    emissiveIntensity={Math.sin(time * 2 + i) > 0 ? 0.8 : 0.1}
+                  />
+                </Sphere>
+              );
+            })}
+          </group>
+        );
+
+      case "world_builder_3d":
+      case "World Builder 3D":
+        return (
+          <group>
+            {/* 3D construction blocks */}
+            <Box ref={meshRef} args={[0.8, 0.8, 0.8]} position={[0, 0, 0]}>
+              <meshStandardMaterial {...commonMaterial} />
+            </Box>
+
+            <Box args={[0.6, 0.6, 0.6]} position={[0.7, 0.7, 0.7]}>
+              <meshStandardMaterial
+                {...commonMaterial}
+                transparent
+                opacity={0.8}
+              />
+            </Box>
+
+            <Box args={[0.4, 0.4, 0.4]} position={[-0.6, 0.6, -0.6]}>
+              <meshStandardMaterial
+                {...commonMaterial}
+                transparent
+                opacity={0.6}
+              />
+            </Box>
+
+            {/* Construction grid */}
+            {[...Array(3)].map((_, i) => (
+              <Box
+                key={i}
+                args={[0.05, 2.0, 0.05]}
+                position={[i * 0.5 - 0.5, 0, 0]}
+                rotation={[0, 0, Math.sin(time + i) * 0.1]}
+              >
+                <meshStandardMaterial
+                  color="#ffffff"
+                  transparent
+                  opacity={0.3}
+                />
+              </Box>
+            ))}
+          </group>
+        );
+
+      case "my_ghost":
+      case "My Ghost":
+        return (
+          <group>
+            {/* Ghost body */}
+            <Sphere ref={meshRef} args={[0.7]} position={[0, 0, 0]}>
+              <meshStandardMaterial
+                {...commonMaterial}
+                transparent
+                opacity={0.6}
+              />
+            </Sphere>
+
+            {/* Ghostly tail */}
+            <Sphere args={[0.4]} position={[0, -0.8, 0]}>
+              <meshStandardMaterial
+                {...commonMaterial}
+                transparent
+                opacity={0.4}
+              />
+            </Sphere>
+
+            <Sphere args={[0.2]} position={[0, -1.2, 0]}>
+              <meshStandardMaterial
+                {...commonMaterial}
+                transparent
+                opacity={0.2}
+              />
+            </Sphere>
+
+            {/* Ethereal particles */}
+            {[...Array(10)].map((_, i) => (
+              <Sphere
+                key={i}
+                args={[0.04]}
+                position={[
+                  Math.cos(time * 2 + i) * 1.2,
+                  Math.sin(time * 1.5 + i) * 0.8,
+                  Math.sin(time * 2 + i) * 1.2,
+                ]}
+              >
+                <meshStandardMaterial
+                  color={baseColor}
+                  transparent
+                  opacity={0.8}
+                  emissiveIntensity={0.8}
+                />
+              </Sphere>
+            ))}
+          </group>
+        );
+
+      case "real_estate_broker":
+      case "Real Estate Broker":
+        return (
+          <group>
+            {/* House structure */}
+            <Box ref={meshRef} args={[1.0, 0.8, 1.0]} position={[0, -0.2, 0]}>
+              <meshStandardMaterial {...commonMaterial} />
+            </Box>
+
+            {/* Roof */}
+            <Box
+              args={[1.2, 0.4, 1.2]}
+              position={[0, 0.4, 0]}
+              rotation={[0, Math.PI / 4, 0]}
+            >
+              <meshStandardMaterial {...commonMaterial} />
+            </Box>
+
+            {/* Property markers */}
+            {[...Array(4)].map((_, i) => {
+              const angle = (i / 4) * Math.PI * 2;
+              return (
+                <Cylinder
+                  key={i}
+                  args={[0.05, 0.05, 0.8, 6]}
+                  position={[Math.cos(angle) * 1.5, 0, Math.sin(angle) * 1.5]}
+                >
+                  <meshStandardMaterial
+                    color="#ffff00"
+                    emissive="#ffff00"
+                    emissiveIntensity={0.5}
+                  />
+                </Cylinder>
+              );
+            })}
           </group>
         );
 
