@@ -14,6 +14,7 @@ import {
 import ThirdWebWalletConnect from "./ThirdWebWalletConnect";
 import SolanaWalletConnect from "./SolanaWalletConnect";
 import MorphWalletConnect from "./MorphWalletConnect";
+import HederaWalletConnect from "./HederaWalletConnect";
 
 const UnifiedWalletConnect = ({ onConnectionChange }) => {
   const [blockdagConnection, setBlockdagConnection] = useState({
@@ -45,16 +46,24 @@ const UnifiedWalletConnect = ({ onConnectionChange }) => {
     balance: null,
     usdtBalance: null,
   });
+  const [hederaConnection, setHederaConnection] = useState({
+    connected: false,
+    address: null,
+    network: null,
+    balance: null,
+  });
 
   // Use refs to get latest state without triggering re-renders
   const blockdagRef = useRef(blockdagConnection);
   const solanaRef = useRef(solanaConnection);
   const morphRef = useRef(morphConnection);
+  const hederaRef = useRef(hederaConnection);
 
   // Update refs when state changes
   blockdagRef.current = blockdagConnection;
   solanaRef.current = solanaConnection;
   morphRef.current = morphConnection;
+  hederaRef.current = hederaConnection;
 
   // Stable callback functions that won't cause infinite loops
   const handleBlockdagConnection = useCallback(
@@ -67,10 +76,12 @@ const UnifiedWalletConnect = ({ onConnectionChange }) => {
           blockdag: connection,
           solana: solanaRef.current,
           morph: morphRef.current,
+          hedera: hederaRef.current,
           hasAnyConnection:
             connection.isConnected ||
             solanaRef.current.isConnected ||
-            morphRef.current.isConnected,
+            morphRef.current.isConnected ||
+            hederaRef.current.isConnected,
         });
       }
     },
@@ -110,10 +121,12 @@ const UnifiedWalletConnect = ({ onConnectionChange }) => {
             hasMultiNetwork: true,
           },
           morph: morphRef.current,
+          hedera: hederaRef.current,
           hasAnyConnection:
             blockdagRef.current.isConnected ||
             connection.isConnected ||
-            morphRef.current.isConnected,
+            morphRef.current.isConnected ||
+            hederaRef.current.isConnected,
         });
       }
     },
@@ -130,10 +143,35 @@ const UnifiedWalletConnect = ({ onConnectionChange }) => {
           blockdag: blockdagRef.current,
           solana: solanaRef.current,
           morph: connection,
+          hedera: hederaRef.current,
           hasAnyConnection:
             blockdagRef.current.isConnected ||
             solanaRef.current.isConnected ||
-            connection.isConnected,
+            connection.isConnected ||
+            hederaRef.current.isConnected,
+        });
+      }
+    },
+    [onConnectionChange]
+  );
+
+  const handleHederaConnection = useCallback(
+    (connection) => {
+      setHederaConnection(connection);
+
+      // Notify parent with combined connection status using refs for latest state
+      if (onConnectionChange) {
+        onConnectionChange({
+          blockdag: blockdagRef.current,
+          solana: solanaRef.current,
+          morph: morphRef.current,
+          hedera: connection,
+          hasAnyConnection:
+            blockdagRef.current.isConnected ||
+            solanaRef.current.isConnected ||
+            morphRef.current.isConnected ||
+            connection.connected ||
+            connection.isConnected, // Support both property names
         });
       }
     },
@@ -145,7 +183,8 @@ const UnifiedWalletConnect = ({ onConnectionChange }) => {
       {/* Connection Status Summary */}
       {(blockdagConnection.isConnected ||
         solanaConnection.isConnected ||
-        morphConnection.isConnected) && (
+        morphConnection.isConnected ||
+        hederaConnection.isConnected) && (
         <Card className="bg-gradient-to-r from-green-900/30 to-blue-900/30 border-green-500/30">
           <CardContent className="pt-4">
             <div className="flex items-center gap-2 mb-3">
@@ -155,7 +194,7 @@ const UnifiedWalletConnect = ({ onConnectionChange }) => {
               </span>
             </div>
 
-            <div className="grid grid-cols-3 gap-4 text-sm">
+            <div className="grid grid-cols-4 gap-4 text-sm">
               {/* BlockDAG Status */}
               <div className="space-y-1">
                 <p className="text-slate-400">BlockDAG Network</p>
@@ -265,6 +304,35 @@ const UnifiedWalletConnect = ({ onConnectionChange }) => {
                   )}
                 </div>
               </div>
+
+              {/* Hedera Status */}
+              <div className="space-y-1">
+                <p className="text-slate-400">Hedera Testnet</p>
+                <div className="flex items-center gap-2">
+                  {hederaConnection.connected ? (
+                    <>
+                      <Badge
+                        variant="outline"
+                        className="border-purple-400 text-purple-400"
+                      >
+                        Connected
+                      </Badge>
+                      <span className="text-purple-300 text-xs">
+                        {hederaConnection.balance !== null
+                          ? `${hederaConnection.balance.toFixed(4)} HBAR`
+                          : "HBAR Ready"}
+                      </span>
+                    </>
+                  ) : (
+                    <Badge
+                      variant="outline"
+                      className="border-slate-500 text-slate-500"
+                    >
+                      Not Connected
+                    </Badge>
+                  )}
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -272,7 +340,7 @@ const UnifiedWalletConnect = ({ onConnectionChange }) => {
 
       {/* Wallet Tabs */}
       <Tabs defaultValue="blockdag" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 bg-slate-800/50">
+        <TabsList className="grid w-full grid-cols-4 bg-slate-800/50">
           <TabsTrigger value="blockdag" className="flex items-center gap-2">
             <Zap className="w-4 h-4" />
             BlockDAG
@@ -284,6 +352,10 @@ const UnifiedWalletConnect = ({ onConnectionChange }) => {
           <TabsTrigger value="morph" className="flex items-center gap-2">
             <Network className="w-4 h-4" />
             Morph
+          </TabsTrigger>
+          <TabsTrigger value="hedera" className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-gradient-to-r from-purple-500 to-magenta-500 rounded-full"></div>
+            Hedera
           </TabsTrigger>
         </TabsList>
 
@@ -482,12 +554,62 @@ const UnifiedWalletConnect = ({ onConnectionChange }) => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Hedera Wallet Tab */}
+        <TabsContent value="hedera" className="mt-4 space-y-4">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-5 h-5 bg-gradient-to-r from-purple-500 to-magenta-500 rounded-full"></div>
+            <h3 className="text-lg font-medium text-white">
+              Hedera Testnet Wallet
+            </h3>
+            <Badge
+              variant="outline"
+              className="border-purple-400 text-purple-400"
+            >
+              HBAR Payments
+            </Badge>
+          </div>
+
+          <HederaWalletConnect onConnectionChange={handleHederaConnection} />
+
+          {/* Hedera Info */}
+          <Card className="bg-purple-900/20 border-purple-500/30">
+            <CardContent className="pt-4">
+              <div className="flex items-start gap-2">
+                <Info className="w-4 h-4 text-purple-400 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="text-purple-200 text-sm font-medium">
+                    HBAR Payments on Hedera Network
+                  </p>
+                  <p className="text-purple-300 text-xs">
+                    Connect MetaMask to Hedera Testnet for 1 HBAR payments to
+                    agents
+                  </p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-purple-400 text-xs">
+                      Network: Hedera Testnet (Chain ID: 296)
+                    </span>
+                    <a
+                      href="https://hashscan.io/testnet"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-purple-300 hover:text-purple-200"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {/* Quick Actions */}
       {(blockdagConnection.isConnected ||
         solanaConnection.isConnected ||
-        morphConnection.isConnected) && (
+        morphConnection.isConnected ||
+        hederaConnection.connected) && (
         <Card className="bg-slate-900/50 border-slate-700/50">
           <CardHeader>
             <CardTitle className="text-sm flex items-center gap-2">
@@ -496,7 +618,7 @@ const UnifiedWalletConnect = ({ onConnectionChange }) => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-4 gap-2">
               {blockdagConnection.isConnected && (
                 <Button
                   variant="outline"
@@ -522,6 +644,15 @@ const UnifiedWalletConnect = ({ onConnectionChange }) => {
                   className="border-green-400 text-green-400 hover:bg-green-700/20"
                 >
                   View Morph Transactions
+                </Button>
+              )}
+              {hederaConnection.connected && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-purple-400 text-purple-400 hover:bg-purple-700/20"
+                >
+                  View Hedera Transactions
                 </Button>
               )}
             </div>

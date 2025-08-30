@@ -149,6 +149,18 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
               <span className="text-xs ml-2 opacity-75">powered by NeAR</span>
             </Button>
 
+            {/* 3D Cube Payment Demo Button */}
+            <Button
+              onClick={() => (window.location.href = "/cube-demo")}
+              size="lg"
+              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold px-8 py-4 text-lg rounded-full transition-all duration-200 hover:scale-105 shadow-lg shadow-blue-500/25 w-full"
+            >
+              🎯 3D Cube Payment Demo
+              <span className="text-xs ml-2 opacity-75">
+                revolutionary interface
+              </span>
+            </Button>
+
             {/* Secondary Link */}
             <div>
               <button className="text-green-400 hover:text-green-300 transition-colors text-sm font-medium group">

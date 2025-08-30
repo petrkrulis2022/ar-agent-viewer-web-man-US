@@ -9,6 +9,8 @@ import {
 import ARViewer from "./components/ARViewer";
 import MainLandingScreen from "./components/MainLandingScreen";
 import CameraActivationScreen from "./components/CameraActivationScreen";
+import CubePaymentDemo from "./components/CubePaymentDemo";
+import SimpleCubeTest from "./components/SimpleCubeTest";
 import UnifiedWalletConnect from "./components/UnifiedWalletConnect";
 import ThirdWebProviderWrapper from "./providers/ThirdWebProvider";
 import NotificationProvider, {
@@ -60,6 +62,12 @@ function AppContent() {
             />
           }
         />
+
+        {/* Simple Cube Test Route */}
+        <Route path="/test-cube" element={<SimpleCubeTest />} />
+
+        {/* 3D Cube Payment Demo Route */}
+        <Route path="/cube-demo" element={<CubePaymentDemo />} />
 
         {/* Camera Activation Screen Route */}
         <Route

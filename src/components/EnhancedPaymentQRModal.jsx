@@ -30,6 +30,7 @@ import qrCodeService from "../services/qrCodeService";
 import arQRManager from "../services/arQRManager";
 import solanaPaymentService from "../services/solanaPaymentService";
 import morphPaymentService from "../services/morphPaymentService";
+import { hederaWalletService } from "../services/hederaWalletService";
 
 const EnhancedPaymentQRModal = ({
   agent,
@@ -47,7 +48,7 @@ const EnhancedPaymentQRModal = ({
   const [arQRCodes, setArQRCodes] = useState([]);
   const [showARView, setShowARView] = useState(false);
   const [isGeneratingAR, setIsGeneratingAR] = useState(false);
-  const [selectedNetwork, setSelectedNetwork] = useState("blockdag"); // "blockdag", "solana-testnet", "solana-devnet", or "morph"
+  const [selectedNetwork, setSelectedNetwork] = useState("blockdag"); // "blockdag", "solana-testnet", "solana-devnet", "morph", or "hedera"
 
   // Generate payment QR code data
   useEffect(() => {
@@ -190,6 +191,32 @@ const EnhancedPaymentQRModal = ({
           explorerUrl: `https://explorer-holesky.morphl2.io`,
           networkName: "Morph Holesky",
           network: "morph",
+        };
+      } else if (network === "hedera") {
+        // Generate Hedera Testnet payment data (HBAR)
+        console.log("🔍 Debug: About to generate Hedera payment");
+        console.log("- Agent object:", agent);
+        console.log("- Agent ID:", agent?.id);
+        console.log("- Agent name:", agent?.agent_name || agent?.name);
+
+        const hederaPayment =
+          await hederaWalletService.generateHederaAgentPayment(
+            agent,
+            1 // 1 HBAR
+          );
+        const qrData =
+          hederaWalletService.generateHederaPaymentQRData(hederaPayment);
+
+        console.log("🎯 Generated Hedera payment data:", hederaPayment);
+        console.log("🎯 Generated Hedera QR data:", qrData);
+
+        return {
+          ...hederaPayment,
+          qrData,
+          transactionId: `hedera_tx_${Date.now()}_${agent.id}`,
+          explorerUrl: `https://hashscan.io/testnet/account/${hederaPayment.recipient}`,
+          networkName: "Hedera Testnet",
+          network: "hedera",
         };
       } else {
         // Generate BlockDAG payment data (original)
@@ -468,7 +495,8 @@ const EnhancedPaymentQRModal = ({
               </div>
 
               <div className="space-y-3">
-                <div className="grid w-full grid-cols-2 gap-2">
+                {/* Main Networks - First Row (3 columns) */}
+                <div className="grid w-full grid-cols-3 gap-2">
                   <button
                     onClick={() => setSelectedNetwork("blockdag")}
                     className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
@@ -490,6 +518,17 @@ const EnhancedPaymentQRModal = ({
                   >
                     <Network className="w-4 h-4" />
                     <span className="text-sm">Morph</span>
+                  </button>
+                  <button
+                    onClick={() => setSelectedNetwork("hedera")}
+                    className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
+                      selectedNetwork === "hedera"
+                        ? "bg-purple-500/20 border-purple-500 text-purple-200"
+                        : "bg-slate-800/50 border-slate-600 text-slate-300 hover:bg-slate-700/50"
+                    }`}
+                  >
+                    <div className="w-4 h-4 bg-gradient-to-r from-purple-500 to-magenta-500 rounded-full"></div>
+                    <span className="text-sm">Hedera</span>
                   </button>
                 </div>
 
@@ -532,6 +571,8 @@ const EnhancedPaymentQRModal = ({
                     ? `${paymentData?.amount} USDC`
                     : selectedNetwork === "morph"
                     ? `${paymentData?.amount} USDT`
+                    : selectedNetwork === "hedera"
+                    ? `${paymentData?.amount} HBAR`
                     : `${paymentData?.amount} USBDG+`}
                 </span>
               </div>
@@ -658,6 +699,8 @@ const EnhancedPaymentQRModal = ({
                       ? "💰 Solana Devnet Payment Instructions (USDC)"
                       : selectedNetwork === "morph"
                       ? "🦊 Morph Holesky Payment Instructions"
+                      : selectedNetwork === "hedera"
+                      ? "⚡ Hedera Testnet Payment Instructions (HBAR)"
                       : "⚡ BlockDAG Payment Instructions"}
                   </p>
                   <ul
@@ -699,6 +742,14 @@ const EnhancedPaymentQRModal = ({
                         </li>
                         <li>• Ensure you have USDT tokens for payment</li>
                         <li>• Scan with EIP-681 compatible wallet</li>
+                      </>
+                    ) : selectedNetwork === "hedera" ? (
+                      <>
+                        <li>• Use MetaMask with Hedera support</li>
+                        <li>• Connect to Hedera Testnet (Chain ID: 296)</li>
+                        <li>• Ensure you have HBAR tokens for payment</li>
+                        <li>• Scan with EIP-681 compatible wallet</li>
+                        <li>• Network RPC: https://testnet.hashio.io/api</li>
                       </>
                     ) : (
                       <>

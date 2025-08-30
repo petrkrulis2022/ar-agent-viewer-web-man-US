@@ -7,7 +7,7 @@ import {
 } from "@react-three/drei";
 import Enhanced3DAgent from "./Enhanced3DAgent";
 import AgentInteractionModal from "./AgentInteractionModal";
-import EnhancedPaymentQRModal from "./EnhancedPaymentQRModal";
+import CubePaymentEngine from "./CubePaymentEngine";
 import QRScannerOverlay from "./QRScannerOverlay";
 import ARQRCodeFixed from "./ARQRCodeFixed";
 import arQRManager from "../services/arQRManager";
@@ -30,7 +30,7 @@ const AR3DScene = ({
   // Agent interaction states
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [showAgentModal, setShowAgentModal] = useState(false);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showCubePayment, setShowCubePayment] = useState(false);
 
   // QR Scanner states
   const [showQRScanner, setShowQRScanner] = useState(false);
@@ -58,19 +58,26 @@ const AR3DScene = ({
     }
   };
 
-  // Handle payment request
+  // Handle payment request - now launches 3D cube instead of modal
   const handlePaymentRequest = async (agent) => {
-    console.log("💳 Payment requested for 3D agent:", agent.name);
+    console.log(
+      "🎯 Payment requested for 3D agent - launching cube:",
+      agent.name
+    );
 
     setSelectedAgent(agent);
     setShowAgentModal(false);
-    setShowPaymentModal(true);
+    setShowCubePayment(true);
   };
 
-  // Handle payment completion
-  const handlePaymentComplete = (agent, paymentData) => {
-    console.log("✅ Payment completed for 3D agent:", agent.name, paymentData);
-    setShowPaymentModal(false);
+  // Handle cube payment completion
+  const handleCubePaymentComplete = (agent, paymentData) => {
+    console.log(
+      "✅ Cube payment completed for 3D agent:",
+      agent.name,
+      paymentData
+    );
+    setShowCubePayment(false);
     setShowAgentModal(true); // Return to agent modal
   };
 
@@ -237,7 +244,7 @@ const AR3DScene = ({
   const closeModals = () => {
     console.log("🔄 Closing 3D modals...");
     setShowAgentModal(false);
-    setShowPaymentModal(false);
+    setShowCubePayment(false);
     setShowQRScanner(false);
     setSelectedAgent(null);
   };
@@ -478,15 +485,21 @@ const AR3DScene = ({
         onQRScan={handleQRScanRequest}
       />
 
-      {/* Payment QR Modal with AR QR Generation */}
-      <EnhancedPaymentQRModal
+      {/* 3D Cube Payment Engine - Revolutionary AR Payment Interface */}
+      <CubePaymentEngine
         agent={selectedAgent}
-        isOpen={showPaymentModal}
+        isOpen={showCubePayment}
         onClose={closeModals}
-        onPaymentComplete={handlePaymentComplete}
-        onARQRGenerated={handleARQRGenerated}
-        onScanARQR={handleQRScanRequest}
-        userLocation={userLocation}
+        onPaymentComplete={handleCubePaymentComplete}
+        paymentAmount={selectedAgent?.interaction_fee || 10.0}
+        enabledMethods={[
+          "crypto_qr",
+          "virtual_card",
+          "bank_qr",
+          "voice_pay",
+          "sound_pay",
+          "onboard_crypto",
+        ]}
       />
 
       {/* QR Scanner Overlay */}

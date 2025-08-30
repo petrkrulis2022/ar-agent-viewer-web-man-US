@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import ARAgentOverlay from "./ARAgentOverlay";
 import AgentInteractionModal from "./AgentInteractionModal";
-import EnhancedPaymentQRModal from "./EnhancedPaymentQRModal";
+import CubePaymentEngine from "./CubePaymentEngine";
 import QRScannerOverlay from "./QRScannerOverlay";
 import ARQRViewer from "./ARQRViewer";
 
@@ -40,7 +40,8 @@ const CameraView = ({
   // Agent interaction states
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [showAgentModal, setShowAgentModal] = useState(false);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showCubePayment, setShowCubePayment] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false); // Legacy payment modal - being phased out
 
   // QR Scanner states
   const [showQRScanner, setShowQRScanner] = useState(false);
@@ -382,19 +383,23 @@ const CameraView = ({
     }
   };
 
-  // Handle payment request
+  // Handle payment request - now launches 3D cube instead of modal
   const handlePaymentRequest = async (agent) => {
-    console.log("💳 Payment requested for agent:", agent.name);
+    console.log(
+      "🎯 Payment requested for agent - launching 3D cube:",
+      agent.name
+    );
 
     // Stop the main camera to free up access for potential QR scanning
     if (isStreaming) {
-      console.log("🛑 Stopping main camera for payment modal...");
+      console.log("🛑 Stopping main camera for cube payment...");
       stopCamera();
     }
 
     setSelectedAgent(agent);
     setShowAgentModal(false);
-    setShowPaymentModal(true);
+    setShowCubePayment(true); // Launch revolutionary 3D cube payment system
+    setShowPaymentModal(false); // Ensure old modal is closed
   };
 
   // Handle payment completion
@@ -402,6 +407,27 @@ const CameraView = ({
     console.log("✅ Payment completed for agent:", agent.name, paymentData);
     setShowPaymentModal(false);
     setShowAgentModal(true); // Return to agent modal
+
+    if (onAgentInteraction) {
+      onAgentInteraction(agent, "payment_complete", paymentData);
+    }
+  };
+
+  // Handle cube payment completion
+  const handleCubePaymentComplete = (agent, paymentData) => {
+    console.log(
+      "✅ Cube payment completed for agent:",
+      agent.name,
+      paymentData
+    );
+    setShowCubePayment(false);
+    setShowAgentModal(true); // Return to agent modal
+
+    // Restart camera after payment
+    if (!isStreaming) {
+      console.log("🎥 Restarting camera after cube payment...");
+      startCamera();
+    }
 
     if (onAgentInteraction) {
       onAgentInteraction(agent, "payment_complete", paymentData);
@@ -528,6 +554,7 @@ const CameraView = ({
     console.log("🔄 Closing modals, restarting main camera...");
     setShowAgentModal(false);
     setShowPaymentModal(false);
+    setShowCubePayment(false); // Close cube payment system
     setSelectedAgent(null);
 
     // Restart the main camera when closing modals
@@ -787,7 +814,7 @@ const CameraView = ({
         onQRScan={handleQRScanRequest}
       />
 
-      {/* Payment QR Modal */}
+      {/* Payment QR Modal - Legacy (being phased out) */}
       <EnhancedPaymentQRModal
         agent={selectedAgent}
         isOpen={showPaymentModal}
@@ -796,6 +823,23 @@ const CameraView = ({
         onARQRGenerated={handleARQRGenerated}
         onScanARQR={handleQRScanRequest}
         userLocation={userLocation}
+      />
+
+      {/* 3D Cube Payment Engine - Revolutionary AR Payment Interface */}
+      <CubePaymentEngine
+        agent={selectedAgent}
+        isOpen={showCubePayment}
+        onClose={closeModals}
+        onPaymentComplete={handleCubePaymentComplete}
+        paymentAmount={selectedAgent?.interaction_fee || 10.0}
+        enabledMethods={[
+          "crypto_qr",
+          "virtual_card",
+          "bank_qr",
+          "voice_pay",
+          "sound_pay",
+          "onboard_crypto",
+        ]}
       />
 
       {/* QR Scanner Overlay */}
