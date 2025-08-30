@@ -161,6 +161,18 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
               </span>
             </Button>
 
+            {/* Camera Debug Test Button */}
+            <Button
+              onClick={() => (window.location.href = "/camera-test")}
+              size="lg"
+              className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-semibold px-8 py-4 text-lg rounded-full transition-all duration-200 hover:scale-105 shadow-lg shadow-orange-500/25 w-full"
+            >
+              📹 Camera Debug Test
+              <span className="text-xs ml-2 opacity-75">
+                troubleshoot camera
+              </span>
+            </Button>
+
             {/* Secondary Link */}
             <div>
               <button className="text-green-400 hover:text-green-300 transition-colors text-sm font-medium group">

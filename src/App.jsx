@@ -11,6 +11,7 @@ import MainLandingScreen from "./components/MainLandingScreen";
 import CameraActivationScreen from "./components/CameraActivationScreen";
 import CubePaymentDemo from "./components/CubePaymentDemo";
 import SimpleCubeTest from "./components/SimpleCubeTest";
+import CameraTest from "./components/CameraTest";
 import UnifiedWalletConnect from "./components/UnifiedWalletConnect";
 import ThirdWebProviderWrapper from "./providers/ThirdWebProvider";
 import NotificationProvider, {
@@ -68,6 +69,9 @@ function AppContent() {
 
         {/* 3D Cube Payment Demo Route */}
         <Route path="/cube-demo" element={<CubePaymentDemo />} />
+
+        {/* Camera Debug Test Route */}
+        <Route path="/camera-test" element={<CameraTest />} />
 
         {/* Camera Activation Screen Route */}
         <Route

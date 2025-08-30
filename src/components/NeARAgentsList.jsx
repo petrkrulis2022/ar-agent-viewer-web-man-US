@@ -53,7 +53,6 @@ const NeARAgentsList = ({
       "My Ghost": "👻",
 
       // Generic fallbacks
-      study_buddy: "📖",
       tutor: "👨‍🏫",
       landmark: "🏛️",
       building: "🏢",

@@ -17,6 +17,7 @@ import AgentInteractionModal from "./AgentInteractionModal";
 import CubePaymentEngine from "./CubePaymentEngine";
 import QRScannerOverlay from "./QRScannerOverlay";
 import ARQRViewer from "./ARQRViewer";
+import EnhancedPaymentQRModal from "./EnhancedPaymentQRModal";
 
 const CameraView = ({
   isActive,
@@ -108,8 +109,43 @@ const CameraView = ({
       setError(null);
       setIsRetrying(attempt > 1);
 
+      // Enhanced camera availability and security checks
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        const errorMsg =
+          "Camera not supported in this browser. Please use Chrome, Firefox, or Safari.";
+        console.error("❌", errorMsg);
+        setError(errorMsg);
+        if (onError) onError(new Error(errorMsg));
+        return false;
+      }
+
+      // Check if we're on HTTPS or localhost (required for camera access)
+      const isSecure =
+        location.protocol === "https:" ||
+        location.hostname === "localhost" ||
+        location.hostname === "127.0.0.1";
+      if (!isSecure) {
+        const errorMsg =
+          "Camera access requires HTTPS. Please access the site via https:// or localhost.";
+        console.error(
+          "❌ Insecure context:",
+          location.protocol,
+          location.hostname
+        );
+        setError(errorMsg);
+        if (onError) onError(new Error(errorMsg));
+        return false;
+      }
+
       console.log(
         `🎥 Starting camera (attempt ${attempt}/${maxAttempts}, constraint level ${constraintLevel})...`
+      );
+      console.log("🔍 Browser:", navigator.userAgent.substring(0, 100));
+      console.log(
+        "🔍 Secure context:",
+        isSecure,
+        "Protocol:",
+        location.protocol
       );
 
       // Stop existing stream if any
