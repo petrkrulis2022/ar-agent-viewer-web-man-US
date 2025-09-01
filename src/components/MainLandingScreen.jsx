@@ -19,6 +19,7 @@ import { useDatabase } from "../hooks/useDatabase";
 import NeARAgentsMarketplace from "./NeARAgentsMarketplace";
 import ARQRTestRunner from "./ARQRTestRunner";
 import DatabaseStatusComponent from "./DatabaseStatusComponent";
+import NetworkDisplay from "./NetworkDisplay";
 
 const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
   const { getNearAgents, getCurrentLocation, isLoading, refreshConnection } =
@@ -108,6 +109,9 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
             <Wallet className="w-4 h-4 mr-2" />
             Wallet
           </Button>
+
+          {/* Network Status Display */}
+          <NetworkDisplay />
         </div>
       </header>
 

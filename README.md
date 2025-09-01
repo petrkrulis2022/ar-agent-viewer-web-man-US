@@ -32,9 +32,39 @@ A cutting-edge augmented reality web application that allows users to discover, 
 
 - **ThirdWeb wallet connection** with social login options
 - **MetaMask integration** for seamless crypto transactions
-- **BlockDAG Testnet support** (Chain ID 1043)
-- **USDFC token payments** for agent interactions
+- **Multi-chain support** - 5+ blockchain networks
+- **USDC stablecoin payments** across EVM testnets
 - **QR code generation** for mobile wallet compatibility
+- **Auto-chain detection** and switching
+
+### 🌐 **Supported EVM Testnets & USDC Contracts**
+
+| Chain         | Network Name     | Chain ID | USDC Contract Address                        | Explorer                                                               |
+| ------------- | ---------------- | -------- | -------------------------------------------- | ---------------------------------------------------------------------- |
+| **Ethereum**  | Sepolia          | 11155111 | `0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238` | [sepolia.etherscan.io](https://sepolia.etherscan.io)                   |
+| **Arbitrum**  | Arbitrum Sepolia | 421614   | `0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d` | [sepolia-explorer.arbitrum.io](https://sepolia-explorer.arbitrum.io)   |
+| **Base**      | Base Sepolia     | 84532    | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` | [sepolia-explorer.base.org](https://sepolia-explorer.base.org)         |
+| **Optimism**  | OP Sepolia       | 11155420 | `0x5fd84259d3c8b37a387c0d8a4c5b0c0d7d3c0D7`  | [sepolia-optimism.etherscan.io](https://sepolia-optimism.etherscan.io) |
+| **Avalanche** | Fuji Testnet     | 43113    | `0x5425890298aed601595a70AB815c96711a31Bc65` | [testnet.snowtrace.io](https://testnet.snowtrace.io)                   |
+
+### 🔗 **Additional Blockchain Networks**
+
+| Chain        | Network            | Token  | Amount    | Chain ID |
+| ------------ | ------------------ | ------ | --------- | -------- |
+| **BlockDAG** | Primordial Testnet | USBDG+ | 50 tokens | 1043     |
+| **Morph**    | Holesky Testnet    | USDT   | 1 token   | 2810     |
+| **Solana**   | Testnet            | SOL    | 1 token   | -        |
+| **Solana**   | Devnet             | USDC   | 1 token   | -        |
+| **Hedera**   | Testnet            | HBAR   | 1 token   | -        |
+
+### 💡 **Payment Features**
+
+- **🎯 Revolutionary 3D Cube Interface** - Interactive floating payment system
+- **🔄 Auto-chain Detection** - Automatically detects user's wallet chain
+- **💱 Smart Chain Selection** - Uses supported chain or suggests alternatives
+- **📱 Universal QR Codes** - Compatible with MetaMask, Coinbase Wallet, and more
+- **🔐 Secure Transactions** - EIP-681 standard for safe payments
+- **⚡ Instant Processing** - Real-time transaction monitoring
 
 ### 🗄️ **Database Connectivity**
 
@@ -227,6 +257,21 @@ CREATE TABLE agents (
 - **Coverage**: Global RTK correction network
 
 ## 🚀 **Deployment**
+
+### **Branch Structure**
+
+- **`main`** - Stable release with full AR system
+- **`Cube-Crypto-QR`** - Development branch for enhanced crypto payments
+
+### **3D Cube Payment Development**
+
+The `Cube-Crypto-QR` branch contains the revolutionary 3D floating payment cube interface with:
+
+- **🎯 Interactive 3D Cube** - 6 payment method faces with click/touch support
+- **📱 Enhanced Crypto QR** - Direct AR QR display without modals
+- **🔄 Chain Autodetection** - Automatically detects and uses optimal blockchain
+- **💰 USDC Focus** - Simplified payments using USDC across all EVM chains
+- **🌟 AR Integration** - QR codes appear directly in AR space
 
 ### **Static Hosting**
 

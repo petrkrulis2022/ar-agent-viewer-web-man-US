@@ -213,8 +213,158 @@ const PaymentCube = ({
     setSelectedFace(frontFaceIndex);
     setIsRotating(false);
 
+    // Dispatch events for CubePaymentHandler
+    if (activeFace) {
+      switch (activeFace) {
+        case "crypto_qr":
+          console.log("📱 Dispatching crypto-qr-selected event");
+          document.dispatchEvent(
+            new CustomEvent("crypto-qr-selected", {
+              detail: {
+                method: "crypto_qr",
+                agent: agent,
+                face: activeFace,
+                config: paymentMethods[activeFace],
+              },
+            })
+          );
+          break;
+
+        case "virtual_card":
+          console.log("💳 Dispatching virtual-card-selected event");
+          document.dispatchEvent(
+            new CustomEvent("virtual-card-selected", {
+              detail: {
+                method: "virtual_card",
+                agent: agent,
+                face: activeFace,
+                config: paymentMethods[activeFace],
+              },
+            })
+          );
+          break;
+
+        case "bank_qr":
+          console.log("🔲 Dispatching bank-qr-selected event");
+          document.dispatchEvent(
+            new CustomEvent("bank-qr-selected", {
+              detail: {
+                method: "bank_qr",
+                agent: agent,
+                face: activeFace,
+                config: paymentMethods[activeFace],
+              },
+            })
+          );
+          break;
+
+        case "voice_pay":
+          console.log("🎤 Dispatching voice-pay-selected event");
+          document.dispatchEvent(
+            new CustomEvent("voice-pay-selected", {
+              detail: {
+                method: "voice_pay",
+                agent: agent,
+                face: activeFace,
+                config: paymentMethods[activeFace],
+              },
+            })
+          );
+          break;
+
+        case "sound_pay":
+          console.log("🎵 Dispatching sound-pay-selected event");
+          document.dispatchEvent(
+            new CustomEvent("sound-pay-selected", {
+              detail: {
+                method: "sound_pay",
+                agent: agent,
+                face: activeFace,
+                config: paymentMethods[activeFace],
+              },
+            })
+          );
+          break;
+
+        case "onboard_crypto":
+          console.log("🚀 Dispatching onboard-crypto-selected event");
+          document.dispatchEvent(
+            new CustomEvent("onboard-crypto-selected", {
+              detail: {
+                method: "onboard_crypto",
+                agent: agent,
+                face: activeFace,
+                config: paymentMethods[activeFace],
+              },
+            })
+          );
+          break;
+
+        default:
+          console.log("❓ Unknown payment method:", activeFace);
+      }
+    }
+
+    // Call existing onFaceSelected callback for backward compatibility
     if (onFaceSelected && activeFace) {
       onFaceSelected(activeFace, paymentMethods[activeFace]);
+    }
+  };
+
+  // Handle individual face clicks - for button-style interactions
+  const handleFaceClick = (method, faceIndex) => {
+    console.log(`🎯 Face clicked directly: ${method} (face ${faceIndex})`);
+
+    setSelectedFace(faceIndex);
+    setIsRotating(false);
+
+    // Dispatch the same events as cube click for consistency
+    switch (method) {
+      case "crypto_qr":
+        console.log("🔗 Dispatching crypto-qr-selected event from face click");
+        document.dispatchEvent(
+          new CustomEvent("crypto-qr-selected", {
+            detail: {
+              method: "crypto_qr",
+              agent: agent,
+              face: method,
+              config: paymentMethods[method],
+            },
+          })
+        );
+        break;
+
+      case "solana":
+        console.log("🟠 Dispatching solana-selected event from face click");
+        document.dispatchEvent(
+          new CustomEvent("solana-selected", {
+            detail: {
+              method: "solana",
+              agent: agent,
+              face: method,
+              config: paymentMethods[method],
+            },
+          })
+        );
+        break;
+
+      default:
+        console.log(`📱 Dispatching ${method}-selected event from face click`);
+        document.dispatchEvent(
+          new CustomEvent(`${method}-selected`, {
+            detail: {
+              method: method,
+              agent: agent,
+              face: method,
+              config: paymentMethods[method],
+            },
+          })
+        );
+    }
+
+    // Call onFaceSelected callback for backward compatibility
+    if (onFaceSelected) {
+      onFaceSelected(method, paymentMethods[method]);
     }
   };
 
@@ -396,33 +546,71 @@ const PaymentCube = ({
 
           return (
             <group key={`face-${method}`}>
-              {/* Face background plane */}
+              {/* 3D Extruded Button - sticks out from cube face */}
               <mesh
-                position={facePositions[faceIndex]}
+                position={[
+                  facePositions[faceIndex][0] + textOffsets[faceIndex][0] * 2,
+                  facePositions[faceIndex][1] + textOffsets[faceIndex][1] * 2,
+                  facePositions[faceIndex][2] + textOffsets[faceIndex][2] * 2,
+                ]}
                 rotation={faceRotations[faceIndex]}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  console.log(`🔥 3D Face button clicked: ${method}`);
+                  handleFaceClick(method, faceIndex);
+                }}
+                onPointerOver={(e) => {
+                  e.stopPropagation();
+                  gl.domElement.style.cursor = "pointer";
+                }}
+                onPointerOut={(e) => {
+                  e.stopPropagation();
+                  gl.domElement.style.cursor = "grab";
+                }}
               >
-                <planeGeometry args={[2, 2]} />
-                <meshBasicMaterial
+                <boxGeometry args={[1.6, 0.8, 0.15]} />
+                <meshStandardMaterial
                   color={config.color}
                   transparent
-                  opacity={isActiveFace ? 0.3 : 0.15}
+                  opacity={isActiveFace ? 1.0 : 0.9}
+                  emissive={isActiveFace ? "#003300" : "#001100"}
+                  emissiveIntensity={0.3}
+                  roughness={0.3}
+                  metalness={0.1}
                 />
               </mesh>
 
-              {/* Icon text - positioned much higher to avoid overlap */}
-              <Text
+              {/* Button face surface for better text contrast */}
+              <mesh
                 position={[
-                  textPosition[0],
-                  textPosition[1] + 0.5,
-                  textPosition[2],
+                  facePositions[faceIndex][0] + textOffsets[faceIndex][0] * 2.1,
+                  facePositions[faceIndex][1] + textOffsets[faceIndex][1] * 2.1,
+                  facePositions[faceIndex][2] + textOffsets[faceIndex][2] * 2.1,
                 ]}
                 rotation={faceRotations[faceIndex]}
-                fontSize={0.3}
-                color="#ffffff"
+              >
+                <planeGeometry args={[1.5, 0.7]} />
+                <meshBasicMaterial
+                  color={isActiveFace ? "#ffffff" : "#f8f8f8"}
+                  transparent
+                  opacity={0.95}
+                />
+              </mesh>
+
+              {/* Icon text - positioned on the 3D button */}
+              <Text
+                position={[
+                  facePositions[faceIndex][0] + textOffsets[faceIndex][0] * 2.2,
+                  facePositions[faceIndex][1] +
+                    textOffsets[faceIndex][1] * 2.2 +
+                    0.15,
+                  facePositions[faceIndex][2] + textOffsets[faceIndex][2] * 2.2,
+                ]}
+                rotation={faceRotations[faceIndex]}
+                fontSize={0.2}
+                color={isActiveFace ? "#000000" : "#333333"}
                 anchorX="center"
                 anchorY="middle"
-                outlineWidth={0.02}
-                outlineColor="#000000"
                 fontWeight="bold"
               >
                 {config.icon}

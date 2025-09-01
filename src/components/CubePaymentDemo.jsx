@@ -1,20 +1,21 @@
 import React, { useState } from "react";
 import CubePaymentEngine from "./CubePaymentEngine";
+import CubePaymentHandler from "./CubePaymentHandler";
 
 const CubePaymentDemo = () => {
   const [showCube, setShowCube] = useState(false);
 
-  // Mock agent data for testing
+  // Mock agent data for testing - Updated for EVM testnets
   const mockAgent = {
     id: "demo-agent-001",
     name: "Demo AR Agent",
-    description: "Revolutionary 3D payment demo agent",
-    interaction_fee: 15.0,
+    description: "Revolutionary 3D payment demo agent with EVM support",
+    interaction_fee: 1.0, // 1 USDC
     agent_wallet_address: "0x742D35Cc6634C0532925a3b8d1C02e4e61b3F9b0",
     payment_recipient_address: "0x742D35Cc6634C0532925a3b8d1C02e4e61b3F9b0",
-    token_symbol: "USDT",
-    currency_type: "USDT",
-    network: "Morph",
+    token_symbol: "USDC",
+    currency_type: "USDC",
+    network: "Ethereum Sepolia", // Updated to use EVM testnet
   };
 
   const handlePaymentComplete = (agent, paymentData) => {
@@ -174,6 +175,13 @@ const CubePaymentDemo = () => {
         onClose={() => setShowCube(false)}
         onPaymentComplete={handlePaymentComplete}
         paymentAmount={mockAgent.interaction_fee}
+      />
+
+      {/* Cube Payment Handler - Manages clicks and QR display */}
+      <CubePaymentHandler
+        agent={mockAgent}
+        amount={mockAgent.interaction_fee}
+        onPaymentComplete={handlePaymentComplete}
       />
     </div>
   );
