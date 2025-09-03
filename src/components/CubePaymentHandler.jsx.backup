@@ -55,10 +55,7 @@ const CubePaymentHandler = ({
     document.addEventListener("back-to-cube", handleBackToCube);
 
     return () => {
-      document.removeEventListener(
-        "crypto-qr-selected",
-        handleCryptoQRSelected
-      );
+      document.removeEventListener("crypto-qr-selected", handleCryptoQRSelected);
       document.removeEventListener("solana-selected", handleSolanaSelected);
       document.removeEventListener("close-payment", handleClosePayment);
       document.removeEventListener("payment-execute", handlePaymentExecution);
@@ -76,31 +73,21 @@ const CubePaymentHandler = ({
 
       // Generate dynamic QR based on user's current network
       const qrResult = await dynamicQRService.generateDynamicQR(agent, amount);
-
-      console.log("✅ Generated QR result:", qrResult);
       setQrData(qrResult);
-      setActivePayment(qrResult.paymentData);
-      setSelectedChain(qrResult.networkInfo);
+      setActivePayment(qrResult);
 
-      // Display QR in AR space (centered)
+      console.log("🌟 Displaying centered QR in AR space...");
       displayCenteredQRInAR(qrResult);
 
-      // Hide the payment cube
-      const cube = document.querySelector("#payment-cube");
-      if (cube) {
-        cube.setAttribute("visible", false);
-      }
-
-      setPaymentStatus("ready");
-      console.log("🎯 Dynamic QR payment ready for user action");
+      setPaymentStatus("waiting");
     } catch (error) {
       console.error("❌ Dynamic crypto QR payment error:", error);
       setPaymentStatus("error");
-
-      // Show error message to user
-      showErrorInAR(error.message || "Failed to generate QR code");
+      showErrorInAR(error.message);
     }
-  }; // Execute current payment (NEW)
+  };
+
+  // Execute current payment (NEW)
   const executeCurrentPayment = async () => {
     if (!qrData) {
       console.error("❌ No payment data available");
@@ -109,20 +96,21 @@ const CubePaymentHandler = ({
 
     try {
       setPaymentStatus("processing");
-
+      
       console.log("� Executing payment...");
       const result = await dynamicQRService.executePayment(qrData);
-
+      
       console.log("✅ Payment successful:", result);
       setPaymentStatus("completed");
-
+      
       // Show success message
       showPaymentSuccess(result);
-
+      
       // Notify parent component
       if (onPaymentComplete) {
         onPaymentComplete(result);
       }
+      
     } catch (error) {
       console.error("❌ Payment execution failed:", error);
       setPaymentStatus("error");
@@ -189,9 +177,9 @@ const CubePaymentHandler = ({
       }
 
       // Hide the payment cube
-      const cube = document.querySelector("#payment-cube");
+      const cube = document.querySelector('#payment-cube');
       if (cube) {
-        cube.setAttribute("visible", false);
+        cube.setAttribute('visible', false);
       }
 
       // Create QR container (centered)
@@ -199,15 +187,12 @@ const CubePaymentHandler = ({
       qrContainer.setAttribute("id", "payment-qr-display");
       qrContainer.setAttribute("position", "0 0 -2.5"); // Centered in front of camera
 
-      // QR Code Background with network color border
+      // QR Code Background with green border
       const qrBorder = document.createElement("a-plane");
       qrBorder.setAttribute("position", "0 0.5 -0.01");
       qrBorder.setAttribute("width", "2.4");
       qrBorder.setAttribute("height", "2.4");
-      qrBorder.setAttribute(
-        "material",
-        `color: ${qrResult.networkInfo.color}; opacity: 0.8`
-      );
+      qrBorder.setAttribute("material", `color: ${qrResult.networkInfo.color}; opacity: 0.8`);
       qrContainer.appendChild(qrBorder);
 
       // QR Code Image (centered)
@@ -215,10 +200,7 @@ const CubePaymentHandler = ({
       qrPlane.setAttribute("position", "0 0.5 0");
       qrPlane.setAttribute("width", "2.2");
       qrPlane.setAttribute("height", "2.2");
-      qrPlane.setAttribute(
-        "material",
-        `src: ${qrResult.qrCodeUrl}; transparent: true`
-      );
+      qrPlane.setAttribute("material", `src: ${qrResult.qrCodeUrl}; transparent: true`);
       qrContainer.appendChild(qrPlane);
 
       // Payment Title
@@ -237,20 +219,14 @@ const CubePaymentHandler = ({
       const payButton = document.createElement("a-entity");
       payButton.setAttribute("id", "payment-instructions");
       payButton.setAttribute("position", "0 -1.2 0");
-      payButton.setAttribute(
-        "geometry",
-        "primitive: plane; width: 1.8; height: 0.4"
-      );
-      payButton.setAttribute(
-        "material",
-        `color: ${qrResult.networkInfo.color}; opacity: 0.9`
-      );
+      payButton.setAttribute("geometry", "primitive: plane; width: 1.8; height: 0.4");
+      payButton.setAttribute("material", `color: ${qrResult.networkInfo.color}; opacity: 0.9`);
       payButton.setAttribute("text", {
         value: "Tap to Pay",
         align: "center",
         color: "#000000",
         width: 12,
-        font: "roboto",
+        font: "roboto"
       });
       payButton.setAttribute("class", "clickable payment-trigger");
       payButton.setAttribute("cursor-listener", "");
@@ -285,10 +261,7 @@ const CubePaymentHandler = ({
       const backButton = document.createElement("a-entity");
       backButton.setAttribute("id", "back-to-cube-btn");
       backButton.setAttribute("position", "0 -2.8 0");
-      backButton.setAttribute(
-        "geometry",
-        "primitive: plane; width: 1.6; height: 0.4"
-      );
+      backButton.setAttribute("geometry", "primitive: plane; width: 1.6; height: 0.4");
       backButton.setAttribute("material", "color: #333333; opacity: 0.8");
       backButton.setAttribute("text", {
         value: "← Back to Cube",
@@ -304,98 +277,20 @@ const CubePaymentHandler = ({
       qrContainer.appendChild(backButton);
 
       // Add entrance animation
-      qrContainer.setAttribute(
-        "animation",
-        "property: scale; from: 0 0 0; to: 1 1 1; dur: 500; easing: easeOutBack"
-      );
+      qrContainer.setAttribute("animation", "property: scale; from: 0 0 0; to: 1 1 1; dur: 500; easing: easeOutBack");
 
       // Add to scene
       scene.appendChild(qrContainer);
       qrDisplayRef.current = qrContainer;
 
       console.log("✅ Centered QR code displayed in AR space");
+
     } catch (error) {
       console.error("❌ Failed to display centered QR in AR:", error);
     }
   };
 
-  // Show error message in AR space
-  const showErrorInAR = (errorMessage) => {
-    try {
-      const scene = document.querySelector("a-scene");
-      if (!scene) return;
-
-      closePaymentDisplay();
-
-      const errorContainer = document.createElement("a-entity");
-      errorContainer.setAttribute("id", "payment-error-display");
-      errorContainer.setAttribute("position", "0 2 -3");
-
-      const errorBackground = document.createElement("a-plane");
-      errorBackground.setAttribute("width", "4");
-      errorBackground.setAttribute("height", "2");
-      errorBackground.setAttribute("material", "color: #440000; opacity: 0.9");
-      errorContainer.appendChild(errorBackground);
-
-      const errorText = document.createElement("a-text");
-      errorText.setAttribute("position", "0 0.2 0.01");
-      errorText.setAttribute("text", {
-        value: "❌ Payment Error",
-        align: "center",
-        color: "#ff4444",
-        width: 8,
-      });
-      errorContainer.appendChild(errorText);
-
-      const errorDetails = document.createElement("a-text");
-      errorDetails.setAttribute("position", "0 -0.3 0.01");
-      errorDetails.setAttribute("text", {
-        value: errorMessage.substring(0, 50) + "...",
-        align: "center",
-        color: "#ffcccc",
-        width: 6,
-      });
-      errorContainer.appendChild(errorDetails);
-
-      scene.appendChild(errorContainer);
-      qrDisplayRef.current = errorContainer;
-
-      // Auto-hide error after 10 seconds
-      setTimeout(() => {
-        if (qrDisplayRef.current === errorContainer) {
-          closePaymentDisplay();
-        }
-      }, 10000);
-    } catch (error) {
-      console.error("❌ Failed to show error in AR:", error);
-    }
-  };
-
-  // Close payment display
-  const closePaymentDisplay = () => {
-    if (qrDisplayRef.current) {
-      const scene = document.querySelector("a-scene");
-      if (scene && qrDisplayRef.current.parentNode === scene) {
-        scene.removeChild(qrDisplayRef.current);
-      }
-      qrDisplayRef.current = null;
-    }
-
-    // Show the payment cube again
-    const cube = document.querySelector("#payment-cube");
-    if (cube) {
-      cube.setAttribute("visible", true);
-    }
-
-    setActivePayment(null);
-    setQrData(null);
-    setPaymentStatus("idle");
-    setSelectedChain(null);
-
-    console.log("💰 Payment session ended");
-  };
-
-  // Show payment success message in AR
+  // Show payment success message in AR (NEW)
   const showPaymentSuccess = (result) => {
     try {
       const scene = document.querySelector("a-scene");
@@ -411,10 +306,7 @@ const CubePaymentHandler = ({
       const successBackground = document.createElement("a-plane");
       successBackground.setAttribute("width", "4");
       successBackground.setAttribute("height", "3");
-      successBackground.setAttribute(
-        "material",
-        "color: #004400; opacity: 0.9"
-      );
+      successBackground.setAttribute("material", "color: #004400; opacity: 0.9");
       successContainer.appendChild(successBackground);
 
       // Success icon
@@ -425,7 +317,7 @@ const CubePaymentHandler = ({
         align: "center",
         color: "#00ff00",
         width: 10,
-        font: "roboto",
+        font: "roboto"
       });
       successContainer.appendChild(successText);
 
@@ -465,10 +357,7 @@ const CubePaymentHandler = ({
       // Back button
       const backButton = document.createElement("a-entity");
       backButton.setAttribute("position", "0 -1.2 0.01");
-      backButton.setAttribute(
-        "geometry",
-        "primitive: plane; width: 2; height: 0.4"
-      );
+      backButton.setAttribute("geometry", "primitive: plane; width: 2; height: 0.4");
       backButton.setAttribute("material", "color: #00aa00; opacity: 0.8");
       backButton.setAttribute("text", {
         value: "← Back to Cube",
@@ -491,12 +380,13 @@ const CubePaymentHandler = ({
           closePaymentDisplay();
         }
       }, 10000);
+
     } catch (error) {
       console.error("❌ Failed to show payment success:", error);
     }
   };
 
-  // Show payment error message in AR
+  // Show payment error message in AR (IMPROVED)
   const showPaymentError = (errorMessage) => {
     try {
       const scene = document.querySelector("a-scene");
@@ -523,7 +413,7 @@ const CubePaymentHandler = ({
         align: "center",
         color: "#ff4444",
         width: 10,
-        font: "roboto",
+        font: "roboto"
       });
       errorContainer.appendChild(errorText);
 
@@ -531,9 +421,7 @@ const CubePaymentHandler = ({
       const errorDetails = document.createElement("a-text");
       errorDetails.setAttribute("position", "0 0 0.01");
       errorDetails.setAttribute("text", {
-        value:
-          errorMessage.substring(0, 60) +
-          (errorMessage.length > 60 ? "..." : ""),
+        value: errorMessage.substring(0, 60) + (errorMessage.length > 60 ? "..." : ""),
         align: "center",
         color: "#ffcccc",
         width: 6,
@@ -543,10 +431,7 @@ const CubePaymentHandler = ({
       // Back button
       const backButton = document.createElement("a-entity");
       backButton.setAttribute("position", "0 -0.8 0.01");
-      backButton.setAttribute(
-        "geometry",
-        "primitive: plane; width: 2; height: 0.4"
-      );
+      backButton.setAttribute("geometry", "primitive: plane; width: 2; height: 0.4");
       backButton.setAttribute("material", "color: #aa0000; opacity: 0.8");
       backButton.setAttribute("text", {
         value: "← Back to Cube",
@@ -571,9 +456,38 @@ const CubePaymentHandler = ({
           closePaymentDisplay();
         }
       }, 8000);
+
     } catch (error) {
       console.error("❌ Failed to show payment error:", error);
     }
+  };
+      qrDisplayRef.current = errorContainer;
+
+      // Auto-hide error after 10 seconds
+      setTimeout(() => {
+        if (qrDisplayRef.current === errorContainer) {
+          closePaymentDisplay();
+        }
+      }, 10000);
+    } catch (error) {
+      console.error("❌ Failed to show error in AR:", error);
+    }
+  };
+
+  // Close payment display
+  const closePaymentDisplay = () => {
+    if (qrDisplayRef.current) {
+      const scene = document.querySelector("a-scene");
+      if (scene && qrDisplayRef.current.parentNode === scene) {
+        scene.removeChild(qrDisplayRef.current);
+      }
+      qrDisplayRef.current = null;
+    }
+
+    setActivePayment(null);
+    setQrData(null);
+    setPaymentStatus("idle");
+    setSelectedChain(null);
   };
 
   // This component manages events, no direct render

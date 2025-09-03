@@ -20,6 +20,7 @@ import NeARAgentsMarketplace from "./NeARAgentsMarketplace";
 import ARQRTestRunner from "./ARQRTestRunner";
 import DatabaseStatusComponent from "./DatabaseStatusComponent";
 import NetworkDisplay from "./NetworkDisplay";
+import WalletAddressDisplay from "./WalletAddressDisplay";
 
 const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
   const { getNearAgents, getCurrentLocation, isLoading, refreshConnection } =
@@ -93,13 +94,8 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
             <Bell className="w-5 h-5 text-slate-400" />
           </button>
 
-          {/* NeAR Protocol Badge */}
-          <Badge className="bg-green-500/20 text-green-400 border-green-400/30 px-3 py-1">
-            <div className="flex items-center space-x-1">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              <span className="text-sm font-medium">NeAR Protocol</span>
-            </div>
-          </Badge>
+          {/* Wallet Address Display (replaces NeAR Protocol badge) */}
+          <WalletAddressDisplay />
 
           {/* Wallet Button */}
           <Button
