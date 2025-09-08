@@ -323,7 +323,37 @@ export const useDatabase = () => {
             mcp_services: obj.mcp_services || [],
             token_address: obj.token_address || null,
             token_symbol: obj.token_symbol || "USDT",
-            chain_id: obj.chain_id || 2810, // Morph Holesky Testnet
+            chain_id: (() => {
+              // Use the same enhanced logic as deployment_chain_id
+              const agentName = (obj.name || "").toLowerCase();
+              let enhancedChainId;
+
+              if (agentName.includes("dynamic"))
+                enhancedChainId = 421614; // Arbitrum Sepolia
+              else if (agentName.includes("base"))
+                enhancedChainId = 84532; // Base Sepolia
+              else if (agentName.includes("sepolia 4"))
+                enhancedChainId = 11155111; // Ethereum Sepolia
+              else if (agentName.includes("sepolia 2"))
+                enhancedChainId = 11155420; // OP Sepolia
+              else if (agentName.includes("sepolia 3"))
+                enhancedChainId = 11155111; // Ethereum Sepolia
+              else if (agentName.includes("updated"))
+                enhancedChainId = 11155111; // Ethereum Sepolia
+              else enhancedChainId = 11155111; // Default to Ethereum Sepolia
+
+              // Use enhanced chain ID unless database has a recognized testnet chain ID
+              const dbChainId = obj.chain_id;
+              const recognizedTestnets = [
+                11155111, 421614, 84532, 11155420, 43113,
+              ]; // Major testnets
+
+              if (dbChainId && recognizedTestnets.includes(dbChainId)) {
+                return dbChainId;
+              }
+
+              return enhancedChainId;
+            })(),
             deployer_wallet_address: obj.deployer_wallet_address || null,
             payment_recipient_address:
               obj.payment_recipient_address ||
@@ -438,16 +468,35 @@ export const useDatabase = () => {
               return "Ethereum Sepolia";
             })(),
             deployment_chain_id: (() => {
-              if (obj.deployment_chain_id || obj.chain_id) {
-                return obj.deployment_chain_id || obj.chain_id;
-              }
-              // Assign chain IDs based on network
+              // Generate enhanced chain ID based on agent name for better network mapping
               const agentName = (obj.name || "").toLowerCase();
-              if (agentName.includes("dynamic")) return 421614; // Arbitrum Sepolia
-              if (agentName.includes("base")) return 84532; // Base Sepolia
-              if (agentName.includes("sepolia 4")) return 11155111; // Ethereum Sepolia
-              if (agentName.includes("sepolia 2")) return 11155420; // OP Sepolia
-              return 11155111; // Default to Ethereum Sepolia
+              let enhancedChainId;
+
+              if (agentName.includes("dynamic"))
+                enhancedChainId = 421614; // Arbitrum Sepolia
+              else if (agentName.includes("base"))
+                enhancedChainId = 84532; // Base Sepolia
+              else if (agentName.includes("sepolia 4"))
+                enhancedChainId = 11155111; // Ethereum Sepolia
+              else if (agentName.includes("sepolia 2"))
+                enhancedChainId = 11155420; // OP Sepolia
+              else if (agentName.includes("sepolia 3"))
+                enhancedChainId = 11155111; // Ethereum Sepolia
+              else if (agentName.includes("updated"))
+                enhancedChainId = 11155111; // Ethereum Sepolia
+              else enhancedChainId = 11155111; // Default to Ethereum Sepolia
+
+              // Use enhanced chain ID unless database has a testnet chain ID we recognize
+              const dbChainId = obj.deployment_chain_id || obj.chain_id;
+              const recognizedTestnets = [
+                11155111, 421614, 84532, 11155420, 43113,
+              ]; // Major testnets
+
+              if (dbChainId && recognizedTestnets.includes(dbChainId)) {
+                return dbChainId;
+              }
+
+              return enhancedChainId;
             })(),
             deployment_token_contract_address: (() => {
               if (
@@ -505,6 +554,13 @@ export const useDatabase = () => {
               "🎯 ENHANCED PAYMENT DATA APPLIED FOR:",
               processedObj.name
             );
+            console.log("🌐 NETWORK DEBUG:", {
+              original_network: obj.network,
+              original_deployment_network_name: obj.deployment_network_name,
+              processed_network: processedObj.network,
+              processed_deployment_network_name:
+                processedObj.deployment_network_name,
+            });
           }
 
           return processedObj;

@@ -85,17 +85,37 @@ const getNetworkDisplay = (agent) => {
       : [],
   });
 
-  // Use deployment network name from database
-  const network =
-    agent?.deployment_network_name || agent?.network || "Network not specified";
-  console.log("🔍 AgentInteractionModal: Network display:", {
+  // First try database fields
+  let network = agent?.deployment_network_name || agent?.network;
+
+  // If no network from database or it's generic, use EVM network service
+  if (
+    !network ||
+    network === "Network not specified" ||
+    network === "Unknown Network"
+  ) {
+    const chainId = agent?.deployment_chain_id || agent?.chain_id;
+    if (chainId) {
+      const networkInfo = getNetworkInfo(chainId);
+      network = networkInfo?.name || "Unknown Network";
+      console.log("🔍 AgentInteractionModal: Using EVM network service:", {
+        chainId,
+        networkInfo: networkInfo?.name,
+        agent: agent?.name,
+      });
+    } else {
+      network = "Unknown Network";
+    }
+  }
+
+  console.log("🔍 AgentInteractionModal: Final network display:", {
     network,
     agent: agent?.name,
     source: agent?.deployment_network_name
       ? "deployment_network_name"
       : agent?.network
       ? "network"
-      : "fallback",
+      : "evm_service",
   });
   return network;
 };
