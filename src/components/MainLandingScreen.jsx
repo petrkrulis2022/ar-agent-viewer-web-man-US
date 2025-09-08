@@ -16,7 +16,7 @@ import {
   Database,
 } from "lucide-react";
 import { useDatabase } from "../hooks/useDatabase";
-import NeARAgentsMarketplace from "./NeARAgentsMarketplace";
+import NewNeARAgentsMarketplace from "./NewNeARAgentsMarketplace";
 import ARQRTestRunner from "./ARQRTestRunner";
 import DatabaseStatusComponent from "./DatabaseStatusComponent";
 import NetworkDisplay from "./NetworkDisplay";
@@ -309,8 +309,8 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
         </div>
       </footer>
 
-      {/* NeAR Agents Marketplace Modal */}
-      <NeARAgentsMarketplace
+      {/* New NeAR Agents Marketplace Modal with correct data */}
+      <NewNeARAgentsMarketplace
         isOpen={showMarketplace}
         onClose={() => setShowMarketplace(false)}
         userLocation={currentLocation}

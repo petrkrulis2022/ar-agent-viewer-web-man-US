@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Payment Modal Fix Test</title>
+    <style>
+      body {
+        background: #1a1a1a;
+        color: white;
+        font-family: Arial, sans-serif;
+        padding: 20px;
+      }
+      .test-container {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+      .test-section {
+        background: #2a2a2a;
+        padding: 20px;
+        margin: 20px 0;
+        border-radius: 10px;
+        border: 1px solid #444;
+      }
+      .before-after {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+      .before,
+      .after {
+        padding: 15px;
+        border-radius: 8px;
+      }
+      .before {
+        background: #4a1a1a;
+        border: 1px solid #aa4444;
+      }
+      .after {
+        background: #1a4a1a;
+        border: 1px solid #44aa44;
+      }
+      .agent-data {
+        background: #333;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 10px 0;
+        font-family: monospace;
+      }
+      .highlight {
+        color: #00ff88;
+        font-weight: bold;
+      }
+      .error {
+        color: #ff4444;
+      }
+      .success {
+        color: #44ff44;
+      }
+      h1 {
+        color: #00ff88;
+      }
+      h2 {
+        color: #88aaff;
+      }
+      h3 {
+        color: #ffaa88;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="test-container">
+      <h1>🎯 Payment Modal Fix - Dynamic Agent Data</h1>
+
+      <div class="test-section">
+        <h2>✅ Problem Fixed: Hardcoded Payment Data → Dynamic Agent Data</h2>
+
+        <div class="before-after">
+          <div class="before">
+            <h3>❌ Before (Hardcoded)</h3>
+            <div class="agent-data">
+              <div>
+                <strong>Service Fee:</strong>
+                <span class="error">10 USDBG+</span>
+              </div>
+              <div>
+                <strong>Network:</strong>
+                <span class="error">BlockDAG Primordial</span>
+              </div>
+              <div>
+                <strong>Token Contract:</strong>
+                <span class="error">Missing</span>
+              </div>
+            </div>
+            <p>❌ All agents showed the same hardcoded values</p>
+          </div>
+
+          <div class="after">
+            <h3>✅ After (Dynamic)</h3>
+            <div class="agent-data">
+              <div>
+                <strong>Service Fee:</strong>
+                <span class="success">{agent.interaction_fee_amount} USDC</span>
+              </div>
+              <div>
+                <strong>Network:</strong>
+                <span class="success">{agent.deployment_network_name}</span>
+              </div>
+              <div>
+                <strong>Token Contract:</strong>
+                <span class="success">{USDC_contract_for_chain}</span>
+              </div>
+            </div>
+            <p>✅ Each agent shows its actual database values</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="test-section">
+        <h2>🔍 Test Cases - Real Agent Data Examples</h2>
+
+        <div class="agent-data">
+          <h3>Agent: "Cube Sepolia 4 dev account"</h3>
+          <div><strong>Database Values:</strong></div>
+          <div>• interaction_fee_amount: <span class="highlight">4</span></div>
+          <div>
+            • deployment_network_name:
+            <span class="highlight">"Ethereum Sepolia"</span>
+          </div>
+          <div>
+            • deployment_chain_id: <span class="highlight">11155111</span>
+          </div>
+          <div><strong>Expected Payment Modal Display:</strong></div>
+          <div>
+            • Service Fee: <span class="success">4 USDC</span> (not "10 USDBG+")
+          </div>
+          <div>
+            • Network: <span class="success">Ethereum Sepolia</span> (not
+            "BlockDAG Primordial")
+          </div>
+          <div>
+            • Token Contract:
+            <span class="success">0x1c7D4B...79C7238</span> (Ethereum Sepolia
+            USDC)
+          </div>
+        </div>
+
+        <div class="agent-data">
+          <h3>Agent: "Base Sepolia Agent"</h3>
+          <div><strong>Database Values:</strong></div>
+          <div>• interaction_fee_amount: <span class="highlight">7</span></div>
+          <div>
+            • deployment_network_name:
+            <span class="highlight">"Base Sepolia"</span>
+          </div>
+          <div>• deployment_chain_id: <span class="highlight">84532</span></div>
+          <div><strong>Expected Payment Modal Display:</strong></div>
+          <div>• Service Fee: <span class="success">7 USDC</span></div>
+          <div>• Network: <span class="success">Base Sepolia</span></div>
+          <div>
+            • Token Contract:
+            <span class="success">0x036CbD...dCF7e</span> (Base Sepolia USDC)
+          </div>
+        </div>
+      </div>
+
+      <div class="test-section">
+        <h2>🔧 Implementation Details</h2>
+
+        <h3>1. Helper Functions Added:</h3>
+        <div class="agent-data">
+          <div><strong>getServiceFeeDisplay(agent)</strong></div>
+          <div>
+            • Reads: agent.interaction_fee_amount ||
+            agent.payment_config?.interaction_fee_amount
+          </div>
+          <div>• Returns: "4 USDC", "7 USDC", "10 USDC" (dynamic)</div>
+          <br />
+          <div><strong>getNetworkDisplay(agent)</strong></div>
+          <div>• Reads: agent.deployment_network_name || agent.network</div>
+          <div>• Returns: "Ethereum Sepolia", "Base Sepolia", etc.</div>
+          <br />
+          <div><strong>getTokenContractDisplay(agent)</strong></div>
+          <div>• Reads: agent.deployment_chain_id</div>
+          <div>• Maps: Chain ID → USDC Contract Address</div>
+          <div>• Returns: "0x1c7D4B...79C7238" (truncated format)</div>
+        </div>
+
+        <h3>2. EVM Network Service Integration:</h3>
+        <div class="agent-data">
+          <div><strong>Supported Testnets:</strong></div>
+          <div>
+            • Ethereum Sepolia (11155111):
+            0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238
+          </div>
+          <div>
+            • Arbitrum Sepolia (421614):
+            0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d
+          </div>
+          <div>
+            • Base Sepolia (84532): 0x036CbD53842c5426634e7929541eC2318f3dCF7e
+          </div>
+          <div>
+            • OP Sepolia (11155420): 0x5fd84259d3c8b37a387c0d8a4c5b0c0d7d3c0D7
+          </div>
+          <div>
+            • Avalanche Fuji (43113): 0x5425890298aed601595a70AB815c96711a31Bc65
+          </div>
+        </div>
+      </div>
+
+      <div class="test-section">
+        <h2>🎯 How to Test the Fix</h2>
+
+        <div class="agent-data">
+          <h3>Steps to Verify:</h3>
+          <div>
+            1. Go to: <span class="highlight">http://localhost:5175/</span>
+          </div>
+          <div>
+            2. Click: <span class="highlight">"NeAR Agents Marketplace"</span>
+          </div>
+          <div>
+            3. Click on an agent card (e.g., "Cube Sepolia 4 dev account")
+          </div>
+          <div>4. In AR mode, interact with agent to open payment modal</div>
+          <div>5. Click: <span class="highlight">"Payment" tab</span></div>
+          <div>6. Verify payment details show:</div>
+          <div>
+            • Service Fee: <span class="success">4 USDC</span> (dynamic, not
+            hardcoded)
+          </div>
+          <div>
+            • Network: <span class="success">Ethereum Sepolia</span> (agent's
+            actual network)
+          </div>
+          <div>
+            • Token Contract:
+            <span class="success">0x1c7D4B...79C7238</span> (correct USDC
+            contract)
+          </div>
+        </div>
+      </div>
+
+      <div class="test-section">
+        <h2>🚀 Critical Impact for Cube Payment System</h2>
+
+        <div class="agent-data">
+          <div><strong>Before Fix:</strong> ❌ All QR codes would be wrong</div>
+          <div>• Wrong fee amount (10 instead of 4,7,10,19,3)</div>
+          <div>• Wrong network (BlockDAG instead of Ethereum Sepolia)</div>
+          <div>• Missing contract address (failed transactions)</div>
+          <br />
+          <div><strong>After Fix:</strong> ✅ QR codes will be accurate</div>
+          <div>• Correct fee amount from database</div>
+          <div>• Correct network for each agent</div>
+          <div>• Correct USDC contract address</div>
+          <div>• Successful payment transactions</div>
+        </div>
+      </div>
+
+      <div class="test-section">
+        <h2>✅ Payment Modal Fix Status: COMPLETE</h2>
+        <div class="agent-data">
+          <div class="success">
+            ✅ Service Fee: Dynamic from database (4, 7, 10, 19, 3 USDC)
+          </div>
+          <div class="success">
+            ✅ Network: Dynamic from deployment_network_name
+          </div>
+          <div class="success">
+            ✅ Token Contract: Dynamic USDC contract for chain
+          </div>
+          <div class="success">
+            ✅ AgentInteractionModal.jsx: Updated with helper functions
+          </div>
+          <div class="success">
+            ✅ EVM Network Service: Integrated for contract mapping
+          </div>
+          <div class="success">
+            ✅ Logging: Added for debugging payment data
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

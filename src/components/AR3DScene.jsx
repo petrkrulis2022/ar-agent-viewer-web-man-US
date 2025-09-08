@@ -50,6 +50,29 @@ const AR3DScene = ({
   const handleAgentClick = (agent) => {
     console.log("🤖 3D Agent clicked:", agent.name);
     console.log("🤖 Agent data:", agent);
+
+    // DEBUG: Log all payment-related fields for debugging payment modal
+    console.log("💰 PAYMENT DEBUG - Agent Payment Fields:", {
+      name: agent?.name,
+      interaction_fee_amount: agent?.interaction_fee_amount,
+      interaction_fee: agent?.interaction_fee,
+      fee_amount: agent?.fee_amount,
+      payment_config: agent?.payment_config,
+      deployment_network_name: agent?.deployment_network_name,
+      deployment_chain_id: agent?.deployment_chain_id,
+      network: agent?.network,
+      chain_id: agent?.chain_id,
+      allKeys: agent
+        ? Object.keys(agent).filter(
+            (k) =>
+              k.includes("fee") ||
+              k.includes("network") ||
+              k.includes("chain") ||
+              k.includes("amount")
+          )
+        : [],
+    });
+
     setSelectedAgent(agent);
     setShowAgentModal(true);
 

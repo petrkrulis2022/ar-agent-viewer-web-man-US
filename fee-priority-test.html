@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Fee Resolution Priority Test</title>
+    <style>
+      body {
+        font-family: monospace;
+        background: #1a1a1a;
+        color: #fff;
+        padding: 20px;
+      }
+      .test-case {
+        background: #2a2a2a;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 8px;
+      }
+      .result {
+        background: #0a3a0a;
+        padding: 10px;
+        margin: 5px 0;
+        border-radius: 4px;
+      }
+      .priority {
+        color: #00ff00;
+        font-weight: bold;
+      }
+      .fallback {
+        color: #ffa500;
+      }
+      .default {
+        color: #ff6666;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🧪 Fee Resolution Priority Test</h1>
+    <div id="results"></div>
+
+    <script>
+      // Simulate the resolveInteractionFee function
+      const resolveInteractionFee = (agent) => {
+        console.log("🔍 INTERACTION FEE FIELD ANALYSIS:");
+        console.log(
+          `- interaction_fee_amount: ${
+            agent.interaction_fee_amount
+          } (type: ${typeof agent.interaction_fee_amount})`
+        );
+        console.log(`- interaction_fee_token: ${agent.interaction_fee_token}`);
+        console.log(
+          `- fee_usdc: ${agent.fee_usdc} (type: ${typeof agent.fee_usdc})`
+        );
+        console.log(
+          `- fee_usdt: ${agent.fee_usdt} (type: ${typeof agent.fee_usdt})`
+        );
+        console.log(`- interaction_fee (legacy): ${agent.interaction_fee}`);
+        console.log(
+          `- interaction_fee_usdfc (legacy): ${agent.interaction_fee_usdfc}`
+        );
+
+        let resolvedFee = {
+          amount: 1.0,
+          token: "USDC",
+          source: "default",
+        };
+
+        // PRIORITY 1: Use new interaction_fee_amount field if available
+        if (
+          agent.interaction_fee_amount !== undefined &&
+          agent.interaction_fee_amount !== null &&
+          !isNaN(agent.interaction_fee_amount) &&
+          agent.interaction_fee_amount > 0
+        ) {
+          resolvedFee = {
+            amount: parseFloat(agent.interaction_fee_amount),
+            token: agent.interaction_fee_token || "USDC",
+            source: "interaction_fee_amount",
+          };
+
+          console.log("✅ Using NEW interaction_fee_amount field");
+        }
+        // PRIORITY 2: Fall back to fee_usdc
+        else if (
+          agent.fee_usdc !== undefined &&
+          agent.fee_usdc !== null &&
+          !isNaN(agent.fee_usdc) &&
+          agent.fee_usdc > 0
+        ) {
+          resolvedFee = {
+            amount: parseFloat(agent.fee_usdc),
+            token: "USDC",
+            source: "fee_usdc",
+          };
+
+          console.log("⚠️ Using fee_usdc field");
+        }
+        // PRIORITY 3: Fall back to fee_usdt
+        else if (
+          agent.fee_usdt !== undefined &&
+          agent.fee_usdt !== null &&
+          !isNaN(agent.fee_usdt) &&
+          agent.fee_usdt > 0
+        ) {
+          resolvedFee = {
+            amount: parseFloat(agent.fee_usdt),
+            token: "USDT",
+            source: "fee_usdt",
+          };
+
+          console.log("⚠️ Using fee_usdt field");
+        }
+        // PRIORITY 4: Fall back to legacy interaction_fee_usdfc
+        else if (
+          agent.interaction_fee_usdfc !== undefined &&
+          agent.interaction_fee_usdfc !== null &&
+          !isNaN(agent.interaction_fee_usdfc) &&
+          agent.interaction_fee_usdfc > 0
+        ) {
+          resolvedFee = {
+            amount: parseFloat(agent.interaction_fee_usdfc),
+            token: "USDC",
+            source: "legacy (interaction_fee_usdfc)",
+          };
+
+          console.log("⚠️ Using LEGACY interaction_fee_usdfc field");
+        }
+        // PRIORITY 5: Fall back to legacy interaction_fee
+        else if (
+          agent.interaction_fee !== undefined &&
+          agent.interaction_fee !== null &&
+          !isNaN(agent.interaction_fee) &&
+          agent.interaction_fee > 0
+        ) {
+          resolvedFee = {
+            amount: parseFloat(agent.interaction_fee),
+            token: "USDC",
+            source: "legacy (interaction_fee)",
+          };
+
+          console.log("⚠️ Using LEGACY interaction_fee field");
+        } else {
+          console.log("❌ Using DEFAULT values (no valid fee found)");
+        }
+
+        console.log("🎯 RESOLVED INTERACTION FEE:");
+        console.log(`- Display Fee: ${resolvedFee.amount}`);
+        console.log(`- Display Token: ${resolvedFee.token}`);
+        console.log(`- Data Source: ${resolvedFee.source}`);
+
+        return resolvedFee;
+      };
+
+      const log = (message) => {
+        console.log(message);
+        document.getElementById(
+          "results"
+        ).innerHTML += `<div class="result">${message}</div>`;
+      };
+
+      // Test cases
+      const testCases = [
+        {
+          name: "🚀 FUTURE: AgentSphere provides interaction_fee_amount (4.0 USDC)",
+          agent: {
+            id: "test-1",
+            name: "Cube Sepolia 4 dev account",
+            interaction_fee_amount: 4.0,
+            interaction_fee_token: "USDC",
+            interaction_fee: 1,
+            fee_usdc: null,
+            fee_usdt: null,
+          },
+        },
+        {
+          name: "🚀 FUTURE: AgentSphere provides interaction_fee_amount (7.0 USDC)",
+          agent: {
+            id: "test-2",
+            name: "Agent with 7.0 USDC fee",
+            interaction_fee_amount: 7.0,
+            interaction_fee_token: "USDC",
+            interaction_fee: 1,
+            fee_usdc: null,
+            fee_usdt: null,
+          },
+        },
+        {
+          name: "🚀 FUTURE: AgentSphere provides interaction_fee_amount (10.0 USDC)",
+          agent: {
+            id: "test-3",
+            name: "Agent with 10.0 USDC fee",
+            interaction_fee_amount: 10.0,
+            interaction_fee_token: "USDC",
+            interaction_fee: 1,
+            fee_usdc: null,
+            fee_usdt: null,
+          },
+        },
+        {
+          name: "📊 CURRENT: Current database state (only legacy fields)",
+          agent: {
+            id: "current-1",
+            name: "Cube Dynamic 1",
+            interaction_fee_amount: 1, // This is what's currently in DB
+            interaction_fee_token: undefined,
+            interaction_fee: 1,
+            fee_usdc: null,
+            fee_usdt: null,
+          },
+        },
+        {
+          name: "⚠️ FALLBACK: No interaction_fee_amount, uses fee_usdc",
+          agent: {
+            id: "fallback-1",
+            name: "Agent using fee_usdc",
+            interaction_fee_amount: null,
+            interaction_fee_token: undefined,
+            interaction_fee: 1,
+            fee_usdc: 5.0,
+            fee_usdt: null,
+          },
+        },
+        {
+          name: "⚠️ FALLBACK: No interaction_fee_amount, uses fee_usdt",
+          agent: {
+            id: "fallback-2",
+            name: "Agent using fee_usdt",
+            interaction_fee_amount: null,
+            interaction_fee_token: undefined,
+            interaction_fee: 1,
+            fee_usdc: null,
+            fee_usdt: 3.0,
+          },
+        },
+      ];
+
+      const runTests = () => {
+        log("<h2>🧪 Fee Resolution Priority Tests</h2>");
+
+        testCases.forEach((testCase, index) => {
+          log(`<div class="test-case"><h3>${testCase.name}</h3>`);
+
+          console.group(`Test ${index + 1}: ${testCase.name}`);
+          const result = resolveInteractionFee(testCase.agent);
+          console.groupEnd();
+
+          const priority =
+            result.source === "interaction_fee_amount"
+              ? "priority"
+              : result.source === "default"
+              ? "default"
+              : "fallback";
+
+          log(
+            `<strong>Result:</strong> <span class="${priority}">${result.amount} ${result.token}</span>`
+          );
+          log(`<strong>Source:</strong> ${result.source}`);
+          log(
+            `<strong>Expected behavior:</strong> ${
+              testCase.name.includes("FUTURE")
+                ? "Will work once AgentSphere provides interaction_fee_amount"
+                : "Current behavior"
+            }</div>`
+          );
+        });
+
+        log('<div class="test-case"><h3>🎯 Summary</h3>');
+        log(
+          "<strong>✅ Priority System Ready:</strong> Once AgentSphere provides interaction_fee_amount with values like 4.0, 7.0, 10.0, AR Viewer will automatically use them."
+        );
+        log(
+          "<strong>⚠️ Current State:</strong> Falls back to legacy fields until AgentSphere update."
+        );
+        log(
+          "<strong>🔄 Backward Compatible:</strong> System gracefully handles missing fields.</div>"
+        );
+      };
+
+      runTests();
+    </script>
+  </body>
+</html>

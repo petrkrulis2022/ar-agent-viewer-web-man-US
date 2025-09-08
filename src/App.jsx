@@ -7,12 +7,14 @@ import {
   useNavigate,
 } from "react-router-dom";
 import ARViewer from "./components/ARViewer";
+import AgentMarketplace from "./components/marketplace/AgentMarketplace";
 import MainLandingScreen from "./components/MainLandingScreen";
 import CameraActivationScreen from "./components/CameraActivationScreen";
 import CubePaymentDemo from "./components/CubePaymentDemo";
 import SimpleCubeTest from "./components/SimpleCubeTest";
 import CameraTest from "./components/CameraTest";
 import UnifiedWalletConnect from "./components/UnifiedWalletConnect";
+import AgentFeeValidationDashboard from "./components/AgentFeeValidationDashboard";
 import ThirdWebProviderWrapper from "./providers/ThirdWebProvider";
 import NotificationProvider, {
   useNotifications,
@@ -53,6 +55,8 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <Routes>
+        {/* New Agent Marketplace Route (Cube-Ready) */}
+        <Route path="/new-marketplace" element={<AgentMarketplace />} />
         {/* Main Landing Screen Route */}
         <Route
           path="/"
@@ -69,6 +73,9 @@ function AppContent() {
 
         {/* 3D Cube Payment Demo Route */}
         <Route path="/cube-demo" element={<CubePaymentDemo />} />
+
+        {/* Agent Fee Validation Dashboard (Debug) */}
+        <Route path="/debug-fees" element={<AgentFeeValidationDashboard />} />
 
         {/* Camera Debug Test Route */}
         <Route path="/camera-test" element={<CameraTest />} />

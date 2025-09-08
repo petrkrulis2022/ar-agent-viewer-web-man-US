@@ -122,6 +122,11 @@ export const getNearAgentsFromSupabase = async (
   try {
     if (!hasValidCredentials || !supabase) {
       console.warn("⚠️ No valid Supabase credentials, returning null");
+      console.log(
+        "🚨 SUPABASE DEBUG: hasValidCredentials =",
+        hasValidCredentials
+      );
+      console.log("🚨 SUPABASE DEBUG: supabase client =", !!supabase);
       return null;
     }
 
@@ -151,8 +156,10 @@ export const getNearAgentsFromSupabase = async (
       console.log("📊 Sample records:", basicData);
     }
 
-    // Now try the full query
-    console.log("🔍 Step 2: Full query with all fields...");
+    // Now try the full query with enhanced field selector
+    console.log(
+      "🔍 Step 2: Full query with all fields including interaction_fee_amount..."
+    );
     const { data, error } = await supabase
       .from("deployed_objects")
       .select(
@@ -178,10 +185,15 @@ export const getNearAgentsFromSupabase = async (
         voice_chat,
         video_chat,
         interaction_fee,
+        interaction_fee_amount,
         interaction_fee_usdfc,
+        fee_usdt,
+        fee_usdc,
         interaction_range,
         currency_type,
         network,
+        deployment_network_name,
+        deployment_chain_id,
         mcp_services,
         features
       `
@@ -235,7 +247,12 @@ export const getNearAgentsFromSupabase = async (
             voice_chat: false,
             video_chat: false,
             interaction_fee: 1.0,
+            interaction_fee_amount: 1.0,
+            fee_usdt: null,
+            fee_usdc: null,
             features: [],
+            deployment_network_name: "Unknown Network",
+            deployment_chain_id: null,
             interaction_range: 50.0,
             currency_type: "USDT",
             network: "Morph",
@@ -276,6 +293,33 @@ export const getNearAgentsFromSupabase = async (
       console.info("   - Location permissions not granted");
       console.info("   - Search radius too small");
       return [];
+    }
+
+    // Log first agent's fee data for debugging
+    if (data && data.length > 0) {
+      console.log("🐛 DEBUG: First agent fee data:");
+      const firstAgent = data[0];
+      console.log(
+        "- interaction_fee_amount:",
+        firstAgent.interaction_fee_amount,
+        typeof firstAgent.interaction_fee_amount
+      );
+      console.log(
+        "- interaction_fee:",
+        firstAgent.interaction_fee,
+        typeof firstAgent.interaction_fee
+      );
+      console.log(
+        "- fee_usdt:",
+        firstAgent.fee_usdt,
+        typeof firstAgent.fee_usdt
+      );
+      console.log(
+        "- fee_usdc:",
+        firstAgent.fee_usdc,
+        typeof firstAgent.fee_usdc
+      );
+      console.log("- Raw agent object:", JSON.stringify(firstAgent, null, 2));
     }
 
     // Calculate distances manually and filter by radius

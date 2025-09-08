@@ -25,6 +25,123 @@ import {
   MicOff,
   VideoOff,
 } from "lucide-react";
+import {
+  getUSDCContractForChain,
+  getNetworkInfo,
+} from "../services/evmNetworkService";
+
+// Helper functions for dynamic agent payment data
+const getServiceFeeDisplay = (agent) => {
+  // Log the full agent object for debugging
+  console.log("🔍 AgentInteractionModal: Full agent data for fee:", {
+    name: agent?.name,
+    interaction_fee_amount: agent?.interaction_fee_amount,
+    interaction_fee: agent?.interaction_fee,
+    payment_config: agent?.payment_config,
+    fee_amount: agent?.fee_amount,
+    allKeys: agent
+      ? Object.keys(agent).filter(
+          (k) => k.includes("fee") || k.includes("amount")
+        )
+      : [],
+  });
+
+  // Priority order for fee fields (same as agentService.js)
+  const fee =
+    agent?.interaction_fee_amount ||
+    agent?.payment_config?.interaction_fee_amount ||
+    agent?.payment_config?.fee_amount ||
+    agent?.interaction_fee ||
+    agent?.fee_amount ||
+    1; // fallback
+
+  const token = agent?.payment_config?.payment_token || "USDC";
+
+  console.log("🔍 AgentInteractionModal: Service fee display:", {
+    fee,
+    token,
+    agent: agent?.name,
+    source: agent?.interaction_fee_amount
+      ? "interaction_fee_amount"
+      : agent?.interaction_fee
+      ? "interaction_fee"
+      : "fallback",
+  });
+  return `${fee} ${token}`;
+};
+
+const getNetworkDisplay = (agent) => {
+  // Log the full agent object for debugging network info
+  console.log("🔍 AgentInteractionModal: Full agent data for network:", {
+    name: agent?.name,
+    deployment_network_name: agent?.deployment_network_name,
+    network: agent?.network,
+    chain_id: agent?.chain_id,
+    deployment_chain_id: agent?.deployment_chain_id,
+    allKeys: agent
+      ? Object.keys(agent).filter(
+          (k) => k.includes("network") || k.includes("chain")
+        )
+      : [],
+  });
+
+  // Use deployment network name from database
+  const network =
+    agent?.deployment_network_name || agent?.network || "Network not specified";
+  console.log("🔍 AgentInteractionModal: Network display:", {
+    network,
+    agent: agent?.name,
+    source: agent?.deployment_network_name
+      ? "deployment_network_name"
+      : agent?.network
+      ? "network"
+      : "fallback",
+  });
+  return network;
+};
+
+const getTokenContractDisplay = (agent) => {
+  // Log the full agent object for debugging chain info
+  console.log("🔍 AgentInteractionModal: Full agent data for contract:", {
+    name: agent?.name,
+    deployment_chain_id: agent?.deployment_chain_id,
+    chain_id: agent?.chain_id,
+    allKeys: agent
+      ? Object.keys(agent).filter(
+          (k) => k.includes("chain") || k.includes("contract")
+        )
+      : [],
+  });
+
+  const chainId = agent?.deployment_chain_id || agent?.chain_id;
+
+  if (!chainId) {
+    console.log(
+      "⚠️ AgentInteractionModal: No chain ID found for agent:",
+      agent?.name
+    );
+    return "Contract not available";
+  }
+
+  const usdcContract = getUSDCContractForChain(chainId);
+
+  if (usdcContract) {
+    // Format: 0x1c7D4B...79C7238
+    const display = `${usdcContract.substring(0, 8)}...${usdcContract.substring(
+      34
+    )}`;
+    console.log("✅ AgentInteractionModal: Token contract display:", {
+      display,
+      chainId,
+      agent: agent?.name,
+      fullContract: usdcContract,
+    });
+    return display;
+  }
+
+  console.log("⚠️ AgentInteractionModal: No USDC contract for chain:", chainId);
+  return "Contract not available";
+};
 
 const AgentInteractionModal = ({
   agent,
@@ -389,13 +506,19 @@ const AgentInteractionModal = ({
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-slate-400">Service Fee:</span>
                       <span className="text-white font-semibold">
-                        10 USBDG+
+                        {getServiceFeeDisplay(agent)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-slate-400">Network:</span>
+                      <span className="text-purple-400">
+                        {getNetworkDisplay(agent)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-slate-400">Network:</span>
-                      <span className="text-purple-400">
-                        BlockDAG Primordial
+                      <span className="text-slate-400">Token Contract:</span>
+                      <span className="text-green-400 font-mono text-sm">
+                        {getTokenContractDisplay(agent)}
                       </span>
                     </div>
                   </div>

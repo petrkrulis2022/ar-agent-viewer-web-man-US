@@ -8,6 +8,7 @@ import {
   Users,
   Activity,
 } from "lucide-react";
+import { resolveInteractionFee } from "../utils/agentDataValidator";
 
 const NeARAgentsList = ({
   agents,
@@ -67,11 +68,21 @@ const NeARAgentsList = ({
       "avalanche-fuji": "Avalanche Fuji",
       "avalanche-mainnet": "Avalanche",
       ethereum: "Ethereum",
+      "ethereum-sepolia": "Ethereum Sepolia",
+      "arbitrum-sepolia": "Arbitrum Sepolia",
+      "base-sepolia": "Base Sepolia",
+      "op-sepolia": "OP Sepolia",
       polygon: "Polygon",
       "near-testnet": "NEAR Testnet",
       "near-mainnet": "NEAR",
       "blockdag-testnet": "BlockDAG",
+      "cube-sepolia": "Cube Sepolia",
+      cube: "Cube Network",
     };
+    console.log(
+      `🔍 Network mapping for '${network}':`,
+      networkMap[network] || network
+    );
     return networkMap[network] || network;
   };
 
@@ -176,7 +187,7 @@ const NeARAgentsList = ({
               </div>
 
               {/* Description */}
-              <p className="text-gray-300 text-sm mb-4 line-clamp-2">
+              <p className="text-gray-300 text-sm mb-4">
                 {agent.description || "No description available"}
               </p>
 
@@ -195,9 +206,28 @@ const NeARAgentsList = ({
                 <div className="flex items-center space-x-2 text-sm text-gray-400">
                   <Wallet className="w-4 h-4" />
                   <span>
-                    {agent.interaction_fee_usdfc || 1}{" "}
-                    {agent.currency_type || "USDFC"} •
-                    {getNetworkDisplay(agent.network)}
+                    {(() => {
+                      console.log(
+                        "🔍 NeARAgentsList FULL Agent Data for:",
+                        agent.name,
+                        {
+                          network: agent.network,
+                          chain_id: agent.chain_id,
+                          interaction_fee_amount: agent.interaction_fee_amount,
+                          fee_usdc: agent.fee_usdc,
+                          fee_usdt: agent.fee_usdt,
+                          interaction_fee_usdfc: agent.interaction_fee_usdfc,
+                          interaction_fee: agent.interaction_fee,
+                        }
+                      );
+                      const resolvedFee = resolveInteractionFee(agent);
+                      console.log(
+                        "🔍 NeARAgentsList NEW Fee Display:",
+                        resolvedFee
+                      );
+                      return `${resolvedFee.amount} ${resolvedFee.token}`;
+                    })()}{" "}
+                    • {getNetworkDisplay(agent.network)}
                   </span>
                 </div>
 

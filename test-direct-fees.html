@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Direct Database Fee Test</title>
+    <style>
+      body {
+        font-family: monospace;
+        background: #1a1a1a;
+        color: #fff;
+        padding: 20px;
+      }
+      .result {
+        background: #2a2a2a;
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🔍 Direct Database Fee Test</h1>
+    <div id="results"></div>
+
+    <script>
+      // Direct database query to check agent fee values
+      console.log("🔍 Testing actual database content...");
+
+      const resultsDiv = document.getElementById("results");
+
+      const log = (message) => {
+        console.log(message);
+        resultsDiv.innerHTML += `<div class="result">${message}</div>`;
+      };
+
+      // Simple test without imports to avoid module issues
+      const testDb = async () => {
+        try {
+          const response = await fetch(
+            "https://vaygtgkqoxkcdjhczaqt.supabase.co/rest/v1/deployed_objects?select=id,name,interaction_fee_amount,interaction_fee,fee_usdt,fee_usdc",
+            {
+              headers: {
+                apikey:
+                  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZheWd0Z2txb3hrY2RqaGN6YXF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjM3MzIxNjQsImV4cCI6MjAzOTMwODE2NH0.QGRdl2cN1LJe7eHvPxYzdjgfzGPGZAr7DWRCo48GcsQ",
+                Authorization:
+                  "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZheWd0Z2txb3hrY2RqaGN6YXF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjM3MzIxNjQsImV4cCI6MjAzOTMwODE2NH0.QGRdl2cN1LJe7eHvPxYzdjgfzGPGZAr7DWRCo48GcsQ",
+              },
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+
+          const data = await response.json();
+
+          log("✅ Database connection successful");
+          log(`📊 Found ${data.length} agents:`);
+
+          data.forEach((agent, index) => {
+            log(`\n--- Agent ${index + 1} ---`);
+            log(`ID: ${agent.id}`);
+            log(`Name: ${agent.name}`);
+            log(
+              `interaction_fee_amount: ${
+                agent.interaction_fee_amount
+              } (${typeof agent.interaction_fee_amount})`
+            );
+            log(
+              `interaction_fee: ${
+                agent.interaction_fee
+              } (${typeof agent.interaction_fee})`
+            );
+            log(`fee_usdt: ${agent.fee_usdt} (${typeof agent.fee_usdt})`);
+            log(`fee_usdc: ${agent.fee_usdc} (${typeof agent.fee_usdc})`);
+          });
+
+          // Look for the specific agent mentioned
+          const cubeAgent = data.find(
+            (a) => a.name && a.name.toLowerCase().includes("cube")
+          );
+          if (cubeAgent) {
+            log("\n🎯 Found Cube agent:");
+            log(JSON.stringify(cubeAgent, null, 2));
+          } else {
+            log("\n❌ No Cube agent found");
+          }
+
+          // Look for agents with 4.0 fee
+          const agentWith4 = data.find(
+            (a) =>
+              a.interaction_fee_amount === 4.0 ||
+              a.interaction_fee === 4.0 ||
+              a.fee_usdc === 4.0
+          );
+          if (agentWith4) {
+            log("\n🎯 Found agent with 4.0 fee:");
+            log(JSON.stringify(agentWith4, null, 2));
+          } else {
+            log("\n❌ No agent found with 4.0 fee");
+          }
+        } catch (error) {
+          log("❌ Database test failed: " + error.message);
+          console.error("❌ Database test failed:", error);
+        }
+      };
+
+      testDb();
+    </script>
+  </body>
+</html>

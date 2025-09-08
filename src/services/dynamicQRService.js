@@ -6,6 +6,7 @@ import {
   networkDetectionService,
   SUPPORTED_EVM_NETWORKS,
 } from "./networkDetectionService";
+import { formatInteractionFee } from "../utils/agentDataValidator";
 import QRCode from "qrcode";
 
 class DynamicQRService {
@@ -29,14 +30,22 @@ class DynamicQRService {
       const deploymentNetwork =
         agentData.deployment_network_name || agentData.network;
 
-      // 2. Use dynamic interaction fee (NEW - with fallback to legacy)
-      const interactionFee =
-        amountUSD ||
-        agentData.interaction_fee_amount ||
-        agentData.interaction_fee ||
-        1.0; // Final fallback
-      const feeToken =
-        agentData.interaction_fee_token || agentData.currency_type || "USDC"; // Default to USDC
+      // 2. Use validated interaction fee from agent data
+      const feeInfo = formatInteractionFee(agentData);
+      const tokenAmount = amountUSD || feeInfo.amount;
+      const feeToken = feeInfo.token;
+
+      console.log("💰 Using validated interaction fee:");
+      console.log("- Amount:", tokenAmount, feeToken);
+      console.log("- Data source:", feeInfo.source);
+      console.log("- Is dynamic data:", feeInfo.isDynamic);
+      console.log("- Is legacy data:", feeInfo.isLegacy);
+
+      if (feeInfo.isFallback) {
+        console.warn(
+          "⚠️ Using fallback interaction fee - agent data may be incomplete"
+        );
+      }
 
       // 3. Use dynamic wallet address (NEW - with fallback to legacy)
       const recipientAddress =
@@ -94,8 +103,8 @@ class DynamicQRService {
         throw new Error(`USDC not supported on network ${targetChainId}`);
       }
 
-      // Calculate token amount (support for different stablecoins)
-      let tokenAmount = interactionFee;
+      // Calculate final amount in token units
+      let finalTokenAmount = tokenAmount;
       let tokenDecimals = 6; // Default USDC decimals
 
       // Adjust for different tokens
@@ -105,7 +114,7 @@ class DynamicQRService {
         tokenDecimals = 18; // Assuming 18 decimals for custom tokens
       }
 
-      const tokenAmountWei = this.toTokenUnits(tokenAmount, tokenDecimals);
+      const tokenAmountWei = this.toTokenUnits(finalTokenAmount, tokenDecimals);
 
       if (!recipientAddress) {
         throw new Error(
@@ -114,7 +123,7 @@ class DynamicQRService {
       }
 
       console.log("💰 Payment details:");
-      console.log("- Amount:", tokenAmount, feeToken);
+      console.log("- Amount:", finalTokenAmount, feeToken);
       console.log("- Amount (wei):", tokenAmountWei);
       console.log("- Recipient:", recipientAddress);
       console.log("- Token contract:", usdcAddress);
@@ -149,7 +158,7 @@ class DynamicQRService {
           address: usdcAddress,
           symbol: feeToken,
           decimals: tokenDecimals,
-          amount: tokenAmount,
+          amount: finalTokenAmount,
         },
         recipientAddress: recipientAddress,
         agentInfo: {

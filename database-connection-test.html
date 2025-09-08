@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Database Connection Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .test-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .status {
+        padding: 10px;
+        border-radius: 4px;
+        margin: 10px 0;
+      }
+      .success {
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        color: #155724;
+      }
+      .error {
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+        color: #721c24;
+      }
+      .info {
+        background: #d1ecf1;
+        border: 1px solid #bee5eb;
+        color: #0c5460;
+      }
+      .code {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        padding: 10px;
+        border-radius: 4px;
+        font-family: monospace;
+        white-space: pre-wrap;
+        margin: 10px 0;
+      }
+      button {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🔍 Database Connection Test</h1>
+
+    <div class="test-card">
+      <h2>Test Database Connection</h2>
+      <button onclick="testConnection()">Test Supabase Connection</button>
+      <button onclick="testAgentService()">Test Agent Service</button>
+      <button onclick="fetchSampleData()">Fetch Sample Data</button>
+
+      <div id="status"></div>
+      <div id="results"></div>
+    </div>
+
+    <script type="module">
+      // Import Supabase client
+      import { createClient } from "https://cdn.skypack.dev/@supabase/supabase-js";
+
+      // Supabase configuration
+      const SUPABASE_URL = "https://ncjbwzibnqrbrvicdmec.supabase.co";
+      const SUPABASE_ANON_KEY =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5jamJ3emlibnFyYnJ2aWNkbWVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2ODAxNTksImV4cCI6MjA2NjI1NjE1OX0.R7rx4jOPt9oOafcyJr3x-nEvGk5-e4DP7MbfCVOCHHI";
+
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+      window.testConnection = async function () {
+        const statusDiv = document.getElementById("status");
+        const resultsDiv = document.getElementById("results");
+
+        statusDiv.innerHTML =
+          '<div class="info">Testing Supabase connection...</div>';
+        resultsDiv.innerHTML = "";
+
+        try {
+          // Test basic connection
+          const { data, error } = await supabase
+            .from("deployed_objects")
+            .select("count")
+            .limit(1);
+
+          if (error) {
+            statusDiv.innerHTML = `<div class="error">❌ Connection failed: ${error.message}</div>`;
+            resultsDiv.innerHTML = `<div class="code">Error details: ${JSON.stringify(
+              error,
+              null,
+              2
+            )}</div>`;
+          } else {
+            statusDiv.innerHTML =
+              '<div class="success">✅ Connection successful!</div>';
+            resultsDiv.innerHTML = `<div class="code">Response: ${JSON.stringify(
+              data,
+              null,
+              2
+            )}</div>`;
+          }
+        } catch (err) {
+          statusDiv.innerHTML = `<div class="error">❌ Connection error: ${err.message}</div>`;
+          resultsDiv.innerHTML = `<div class="code">Error: ${err.stack}</div>`;
+        }
+      };
+
+      window.testAgentService = async function () {
+        const statusDiv = document.getElementById("status");
+        const resultsDiv = document.getElementById("results");
+
+        statusDiv.innerHTML = '<div class="info">Testing AgentService...</div>';
+        resultsDiv.innerHTML = "";
+
+        try {
+          // Simulate AgentService fetchAllAgents
+          const { data, error } = await supabase
+            .from("deployed_objects")
+            .select("*");
+
+          if (error) {
+            statusDiv.innerHTML = `<div class="error">❌ AgentService test failed: ${error.message}</div>`;
+            resultsDiv.innerHTML = `<div class="code">Error details: ${JSON.stringify(
+              error,
+              null,
+              2
+            )}</div>`;
+          } else {
+            statusDiv.innerHTML = `<div class="success">✅ AgentService test successful! Found ${
+              data?.length || 0
+            } agents</div>`;
+            resultsDiv.innerHTML = `<div class="code">Sample data: ${JSON.stringify(
+              data?.[0] || {},
+              null,
+              2
+            )}</div>`;
+          }
+        } catch (err) {
+          statusDiv.innerHTML = `<div class="error">❌ AgentService error: ${err.message}</div>`;
+          resultsDiv.innerHTML = `<div class="code">Error: ${err.stack}</div>`;
+        }
+      };
+
+      window.fetchSampleData = async function () {
+        const statusDiv = document.getElementById("status");
+        const resultsDiv = document.getElementById("results");
+
+        statusDiv.innerHTML =
+          '<div class="info">Fetching sample agent data...</div>';
+        resultsDiv.innerHTML = "";
+
+        try {
+          const { data, error } = await supabase
+            .from("deployed_objects")
+            .select(
+              "id, name, description, latitude, longitude, chain_id, network, deployer_wallet_address, interaction_fee, currency_type, is_active"
+            )
+            .limit(5);
+
+          if (error) {
+            statusDiv.innerHTML = `<div class="error">❌ Failed to fetch sample data: ${error.message}</div>`;
+            resultsDiv.innerHTML = `<div class="code">Error details: ${JSON.stringify(
+              error,
+              null,
+              2
+            )}</div>`;
+          } else {
+            statusDiv.innerHTML = `<div class="success">✅ Fetched ${
+              data?.length || 0
+            } sample agents</div>`;
+            resultsDiv.innerHTML = `<div class="code">${JSON.stringify(
+              data,
+              null,
+              2
+            )}</div>`;
+          }
+        } catch (err) {
+          statusDiv.innerHTML = `<div class="error">❌ Fetch error: ${err.message}</div>`;
+          resultsDiv.innerHTML = `<div class="code">Error: ${err.stack}</div>`;
+        }
+      };
+
+      // Auto-run connection test on page load
+      window.addEventListener("load", () => {
+        setTimeout(() => {
+          testConnection();
+        }, 1000);
+      });
+    </script>
+  </body>
+</html>

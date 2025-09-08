@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Database Fee Fields Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .test-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .status {
+        padding: 10px;
+        border-radius: 4px;
+        margin: 10px 0;
+      }
+      .success {
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        color: #155724;
+      }
+      .error {
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+        color: #721c24;
+      }
+      .info {
+        background: #d1ecf1;
+        border: 1px solid #bee5eb;
+        color: #0c5460;
+      }
+      .code {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        padding: 10px;
+        border-radius: 4px;
+        font-family: monospace;
+        white-space: pre-wrap;
+        margin: 10px 0;
+      }
+      button {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 10px 0;
+      }
+      th,
+      td {
+        border: 1px solid #dee2e6;
+        padding: 8px;
+        text-align: left;
+      }
+      th {
+        background: #f8f9fa;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🔍 Database Fee Fields Test</h1>
+
+    <div class="test-card">
+      <h2>Test Fee Fields from Database</h2>
+      <button onclick="testFeeFields()">🔍 Check All Fee Fields</button>
+      <button onclick="testSpecificAgent()">
+        👤 Check Specific Agent Fees
+      </button>
+      <button onclick="queryFeeFieldsOnly()">💰 Query Fee Fields Only</button>
+
+      <div id="status"></div>
+      <div id="results"></div>
+    </div>
+
+    <script type="module">
+      // Import Supabase client
+      import { createClient } from "https://cdn.skypack.dev/@supabase/supabase-js";
+
+      // Supabase configuration
+      const SUPABASE_URL = "https://ncjbwzibnqrbrvicdmec.supabase.co";
+      const SUPABASE_ANON_KEY =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5jamJ3emlibnFyYnJ2aWNkbWVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2ODAxNTksImV4cCI6MjA2NjI1NjE1OX0.R7rx4jOPt9oOafcyJr3x-nEvGk5-e4DP7MbfCVOCHHI";
+
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+      window.testFeeFields = async function () {
+        const statusDiv = document.getElementById("status");
+        const resultsDiv = document.getElementById("results");
+
+        statusDiv.innerHTML =
+          '<div class="info">Testing all fee fields...</div>';
+        resultsDiv.innerHTML = "";
+
+        try {
+          const { data, error } = await supabase
+            .from("deployed_objects")
+            .select(
+              "id, name, interaction_fee, interaction_fee_usdfc, fee_usdc, fee_usdt, currency_type"
+            )
+            .limit(10);
+
+          if (error) {
+            statusDiv.innerHTML = `<div class="error">❌ Fee test failed: ${error.message}</div>`;
+            resultsDiv.innerHTML = `<div class="code">Error details: ${JSON.stringify(
+              error,
+              null,
+              2
+            )}</div>`;
+          } else {
+            statusDiv.innerHTML = `<div class="success">✅ Fee test successful! Found ${
+              data?.length || 0
+            } agents</div>`;
+
+            let tableHTML = `
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Agent Name</th>
+                                    <th>interaction_fee</th>
+                                    <th>interaction_fee_usdfc</th>
+                                    <th>fee_usdc</th>
+                                    <th>fee_usdt</th>
+                                    <th>currency_type</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+
+            data.forEach((agent) => {
+              tableHTML += `
+                            <tr>
+                                <td>${agent.name || "Unknown"}</td>
+                                <td>${agent.interaction_fee || "null"}</td>
+                                <td>${
+                                  agent.interaction_fee_usdfc || "null"
+                                }</td>
+                                <td>${agent.fee_usdc || "null"}</td>
+                                <td>${agent.fee_usdt || "null"}</td>
+                                <td>${agent.currency_type || "null"}</td>
+                            </tr>
+                        `;
+            });
+
+            tableHTML += "</tbody></table>";
+            resultsDiv.innerHTML = tableHTML;
+          }
+        } catch (err) {
+          statusDiv.innerHTML = `<div class="error">❌ Fee test error: ${err.message}</div>`;
+          resultsDiv.innerHTML = `<div class="code">Error: ${err.stack}</div>`;
+        }
+      };
+
+      window.testSpecificAgent = async function () {
+        const statusDiv = document.getElementById("status");
+        const resultsDiv = document.getElementById("results");
+
+        statusDiv.innerHTML =
+          '<div class="info">Testing specific agent fees...</div>';
+        resultsDiv.innerHTML = "";
+
+        try {
+          const { data, error } = await supabase
+            .from("deployed_objects")
+            .select("*")
+            .limit(1)
+            .single();
+
+          if (error) {
+            statusDiv.innerHTML = `<div class="error">❌ Specific agent test failed: ${error.message}</div>`;
+            resultsDiv.innerHTML = `<div class="code">Error details: ${JSON.stringify(
+              error,
+              null,
+              2
+            )}</div>`;
+          } else {
+            statusDiv.innerHTML = `<div class="success">✅ Found agent: ${data.name}</div>`;
+
+            // Check all possible fee fields
+            const feeFields = {
+              interaction_fee: data.interaction_fee,
+              interaction_fee_usdfc: data.interaction_fee_usdfc,
+              fee_usdc: data.fee_usdc,
+              fee_usdt: data.fee_usdt,
+              currency_type: data.currency_type,
+            };
+
+            let analysis = "<h3>Fee Field Analysis:</h3>";
+            for (const [field, value] of Object.entries(feeFields)) {
+              const hasValue =
+                value !== null && value !== undefined && value !== "";
+              analysis += `<p><strong>${field}:</strong> ${value} (${typeof value}) ${
+                hasValue ? "✅" : "❌"
+              }</p>`;
+            }
+
+            // Simulate the fee calculation logic
+            const calculatedFee =
+              data.interaction_fee ||
+              data.interaction_fee_usdfc ||
+              data.fee_usdc ||
+              data.fee_usdt ||
+              1.0;
+            analysis += `<h3>Calculated Fee (AgentService logic):</h3><p><strong>${calculatedFee}</strong></p>`;
+
+            resultsDiv.innerHTML =
+              analysis +
+              `<div class="code">${JSON.stringify(feeFields, null, 2)}</div>`;
+          }
+        } catch (err) {
+          statusDiv.innerHTML = `<div class="error">❌ Specific agent error: ${err.message}</div>`;
+          resultsDiv.innerHTML = `<div class="code">Error: ${err.stack}</div>`;
+        }
+      };
+
+      window.queryFeeFieldsOnly = async function () {
+        const statusDiv = document.getElementById("status");
+        const resultsDiv = document.getElementById("results");
+
+        statusDiv.innerHTML =
+          '<div class="info">Querying fee fields only...</div>';
+        resultsDiv.innerHTML = "";
+
+        try {
+          // Query with a more specific select to see what fields actually exist
+          const { data, error } = await supabase
+            .from("deployed_objects")
+            .select("interaction_fee")
+            .limit(5);
+
+          if (error) {
+            statusDiv.innerHTML = `<div class="error">❌ Fee fields query failed: ${error.message}</div>`;
+            resultsDiv.innerHTML = `<div class="code">Error details: ${JSON.stringify(
+              error,
+              null,
+              2
+            )}</div>`;
+          } else {
+            statusDiv.innerHTML = `<div class="success">✅ Fee fields query successful</div>`;
+            resultsDiv.innerHTML = `<div class="code">${JSON.stringify(
+              data,
+              null,
+              2
+            )}</div>`;
+          }
+        } catch (err) {
+          statusDiv.innerHTML = `<div class="error">❌ Fee query error: ${err.message}</div>`;
+          resultsDiv.innerHTML = `<div class="code">Error: ${err.stack}</div>`;
+        }
+      };
+
+      // Auto-run fee test on page load
+      window.addEventListener("load", () => {
+        setTimeout(() => {
+          testFeeFields();
+        }, 1000);
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Enhanced Mock Data Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background-color: #1a1a1a;
+        color: white;
+      }
+      .test-result {
+        background-color: #2a2a2a;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 8px;
+        border-left: 4px solid #00ff88;
+      }
+      .test-result.error {
+        border-left-color: #ff6b6b;
+      }
+      .agent-card {
+        background-color: #333;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 8px;
+        border: 1px solid #555;
+      }
+      .fee-display {
+        color: #00ff88;
+        font-weight: bold;
+        font-size: 18px;
+      }
+      .network-display {
+        color: #6bb6ff;
+        font-weight: bold;
+      }
+      .contract-display {
+        color: #ffd700;
+        font-family: monospace;
+        font-size: 12px;
+      }
+      pre {
+        background-color: #1a1a1a;
+        padding: 10px;
+        border-radius: 5px;
+        overflow-x: auto;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🧪 Enhanced Mock Data Test</h1>
+    <p>
+      This page tests our enhanced mock data to verify payment modal will show
+      correct values.
+    </p>
+
+    <div id="test-results"></div>
+
+    <script>
+      // Mock agent data generator (same as in useDatabase.js)
+      function generateTestMockObjects() {
+        const feeAmounts = [4, 7, 10, 19, 3]; // Real database fee values
+        const networks = [
+          { name: "Ethereum Sepolia", chainId: 11155111 },
+          { name: "Arbitrum Sepolia", chainId: 421614 },
+          { name: "Base Sepolia", chainId: 84532 },
+          { name: "OP Sepolia", chainId: 11155420 },
+          { name: "Avalanche Fuji", chainId: 43113 },
+        ];
+
+        const mockAgents = [];
+        for (let i = 0; i < 5; i++) {
+          const selectedNetwork = networks[i % networks.length];
+          const feeAmount = feeAmounts[i % feeAmounts.length];
+
+          const agent = {
+            id: `mock-${i + 1}`,
+            name: `Test Agent ${i + 1}`,
+            interaction_fee_amount: feeAmount,
+            interaction_fee: feeAmount * 1.5,
+            fee_usdc: feeAmount,
+            currency_type: "USDC",
+            deployment_network_name: selectedNetwork.name,
+            deployment_chain_id: selectedNetwork.chainId,
+            network: selectedNetwork.name,
+            chain_id: selectedNetwork.chainId,
+            token_symbol: "USDC",
+            payment_config: {
+              payment_token: "USDC",
+              interaction_fee_amount: feeAmount,
+              fee_amount: feeAmount,
+            },
+          };
+          mockAgents.push(agent);
+        }
+        return mockAgents;
+      }
+
+      // Payment modal helper functions (same as in AgentInteractionModal.jsx)
+      function getServiceFeeDisplay(agent) {
+        const fee =
+          agent?.interaction_fee_amount ||
+          agent?.payment_config?.interaction_fee_amount ||
+          agent?.payment_config?.fee_amount ||
+          agent?.interaction_fee ||
+          agent?.fee_amount ||
+          1;
+        const token = agent?.payment_config?.payment_token || "USDC";
+        return `${fee} ${token}`;
+      }
+
+      function getNetworkDisplay(agent) {
+        return (
+          agent?.deployment_network_name ||
+          agent?.network ||
+          "Network not specified"
+        );
+      }
+
+      function getTokenContractDisplay(agent) {
+        const chainId = agent?.deployment_chain_id || agent?.chain_id;
+        if (!chainId) return "Contract not available";
+
+        // USDC contracts for different networks
+        const contracts = {
+          11155111: "0x1c7D4B196c621e52a45a469c7805A79C7238fD5B", // Ethereum Sepolia
+          421614: "0x75faf114eafb1BDbe2F0316DF893fd58CF46885A", // Arbitrum Sepolia
+          84532: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", // Base Sepolia
+          11155420: "0x5fd84259d66Cd46123540766Be93DFE6D43130D7", // OP Sepolia
+          43113: "0x5425890298aed601595a70AB815c96711a31Bc65", // Avalanche Fuji
+        };
+
+        const contract = contracts[chainId];
+        if (contract) {
+          return `${contract.substring(0, 8)}...${contract.substring(34)}`;
+        }
+        return "Contract not available";
+      }
+
+      // Test the mock data
+      function runTests() {
+        const resultsDiv = document.getElementById("test-results");
+        const mockAgents = generateTestMockObjects();
+
+        let html = "<h2>🔍 Test Results</h2>";
+
+        // Test each mock agent
+        mockAgents.forEach((agent, index) => {
+          const serviceFee = getServiceFeeDisplay(agent);
+          const network = getNetworkDisplay(agent);
+          const contract = getTokenContractDisplay(agent);
+
+          const expectedFee = agent.interaction_fee_amount;
+          const expectedNetwork = agent.deployment_network_name;
+          const expectedHasContract = contract !== "Contract not available";
+
+          const feeCorrect = serviceFee === `${expectedFee} USDC`;
+          const networkCorrect = network === expectedNetwork;
+
+          html += `
+                    <div class="agent-card">
+                        <h3>Agent ${index + 1}: ${agent.name}</h3>
+                        <div class="fee-display">
+                            Service Fee: ${serviceFee} 
+                            ${
+                              feeCorrect
+                                ? "✅"
+                                : "❌ Expected: " + expectedFee + " USDC"
+                            }
+                        </div>
+                        <div class="network-display">
+                            Network: ${network} 
+                            ${
+                              networkCorrect
+                                ? "✅"
+                                : "❌ Expected: " + expectedNetwork
+                            }
+                        </div>
+                        <div class="contract-display">
+                            Contract: ${contract} 
+                            ${
+                              expectedHasContract
+                                ? "✅"
+                                : "❌ No contract found"
+                            }
+                        </div>
+                        <details>
+                            <summary>Raw Agent Data</summary>
+                            <pre>${JSON.stringify(agent, null, 2)}</pre>
+                        </details>
+                    </div>
+                `;
+        });
+
+        // Summary
+        const totalTests = mockAgents.length * 3; // fee, network, contract per agent
+        const passedTests = mockAgents.reduce((count, agent, index) => {
+          const serviceFee = getServiceFeeDisplay(agent);
+          const network = getNetworkDisplay(agent);
+          const contract = getTokenContractDisplay(agent);
+
+          const feeCorrect =
+            serviceFee === `${agent.interaction_fee_amount} USDC`;
+          const networkCorrect = network === agent.deployment_network_name;
+          const contractCorrect = contract !== "Contract not available";
+
+          return (
+            count +
+            (feeCorrect ? 1 : 0) +
+            (networkCorrect ? 1 : 0) +
+            (contractCorrect ? 1 : 0)
+          );
+        }, 0);
+
+        html += `
+                <div class="test-result ${
+                  passedTests === totalTests ? "" : "error"
+                }">
+                    <h3>Summary: ${passedTests}/${totalTests} tests passed</h3>
+                    ${
+                      passedTests === totalTests
+                        ? "🎉 All tests passed! Enhanced mock data is working correctly."
+                        : "⚠️ Some tests failed. Check the individual results above."
+                    }
+                </div>
+            `;
+
+        resultsDiv.innerHTML = html;
+      }
+
+      // Run tests when page loads
+      runTests();
+    </script>
+  </body>
+</html>
