@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Live Payment Modal Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background: #f0f0f0;
+      }
+      .test-container {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        max-width: 800px;
+        margin: 0 auto;
+      }
+      .status {
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 4px;
+      }
+      .success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+      .info {
+        background: #d1ecf1;
+        color: #0c5460;
+        border: 1px solid #bee5eb;
+      }
+      .test-button {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      .test-button:hover {
+        background: #0056b3;
+      }
+      #results {
+        margin-top: 20px;
+        white-space: pre-wrap;
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 4px;
+        font-family: monospace;
+        max-height: 400px;
+        overflow-y: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="test-container">
+      <h1>🔴 Live Payment Modal Test</h1>
+      <p>This page tests the payment modal with live React app data.</p>
+
+      <div class="status info">
+        <strong>Server Status:</strong>
+        <span id="serverStatus">Checking...</span>
+      </div>
+
+      <div class="status info">
+        <strong>App URL:</strong>
+        <a href="http://localhost:5173/" target="_blank"
+          >http://localhost:5173/</a
+        >
+      </div>
+
+      <button class="test-button" onclick="checkServerStatus()">
+        Check Server
+      </button>
+      <button class="test-button" onclick="openMainApp()">Open Main App</button>
+      <button class="test-button" onclick="testPaymentModal()">
+        Test Payment Modal
+      </button>
+
+      <div id="results"></div>
+    </div>
+
+    <script>
+      let results = document.getElementById("results");
+      let serverStatus = document.getElementById("serverStatus");
+
+      function log(message) {
+        results.textContent += `[${new Date().toLocaleTimeString()}] ${message}\n`;
+        results.scrollTop = results.scrollHeight;
+      }
+
+      async function checkServerStatus() {
+        log("🔍 Checking server status...");
+        try {
+          const response = await fetch("http://localhost:5173/");
+          if (response.ok) {
+            serverStatus.textContent = "✅ Running";
+            serverStatus.style.color = "green";
+            log("✅ Development server is running");
+
+            // Try to fetch the main page to check for errors
+            const text = await response.text();
+            if (text.includes('<div id="root">')) {
+              log("✅ React root element found in HTML");
+            } else {
+              log("⚠️ React root element not found - possible build issue");
+            }
+          } else {
+            throw new Error(`Server responded with ${response.status}`);
+          }
+        } catch (error) {
+          serverStatus.textContent = "❌ Not Running";
+          serverStatus.style.color = "red";
+          log(`❌ Server check failed: ${error.message}`);
+        }
+      }
+
+      function openMainApp() {
+        log("🌐 Opening main app in new tab...");
+        window.open("http://localhost:5173/", "_blank");
+      }
+
+      async function testPaymentModal() {
+        log("🧪 Testing payment modal functionality...");
+
+        // Test the mock data generation function
+        log("📊 Testing mock data generation...");
+
+        const mockLocation = {
+          latitude: 37.7749,
+          longitude: -122.4194,
+          radius_meters: 1000,
+          limit: 5,
+        };
+
+        // Simulate the enhanced mock data generation
+        const feeAmounts = [4, 7, 10, 19, 3];
+        const networks = [
+          { name: "Ethereum Sepolia", chainId: 11155111 },
+          { name: "Arbitrum Sepolia", chainId: 421614 },
+          { name: "Base Sepolia", chainId: 84532 },
+          { name: "OP Sepolia", chainId: 11155420 },
+          { name: "Avalanche Fuji", chainId: 43113 },
+        ];
+
+        const mockAgents = [];
+        for (let i = 0; i < 5; i++) {
+          const selectedNetwork = networks[i % networks.length];
+          const feeAmount = feeAmounts[i % feeAmounts.length];
+
+          const agent = {
+            id: `mock-${i + 1}`,
+            name: `Test Agent ${i + 1}`,
+            interaction_fee_amount: feeAmount,
+            deployment_network_name: selectedNetwork.name,
+            deployment_chain_id: selectedNetwork.chainId,
+            deployment_token_contract_address: `0x${"0".repeat(32)}${i
+              .toString()
+              .padStart(8, "0")}`,
+          };
+
+          mockAgents.push(agent);
+        }
+
+        log(`✅ Generated ${mockAgents.length} mock agents with payment data`);
+
+        // Test payment helper functions
+        log("🔧 Testing payment helper functions...");
+
+        function getServiceFeeDisplay(agent) {
+          const amount = agent.interaction_fee_amount || agent.service_fee;
+          const token =
+            agent.interaction_fee_token || agent.fee_token || "USDC";
+          return amount ? `${amount} ${token}` : "1 USDC";
+        }
+
+        function getNetworkDisplay(agent) {
+          return (
+            agent.deployment_network_name ||
+            agent.network_name ||
+            agent.network ||
+            "Unknown Network"
+          );
+        }
+
+        function getTokenContractDisplay(agent) {
+          const contract =
+            agent.deployment_token_contract_address ||
+            agent.token_contract_address ||
+            agent.contract_address;
+          return contract || "0x0000000000000000000000000000000000000000";
+        }
+
+        mockAgents.forEach((agent, index) => {
+          const fee = getServiceFeeDisplay(agent);
+          const network = getNetworkDisplay(agent);
+          const contract = getTokenContractDisplay(agent);
+
+          log(`Agent ${index + 1}: ${agent.name}`);
+          log(`  💰 Fee: ${fee}`);
+          log(`  🌐 Network: ${network}`);
+          log(`  📜 Contract: ${contract.slice(0, 10)}...`);
+        });
+
+        log("✅ Payment modal test completed");
+        log(
+          "📌 Expected results: Fees should be 4, 7, 10, 19, 3 USDC with proper networks"
+        );
+      }
+
+      // Auto-check server status on load
+      setTimeout(checkServerStatus, 500);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Direct App Access Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background: #f0f0f0;
+      }
+      .test-container {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        max-width: 600px;
+        margin: 0 auto;
+      }
+      .status {
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 4px;
+      }
+      .info {
+        background: #d1ecf1;
+        color: #0c5460;
+        border: 1px solid #bee5eb;
+      }
+      .test-button {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 5px;
+        font-size: 16px;
+      }
+      .test-button:hover {
+        background: #0056b3;
+      }
+      iframe {
+        width: 100%;
+        height: 600px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="test-container">
+      <h1>🔍 Direct App Access Test</h1>
+      <p>
+        This page embeds the React app directly to check for loading issues.
+      </p>
+
+      <div class="status info">
+        <strong>App Status:</strong> If you see the app loading below, the
+        server is working correctly. If it's blank, there might be a JavaScript
+        error.
+      </div>
+
+      <button
+        class="test-button"
+        onclick="window.open('http://localhost:5173/', '_blank')"
+      >
+        🌐 Open App in New Tab
+      </button>
+
+      <button class="test-button" onclick="refreshIframe()">
+        🔄 Refresh Embedded App
+      </button>
+
+      <button
+        class="test-button"
+        onclick="window.open('http://localhost:5173/debug-fees', '_blank')"
+      >
+        🧪 Open Debug Dashboard
+      </button>
+
+      <h3>Embedded App (should show main landing screen):</h3>
+      <iframe id="appFrame" src="http://localhost:5173/"></iframe>
+    </div>
+
+    <script>
+      function refreshIframe() {
+        document.getElementById("appFrame").src =
+          document.getElementById("appFrame").src;
+      }
+
+      // Check if iframe loads
+      document.getElementById("appFrame").onload = function () {
+        console.log("✅ App iframe loaded successfully");
+      };
+
+      document.getElementById("appFrame").onerror = function () {
+        console.log("❌ App iframe failed to load");
+      };
+    </script>
+  </body>
+</html>
