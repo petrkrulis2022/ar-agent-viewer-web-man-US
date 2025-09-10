@@ -187,8 +187,6 @@ export const getNearAgentsFromSupabase = async (
         interaction_fee,
         interaction_fee_amount,
         interaction_fee_usdfc,
-        fee_usdt,
-        fee_usdc,
         interaction_range,
         currency_type,
         network,
@@ -248,14 +246,18 @@ export const getNearAgentsFromSupabase = async (
             video_chat: false,
             interaction_fee: 1.0,
             interaction_fee_amount: 1.0,
-            fee_usdt: null,
-            fee_usdc: null,
             features: [],
-            deployment_network_name: "Unknown Network",
-            deployment_chain_id: null,
+            deployment_network_name: "OP Sepolia",
+            deployment_chain_id: 11155420,
             interaction_range: 50.0,
-            currency_type: "USDT",
-            network: "Morph",
+            currency_type: "USDC",
+            network: "OP Sepolia",
+            // Add wallet addresses for payment functionality
+            wallet_address: "0x742d35Cc6634C0532925a3b8D32d8B2A83B6ddE2",
+            payment_recipient_address:
+              "0x742d35Cc6634C0532925a3b8D32d8B2A83B6ddE2",
+            deployer_address: "0x742d35Cc6634C0532925a3b8D32d8B2A83B6ddE2",
+            agent_wallet_address: "0x742d35Cc6634C0532925a3b8D32d8B2A83B6ddE2",
           }));
 
           console.log(
@@ -310,14 +312,9 @@ export const getNearAgentsFromSupabase = async (
         typeof firstAgent.interaction_fee
       );
       console.log(
-        "- fee_usdt:",
-        firstAgent.fee_usdt,
-        typeof firstAgent.fee_usdt
-      );
-      console.log(
-        "- fee_usdc:",
-        firstAgent.fee_usdc,
-        typeof firstAgent.fee_usdc
+        "- interaction_fee_usdfc:",
+        firstAgent.interaction_fee_usdfc,
+        typeof firstAgent.interaction_fee_usdfc
       );
       console.log("- Raw agent object:", JSON.stringify(firstAgent, null, 2));
     }

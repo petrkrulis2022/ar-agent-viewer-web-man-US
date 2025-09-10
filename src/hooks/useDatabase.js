@@ -154,12 +154,21 @@ const generateMockObjects = (location) => {
       network: selectedNetwork.name, // Fallback
       chain_id: selectedNetwork.chainId, // Fallback
 
+      // ✅ CRITICAL: Add wallet addresses for payments
+      wallet_address: `0x${Math.random().toString(16).substring(2, 42)}`, // Mock wallet address
+      payment_recipient_address: `0x${Math.random()
+        .toString(16)
+        .substring(2, 42)}`,
+      deployer_address: `0x${Math.random().toString(16).substring(2, 42)}`,
+      agent_wallet_address: `0x${Math.random().toString(16).substring(2, 42)}`,
+
       // Token information
       token_symbol: "USDC",
       payment_config: {
         payment_token: "USDC",
         interaction_fee_amount: feeAmount,
         fee_amount: feeAmount,
+        wallet_address: `0x${Math.random().toString(16).substring(2, 42)}`, // Primary wallet
       },
     };
 
@@ -407,7 +416,6 @@ export const useDatabase = () => {
 
               return enhancedFee;
             })(),
-            fee_usdt: obj.fee_usdt ? parseFloat(obj.fee_usdt) : null,
             fee_usdc: (() => {
               // Use the same enhanced logic as interaction_fee_amount
               const agentId = obj.id || "";
@@ -456,10 +464,30 @@ export const useDatabase = () => {
             })(),
             // NEW: Add deployment network fields from enhanced database query with realistic fallbacks
             deployment_network_name: (() => {
+              // 🔧 CRITICAL: Derive network name from actual chain_id (like deployment_chain_id logic)
+              const dbChainId = obj.deployment_chain_id || obj.chain_id;
+              const recognizedTestnets = [
+                11155111, 421614, 84532, 11155420, 43113,
+              ];
+
+              // If database has valid chain_id, use it to derive network name
+              if (dbChainId && recognizedTestnets.includes(dbChainId)) {
+                const chainToNetwork = {
+                  11155111: "Ethereum Sepolia",
+                  421614: "Arbitrum Sepolia",
+                  84532: "Base Sepolia",
+                  11155420: "OP Sepolia",
+                  43113: "Avalanche Fuji",
+                };
+                return chainToNetwork[dbChainId] || "Unknown Network";
+              }
+
+              // Fallback: use database network names if available
               if (obj.deployment_network_name || obj.network) {
                 return obj.deployment_network_name || obj.network;
               }
-              // Same logic as network field
+
+              // Final fallback: enhanced logic based on agent name
               const agentName = (obj.name || "").toLowerCase();
               if (agentName.includes("dynamic")) return "Arbitrum Sepolia";
               if (agentName.includes("base")) return "Base Sepolia";

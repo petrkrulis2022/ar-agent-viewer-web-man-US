@@ -27,7 +27,7 @@ const EVM_TESTNETS = {
   11155420: {
     // OP Sepolia
     name: "OP Sepolia",
-    usdc_contract: "0x5fd84259d3c8b37a387c0d8a4c5b0c0d7d3c0D7",
+    usdc_contract: "0x5fd84259d66Cd46123540766Be93DFE6D43130D7",
     rpc_url: "sepolia.optimism.io",
     currency_symbol: "ETH",
   },

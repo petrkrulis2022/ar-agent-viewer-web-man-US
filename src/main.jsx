@@ -29,16 +29,22 @@ if (Buffer && !Buffer.from) {
   };
 }
 
-// Import AR QR Manager for global access
-import arQRManager from "./services/arQRManager";
-import qrCodeService from "./services/qrCodeService";
+// Import AR QR Manager for global access - TEMPORARILY DISABLED FOR DEBUGGING
+// import arQRManager from "./services/arQRManager";
+// import qrCodeService from "./services/qrCodeService";
 
-// Make AR QR services globally available for testing and debugging
-window.arQRManager = arQRManager;
-window.qrCodeService = qrCodeService;
+// Make AR QR services globally available for testing and debugging - TEMPORARILY DISABLED
+// window.arQRManager = arQRManager;
+// window.qrCodeService = qrCodeService;
+
+console.log("🧪 AR QR services temporarily disabled for debugging blank page");
 
 // Development testing utilities
 if (import.meta.env.DEV) {
+  console.log("🧪 Development mode - testing utilities disabled temporarily");
+
+  // TODO: Re-enable after debugging blank page issue
+  /*
   import("./utils/testARQRFix.js")
     .then((module) => {
       window.testARQRFix = module.runAllTests;
@@ -83,6 +89,7 @@ if (import.meta.env.DEV) {
     .catch((err) => {
       console.log("Solana testing utilities not available:", err);
     });
+  */
 }
 
 createRoot(document.getElementById("root")).render(

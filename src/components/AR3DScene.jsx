@@ -54,6 +54,7 @@ const AR3DScene = ({
     // DEBUG: Log all payment-related fields for debugging payment modal
     console.log("💰 PAYMENT DEBUG - Agent Payment Fields:", {
       name: agent?.name,
+      id: agent?.id,
       interaction_fee_amount: agent?.interaction_fee_amount,
       interaction_fee: agent?.interaction_fee,
       fee_amount: agent?.fee_amount,
@@ -62,6 +63,10 @@ const AR3DScene = ({
       deployment_chain_id: agent?.deployment_chain_id,
       network: agent?.network,
       chain_id: agent?.chain_id,
+      ALERT:
+        agent?.name === "Cube Dynamic 1"
+          ? "THIS IS CUBE DYNAMIC 1 - EXPECTED ID: f911cc7d-244c-4916-9612-71b3904e9424"
+          : "Other agent",
       allKeys: agent
         ? Object.keys(agent).filter(
             (k) =>

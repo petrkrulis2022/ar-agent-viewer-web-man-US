@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Agent Network Data Inspector</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background-color: #1a1a1a;
+        color: #ffffff;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      .agent-card {
+        background-color: #2a2a2a;
+        padding: 20px;
+        margin: 15px 0;
+        border-radius: 8px;
+        border: 2px solid #444;
+      }
+      .debug-info {
+        background-color: #0f0f0f;
+        padding: 15px;
+        border-radius: 5px;
+        font-family: monospace;
+        margin: 10px 0;
+        border-left: 4px solid #ff4444;
+      }
+      .field {
+        margin: 5px 0;
+        padding: 3px 0;
+      }
+      .field-name {
+        color: #4a9eff;
+        font-weight: bold;
+      }
+      .field-value {
+        color: #90ee90;
+        margin-left: 20px;
+      }
+      .issue {
+        background-color: #660000;
+        padding: 10px;
+        border-radius: 5px;
+        margin: 10px 0;
+        border: 1px solid #ff4444;
+      }
+      .success {
+        background-color: #006600;
+        padding: 10px;
+        border-radius: 5px;
+        margin: 10px 0;
+        border: 1px solid #44ff44;
+      }
+      iframe {
+        width: 100%;
+        height: 400px;
+        border: 2px solid #444;
+        border-radius: 8px;
+        margin: 20px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔍 Agent Network Data Inspector</h1>
+      <p>
+        This page inspects agent data to identify why all agents show OP Sepolia
+        in payment modals.
+      </p>
+
+      <h2>📋 Instructions:</h2>
+      <ol>
+        <li><strong>Open the AR Viewer below</strong></li>
+        <li>
+          <strong>Click on any cube/agent to open the payment modal</strong>
+        </li>
+        <li>
+          <strong
+            >Look for the red DEBUG section at the top of the modal</strong
+          >
+        </li>
+        <li>
+          <strong
+            >Check if all agents show the same chain ID (11155420 = OP
+            Sepolia)</strong
+          >
+        </li>
+      </ol>
+
+      <h2>🎯 Expected Behavior:</h2>
+      <div class="success">
+        <strong>✅ CORRECT:</strong> Different agents should show different
+        chain IDs:
+        <ul>
+          <li>Ethereum Sepolia agents: chain_id = 11155111</li>
+          <li>Base Sepolia agents: chain_id = 84532</li>
+          <li>OP Sepolia agents: chain_id = 11155420</li>
+          <li>Arbitrum Sepolia agents: chain_id = 421614</li>
+        </ul>
+      </div>
+
+      <h2>🚨 Problem Identified:</h2>
+      <div class="issue">
+        <strong>❌ ISSUE:</strong> If all agents show "Final Chain ID: 11155420"
+        regardless of their deployment network, this confirms the bug where all
+        payment modals incorrectly display OP Sepolia network and USDC contract.
+      </div>
+
+      <h2>🔧 Test AR Viewer:</h2>
+      <iframe
+        src="http://localhost:5176/"
+        title="AR Agent Viewer with Debug Info"
+      ></iframe>
+
+      <h2>📊 Debug Analysis:</h2>
+      <div id="analysis" class="debug-info">
+        <div class="field">
+          <span class="field-name">Analysis Status:</span>
+          <span class="field-value">Waiting for user to test agents...</span>
+        </div>
+      </div>
+
+      <script>
+        console.log("🔍 Agent Network Inspector loaded");
+        console.log("📋 Next steps:");
+        console.log("   1. Click on agents in the AR viewer below");
+        console.log("   2. Check the red DEBUG section in each payment modal");
+        console.log(
+          "   3. Verify if all agents show chain_id = 11155420 (OP Sepolia)"
+        );
+      </script>
+    </div>
+  </body>
+</html>

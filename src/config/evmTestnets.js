@@ -56,7 +56,7 @@ export const EVM_TESTNETS = {
     name: "OP Sepolia",
     shortName: "Optimism",
     rpcUrl: "https://sepolia.optimism.io",
-    usdcAddress: "0x5fd84259d3c8b37a387c0d8a4c5b0c0d7d3c0D7",
+    usdcAddress: "0x5fd84259d66Cd46123540766Be93DFE6D43130D7",
     decimals: 6,
     symbol: "USDC",
     nativeCurrency: {

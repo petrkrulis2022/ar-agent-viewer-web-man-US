@@ -35,26 +35,24 @@ const getServiceFeeDisplay = (agent) => {
   // Use the same priority logic as resolveInteractionFee to ensure consistency
   console.log("🔍 AgentInteractionModal: Full agent data for fee:", {
     name: agent?.name,
-    id: agent?.id,
     interaction_fee_amount: agent?.interaction_fee_amount,
+    fee_usdc: agent?.fee_usdc,
+    fee_usdt: agent?.fee_usdt,
     interaction_fee_usdfc: agent?.interaction_fee_usdfc,
     interaction_fee: agent?.interaction_fee,
-    interaction_fee_token: agent?.interaction_fee_token,
     allKeys: agent
       ? Object.keys(agent).filter(
           (k) => k.includes("fee") || k.includes("amount")
         )
       : [],
-    TRACKING:
-      "CUBE DYNAMIC 1 DISCREPANCY - Expected ID: f911cc7d-244c-4916-9612-71b3904e9424",
   });
 
-  // 🔧 CRITICAL: Use EXACT same priority as database schema (NO fee_usdc/fee_usdt)
+  // 🔧 CRITICAL: Use EXACT same priority as resolveInteractionFee
   let fee = 1; // fallback
   let token = "USDC";
   let source = "fallback";
 
-  // PRIORITY 1: interaction_fee_amount (authoritative field for new deployments)
+  // PRIORITY 1: interaction_fee_amount (authoritative field)
   if (
     agent?.interaction_fee_amount !== undefined &&
     agent?.interaction_fee_amount !== null &&
@@ -65,7 +63,29 @@ const getServiceFeeDisplay = (agent) => {
     token = agent?.interaction_fee_token || "USDC";
     source = "interaction_fee_amount";
   }
-  // PRIORITY 2: interaction_fee_usdfc (legacy field)
+  // PRIORITY 2: fee_usdc
+  else if (
+    agent?.fee_usdc !== undefined &&
+    agent?.fee_usdc !== null &&
+    !isNaN(agent?.fee_usdc) &&
+    agent?.fee_usdc > 0
+  ) {
+    fee = parseFloat(agent.fee_usdc);
+    token = "USDC";
+    source = "fee_usdc";
+  }
+  // PRIORITY 3: fee_usdt
+  else if (
+    agent?.fee_usdt !== undefined &&
+    agent?.fee_usdt !== null &&
+    !isNaN(agent?.fee_usdt) &&
+    agent?.fee_usdt > 0
+  ) {
+    fee = parseFloat(agent.fee_usdt);
+    token = "USDT";
+    source = "fee_usdt";
+  }
+  // PRIORITY 4: interaction_fee_usdfc (legacy)
   else if (
     agent?.interaction_fee_usdfc !== undefined &&
     agent?.interaction_fee_usdfc !== null &&
@@ -76,7 +96,7 @@ const getServiceFeeDisplay = (agent) => {
     token = "USDC";
     source = "interaction_fee_usdfc";
   }
-  // PRIORITY 3: interaction_fee (fallback legacy field)
+  // PRIORITY 5: interaction_fee (legacy)
   else if (
     agent?.interaction_fee !== undefined &&
     agent?.interaction_fee !== null &&
@@ -93,7 +113,7 @@ const getServiceFeeDisplay = (agent) => {
     token,
     agent: agent?.name,
     source,
-    note: "Using database schema aligned priority logic",
+    note: "Using resolveInteractionFee priority logic",
   });
   return `${fee} ${token}`;
 };

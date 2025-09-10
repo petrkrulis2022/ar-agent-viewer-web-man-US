@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Payment Modal Network Debug Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background-color: #1a1a1a;
+        color: #ffffff;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      .test-section {
+        margin: 20px 0;
+        padding: 20px;
+        border: 1px solid #333;
+        border-radius: 8px;
+        background-color: #2a2a2a;
+      }
+      .agent-data {
+        background-color: #333;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 5px;
+        font-family: monospace;
+      }
+      .network-info {
+        background-color: #1e3a8a;
+        padding: 10px;
+        margin: 5px 0;
+        border-radius: 3px;
+      }
+      .button {
+        background-color: #3b82f6;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      .button:hover {
+        background-color: #2563eb;
+      }
+      .debug-output {
+        background-color: #000;
+        color: #00ff00;
+        padding: 15px;
+        border-radius: 5px;
+        font-family: monospace;
+        white-space: pre-wrap;
+        height: 300px;
+        overflow-y: auto;
+        border: 1px solid #333;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔍 Payment Modal Network Debug Test</h1>
+
+      <div class="test-section">
+        <h2>Mock Agent Data Analysis</h2>
+        <button class="button" onclick="generateMockAgents()">
+          Generate Mock Agents
+        </button>
+        <button class="button" onclick="testNetworkDetection()">
+          Test Network Detection
+        </button>
+        <button class="button" onclick="clearDebug()">Clear Debug</button>
+
+        <div id="mock-agents-display"></div>
+        <div id="debug-output" class="debug-output">
+          Debug output will appear here...
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Import the network service and mock data functions
+      const networks = [
+        { name: "Ethereum Sepolia", chainId: 11155111 },
+        { name: "Arbitrum Sepolia", chainId: 421614 },
+        { name: "Base Sepolia", chainId: 84532 },
+        { name: "OP Sepolia", chainId: 11155420 },
+        { name: "Avalanche Fuji", chainId: 43113 },
+      ];
+
+      const usdcContracts = {
+        11155111: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", // Ethereum Sepolia
+        421614: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d", // Arbitrum Sepolia
+        84532: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", // Base Sepolia
+        11155420: "0x5fd84259d66Cd46123540766Be93DFE6D43130D7", // OP Sepolia
+        43113: "0x5425890298aed601595a70AB815c96711a31Bc65", // Avalanche Fuji
+      };
+
+      let debugOutput = [];
+
+      function log(message) {
+        const timestamp = new Date().toLocaleTimeString();
+        const logMessage = `[${timestamp}] ${message}`;
+        debugOutput.push(logMessage);
+        document.getElementById("debug-output").textContent =
+          debugOutput.join("\n");
+        console.log(logMessage);
+      }
+
+      function clearDebug() {
+        debugOutput = [];
+        document.getElementById("debug-output").textContent =
+          "Debug output cleared...";
+      }
+
+      function generateMockAgent(index) {
+        const networkIndex = index % networks.length;
+        const network = networks[networkIndex];
+
+        const agent = {
+          id: `agent-${index + 1}`,
+          name: `TestAgent_${network.name.replace(/\s+/g, "_")}_${index + 1}`,
+          deployment_network_name: network.name,
+          deployment_chain_id: network.chainId,
+          chain_id: network.chainId, // Ensure both are set correctly
+          network: network.name,
+          wallet_address: `0x${Math.random().toString(16).substr(2, 40)}`,
+          fee_amount: "0.1",
+          fee_token: "USDC",
+          created_at: new Date().toISOString(),
+        };
+
+        log(
+          `✅ Generated agent: ${agent.name} on ${agent.deployment_network_name} (Chain ID: ${agent.deployment_chain_id})`
+        );
+        return agent;
+      }
+
+      function generateMockAgents() {
+        log("🚀 Generating mock agents...");
+        const agents = [];
+
+        // Generate 6 agents to cycle through all networks
+        for (let i = 0; i < 6; i++) {
+          agents.push(generateMockAgent(i));
+        }
+
+        // Display agent data
+        const display = document.getElementById("mock-agents-display");
+        display.innerHTML = agents
+          .map(
+            (agent) => `
+                <div class="agent-data">
+                    <strong>${agent.name}</strong><br>
+                    Network: ${agent.deployment_network_name}<br>
+                    Chain ID: ${agent.deployment_chain_id}<br>
+                    Wallet: ${agent.wallet_address}<br>
+                    Fee: ${agent.fee_amount} ${agent.fee_token}
+                </div>
+            `
+          )
+          .join("");
+
+        log(
+          `📊 Generated ${agents.length} agents across ${networks.length} networks`
+        );
+        return agents;
+      }
+
+      // Simulate the AgentInteractionModal functions
+      function getTokenContractDisplay(agent) {
+        log(`\n🔍 getTokenContractDisplay for agent: ${agent.name}`);
+        log(`   - deployment_chain_id: ${agent.deployment_chain_id}`);
+        log(`   - chain_id: ${agent.chain_id}`);
+        log(`   - deployment_network_name: ${agent.deployment_network_name}`);
+        log(`   - network: ${agent.network}`);
+
+        const chainId = agent?.deployment_chain_id || agent?.chain_id;
+        log(`   - Final chainId selected: ${chainId}`);
+
+        const contractAddress = usdcContracts[chainId];
+        log(`   - USDC contract for chain ${chainId}: ${contractAddress}`);
+
+        if (!contractAddress) {
+          log(`   ❌ ERROR: No USDC contract found for chain ID ${chainId}`);
+          return "Unknown Contract";
+        }
+
+        log(`   ✅ SUCCESS: Contract ${contractAddress} for ${agent.name}`);
+        return contractAddress;
+      }
+
+      function getNetworkDisplay(agent) {
+        log(`\n🔍 getNetworkDisplay for agent: ${agent.name}`);
+        log(`   - deployment_network_name: ${agent.deployment_network_name}`);
+        log(`   - network: ${agent.network}`);
+        log(`   - deployment_chain_id: ${agent.deployment_chain_id}`);
+        log(`   - chain_id: ${agent.chain_id}`);
+
+        const chainId = agent?.deployment_chain_id || agent?.chain_id;
+        log(`   - Chain ID for network: ${chainId}`);
+
+        let network = agent?.deployment_network_name || agent?.network;
+        log(`   - Database network field: ${network}`);
+
+        // If no network name, derive from chain ID
+        if (!network && chainId) {
+          const networkMap = {
+            11155111: "Ethereum Sepolia",
+            421614: "Arbitrum Sepolia",
+            84532: "Base Sepolia",
+            11155420: "OP Sepolia",
+            43113: "Avalanche Fuji",
+          };
+          network = networkMap[chainId];
+          log(`   - Derived network from chain ID: ${network}`);
+        }
+
+        log(`   ✅ Final network display: ${network || "Unknown Network"}`);
+        return network || "Unknown Network";
+      }
+
+      function testNetworkDetection() {
+        log("\n🧪 Testing Network Detection Functions...");
+        const agents = generateMockAgents();
+
+        agents.forEach((agent, index) => {
+          log(`\n--- Testing Agent ${index + 1}: ${agent.name} ---`);
+          const networkDisplay = getNetworkDisplay(agent);
+          const contractDisplay = getTokenContractDisplay(agent);
+
+          log(`📋 Results for ${agent.name}:`);
+          log(`   Network Display: ${networkDisplay}`);
+          log(`   Contract Display: ${contractDisplay}`);
+
+          // Check if results match expected
+          const expectedNetwork = agent.deployment_network_name;
+          const expectedContract = usdcContracts[agent.deployment_chain_id];
+
+          if (
+            networkDisplay === expectedNetwork &&
+            contractDisplay === expectedContract
+          ) {
+            log(`   ✅ SUCCESS: Network and contract match expected values`);
+          } else {
+            log(`   ❌ ERROR: Mismatch detected!`);
+            log(
+              `     Expected Network: ${expectedNetwork}, Got: ${networkDisplay}`
+            );
+            log(
+              `     Expected Contract: ${expectedContract}, Got: ${contractDisplay}`
+            );
+          }
+        });
+
+        log("\n🏁 Network detection test completed!");
+      }
+
+      // Auto-generate agents on page load
+      window.addEventListener("load", () => {
+        log("🔄 Page loaded, ready for testing...");
+      });
+    </script>
+  </body>
+</html>

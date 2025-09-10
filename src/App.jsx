@@ -10,7 +10,6 @@ import ARViewer from "./components/ARViewer";
 import AgentMarketplace from "./components/marketplace/AgentMarketplace";
 import MainLandingScreen from "./components/MainLandingScreen";
 import CameraActivationScreen from "./components/CameraActivationScreen";
-import CubePaymentDemo from "./components/CubePaymentDemo";
 import SimpleCubeTest from "./components/SimpleCubeTest";
 import CameraTest from "./components/CameraTest";
 import UnifiedWalletConnect from "./components/UnifiedWalletConnect";
@@ -70,9 +69,6 @@ function AppContent() {
 
         {/* Simple Cube Test Route */}
         <Route path="/test-cube" element={<SimpleCubeTest />} />
-
-        {/* 3D Cube Payment Demo Route */}
-        <Route path="/cube-demo" element={<CubePaymentDemo />} />
 
         {/* Agent Fee Validation Dashboard (Debug) */}
         <Route path="/debug-fees" element={<AgentFeeValidationDashboard />} />

@@ -44,7 +44,7 @@ A cutting-edge augmented reality web application that allows users to discover, 
 | **Ethereum**  | Sepolia          | 11155111 | `0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238` | [sepolia.etherscan.io](https://sepolia.etherscan.io)                   |
 | **Arbitrum**  | Arbitrum Sepolia | 421614   | `0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d` | [sepolia-explorer.arbitrum.io](https://sepolia-explorer.arbitrum.io)   |
 | **Base**      | Base Sepolia     | 84532    | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` | [sepolia-explorer.base.org](https://sepolia-explorer.base.org)         |
-| **Optimism**  | OP Sepolia       | 11155420 | `0x5fd84259d3c8b37a387c0d8a4c5b0c0d7d3c0D7`  | [sepolia-optimism.etherscan.io](https://sepolia-optimism.etherscan.io) |
+| **Optimism**  | OP Sepolia       | 11155420 | `0x5fd84259d66Cd46123540766Be93DFE6D43130D7` | [sepolia-optimism.etherscan.io](https://sepolia-optimism.etherscan.io) |
 | **Avalanche** | Fuji Testnet     | 43113    | `0x5425890298aed601595a70AB815c96711a31Bc65` | [testnet.snowtrace.io](https://testnet.snowtrace.io)                   |
 
 ### 🔗 **Additional Blockchain Networks**

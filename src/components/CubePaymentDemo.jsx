@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import CubePaymentEngine from "./CubePaymentEngine";
-import CubePaymentHandler from "./CubePaymentHandler";
+import CubePaymentHandler from "./CubePaymentHandler-minimal"; // Using minimal version for testing
 
 const CubePaymentDemo = () => {
   const [showCube, setShowCube] = useState(false);
@@ -177,10 +177,10 @@ const CubePaymentDemo = () => {
         paymentAmount={mockAgent.interaction_fee}
       />
 
-      {/* Cube Payment Handler - Manages clicks and QR display */}
+      {/* Cube Payment Handler - Minimal test version */}
       <CubePaymentHandler
-        agent={mockAgent}
-        amount={mockAgent.interaction_fee}
+        agentData={[mockAgent]}
+        selectedAgent={mockAgent.id}
         onPaymentComplete={handlePaymentComplete}
       />
     </div>

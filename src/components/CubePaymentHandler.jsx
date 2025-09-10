@@ -1,583 +1,405 @@
-// Cube Payment Handler - Orchestrates 3D Cube payments with crypto QR integration
-// Manages cube face clicks and displays QR codes directly in AR space
+import React, { useState, useEffect, useRef } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { OrbitControls, Text, Billboard } from "@react-three/drei";
+import * as THREE from "three";
+import { morphPaymentService } from "../services/morphPaymentService.js";
+import { dynamicQRService } from "../services/dynamicQRService.js";
+import { evmPaymentService } from "../services/evmPaymentService.js";
+import { qrPaymentDataService } from "../services/qrPaymentDataService.js";
 
-import React, { useEffect, useState, useRef } from "react";
-import evmPaymentService from "../services/evmPaymentService";
-import solanaPaymentService from "../services/solanaPaymentService";
-import qrCodeService from "../services/qrCodeService";
-import { dynamicQRService } from "../services/dynamicQRService";
-import QRCode from "react-qr-code";
+// Animation hook for rotating cube
+function useRotatingCube(ref, isActive) {
+  useFrame((state, delta) => {
+    if (ref.current) {
+      ref.current.rotation.y += delta * 0.5;
+      if (isActive) {
+        ref.current.rotation.x += delta * 0.3;
+      }
+    }
+  });
+}
 
-const CubePaymentHandler = ({
-  agent,
-  amount = 1,
-  userLocation,
+// Face component for interactive cube faces
+function CubeFace({ position, rotation, color, onClick, text, isActive }) {
+  const meshRef = useRef();
+
+  return (
+    <group position={position} rotation={rotation}>
+      <mesh
+        ref={meshRef}
+        onClick={onClick}
+        onPointerOver={() => (document.body.style.cursor = "pointer")}
+        onPointerOut={() => (document.body.style.cursor = "default")}
+        scale={isActive ? [1.1, 1.1, 1.1] : [1, 1, 1]}
+      >
+        <planeGeometry args={[0.9, 0.9]} />
+        <meshStandardMaterial
+          color={isActive ? "#4CAF50" : color}
+          transparent={true}
+          opacity={0.8}
+        />
+      </mesh>
+      <Text
+        position={[0, 0, 0.01]}
+        fontSize={0.08}
+        color="white"
+        anchorX="center"
+        anchorY="middle"
+      >
+        {text}
+      </Text>
+    </group>
+  );
+}
+
+// QR Display component for user-facing QR codes
+function QRDisplay({ qrData, position, onClose, onQRClick }) {
+  if (!qrData) return null;
+
+  const handleQRClick = async () => {
+    console.log("🎯 QR Display clicked!");
+    if (onQRClick) {
+      await onQRClick();
+    }
+  };
+
+  return (
+    <Billboard position={position}>
+      <group>
+        {/* QR Code Background */}
+        <mesh position={[0, 0, -0.01]}>
+          <planeGeometry args={[1.2, 1.2]} />
+          <meshStandardMaterial color="white" />
+        </mesh>
+
+        {/* QR Code Image - CLICKABLE */}
+        <mesh
+          onClick={handleQRClick}
+          onPointerOver={() => (document.body.style.cursor = "pointer")}
+          onPointerOut={() => (document.body.style.cursor = "default")}
+        >
+          <planeGeometry args={[1, 1]} />
+          <meshStandardMaterial map={qrData.texture} transparent={true} />
+        </mesh>
+
+        {/* Close Button */}
+        <mesh
+          position={[0.6, 0.6, 0.01]}
+          onClick={onClose}
+          onPointerOver={() => (document.body.style.cursor = "pointer")}
+          onPointerOut={() => (document.body.style.cursor = "default")}
+        >
+          <circleGeometry args={[0.1]} />
+          <meshStandardMaterial color="red" />
+        </mesh>
+
+        {/* Close X */}
+        <Text
+          position={[0.6, 0.6, 0.02]}
+          fontSize={0.08}
+          color="white"
+          anchorX="center"
+          anchorY="middle"
+        >
+          X
+        </Text>
+
+        {/* Instructions */}
+        <Text
+          position={[0, -0.7, 0]}
+          fontSize={0.06}
+          color="black"
+          anchorX="center"
+          anchorY="middle"
+          maxWidth={1}
+        >
+          {"CLICK QR to Pay Now | Scan with Mobile"}
+        </Text>
+      </group>
+    </Billboard>
+  );
+}
+
+// Main Cube Payment Handler Component
+function CubePaymentHandler({
+  agentData,
+  selectedAgent,
   onPaymentComplete,
-}) => {
-  const [activePayment, setActivePayment] = useState(null);
-  const [qrData, setQrData] = useState(null);
-  const [paymentStatus, setPaymentStatus] = useState("idle");
-  const [selectedChain, setSelectedChain] = useState(null);
-  const qrDisplayRef = useRef(null);
+  className = "",
+}) {
+  const [activeFace, setActiveFace] = useState(null);
+  const [qrData, setQRData] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const cubeRef = useRef();
 
+  // Use the rotating cube animation
+  useRotatingCube(cubeRef, activeFace !== null);
+
+  // Handle face click events
+  const handleFaceClick = async (method) => {
+    console.log("CUBE CLICK: Face clicked -", method);
+
+    try {
+      setIsLoading(true);
+      setError(null);
+      setActiveFace(method);
+
+      if (!selectedAgent || !agentData) {
+        throw new Error("No agent selected for payment");
+      }
+
+      // Get agent data for payment
+      const agent = agentData.find((a) => a.id === selectedAgent);
+      if (!agent) {
+        throw new Error("Selected agent not found in data");
+      }
+
+      let result;
+      const successCheck = "\u2713"; // Unicode check mark
+
+      switch (method) {
+        case "morph":
+          console.log(
+            successCheck + " CUBE QR INTEGRATION: Generating Morph QR..."
+          );
+          result = await morphPaymentService.generateQR(agent);
+          break;
+
+        case "dynamic":
+          console.log(
+            successCheck + " CUBE QR INTEGRATION: Generating Dynamic QR..."
+          );
+          result = await dynamicQRService.generateQR(agent);
+          break;
+
+        case "evm":
+          console.log(
+            successCheck + " CUBE QR INTEGRATION: Generating EVM QR..."
+          );
+          result = await evmPaymentService.generateQR(agent);
+          break;
+
+        case "qr":
+          console.log(
+            successCheck + " CUBE QR INTEGRATION: Generating Crypto QR..."
+          );
+          result = await qrPaymentDataService.generateCubeQRPayment(agent);
+          break;
+
+        default:
+          throw new Error("Unknown payment method: " + method);
+      }
+
+      if (result && result.qrCodeUrl) {
+        // Create texture from QR code
+        const texture = new THREE.TextureLoader().load(result.qrCodeUrl);
+
+        // Get user-facing position
+        const userPosition = qrPaymentDataService.getUserFacingPosition();
+
+        setQRData({
+          texture,
+          position: userPosition,
+          scannable: result.scannable || false,
+          clickable: result.clickable || false,
+          paymentData: result,
+        });
+
+        console.log(
+          successCheck +
+            " CUBE QR INTEGRATION: QR generated successfully for " +
+            method
+        );
+      } else {
+        throw new Error("Failed to generate QR code");
+      }
+    } catch (err) {
+      console.error("CUBE QR ERROR:", err.message);
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle QR code interaction
+  const handleQRClick = async () => {
+    if (!qrData || !qrData.paymentData) return;
+
+    try {
+      console.log("🔥 QR CLICK: Processing payment...");
+      setIsLoading(true);
+
+      // Use the dynamicQRService's handleQRClick method for direct transactions
+      const result = await dynamicQRService.handleQRClick(qrData.paymentData);
+
+      if (result.success) {
+        console.log(
+          "✅ PAYMENT SUCCESS: Completed via " + activeFace + ":",
+          result
+        );
+
+        // Show success message
+        setError(null);
+
+        // Close QR display after delay
+        setTimeout(() => {
+          setQRData(null);
+          setActiveFace(null);
+        }, 2000);
+
+        // Notify parent component
+        if (onPaymentComplete) {
+          onPaymentComplete(result);
+        }
+      } else {
+        throw new Error(result.error || "Payment failed");
+      }
+    } catch (err) {
+      console.error("❌ QR PAYMENT ERROR:", err.message);
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Close QR display
+  const closeQR = () => {
+    setQRData(null);
+    setActiveFace(null);
+    setError(null);
+  };
+
+  // Reset error after 5 seconds
   useEffect(() => {
-    // Listen for cube face clicks
-    const handleCryptoQRSelected = async (event) => {
-      console.log("🎯 Crypto QR face clicked");
-      await handleDynamicCryptoQRPayment();
-    };
-
-    const handleSolanaSelected = async (event) => {
-      console.log("🟠 Solana face clicked");
-      await handleSolanaPayment();
-    };
-
-    const handleClosePayment = () => {
-      console.log("❌ Closing payment");
-      closePaymentDisplay();
-    };
-
-    const handlePaymentExecution = async (event) => {
-      console.log("💳 Payment execution triggered");
-      await executeCurrentPayment();
-    };
-
-    const handleBackToCube = () => {
-      console.log("🔙 Back to cube");
-      closePaymentDisplay();
-    };
-
-    // Register event listeners
-    document.addEventListener("crypto-qr-selected", handleCryptoQRSelected);
-    document.addEventListener("solana-selected", handleSolanaSelected);
-    document.addEventListener("close-payment", handleClosePayment);
-    document.addEventListener("payment-execute", handlePaymentExecution);
-    document.addEventListener("back-to-cube", handleBackToCube);
-
-    return () => {
-      document.removeEventListener(
-        "crypto-qr-selected",
-        handleCryptoQRSelected
-      );
-      document.removeEventListener("solana-selected", handleSolanaSelected);
-      document.removeEventListener("close-payment", handleClosePayment);
-      document.removeEventListener("payment-execute", handlePaymentExecution);
-      document.removeEventListener("back-to-cube", handleBackToCube);
-    };
-  }, [agent, amount]);
-
-  // Handle Dynamic EVM Crypto QR Payment (NEW)
-  const handleDynamicCryptoQRPayment = async () => {
-    try {
-      setPaymentStatus("generating");
-
-      console.log("🔧 Generating dynamic QR payment for agent:", agent.name);
-      console.log("💰 Amount:", amount, "USD");
-
-      // Generate dynamic QR based on user's current network
-      const qrResult = await dynamicQRService.generateDynamicQR(agent, amount);
-
-      console.log("✅ Generated QR result:", qrResult);
-      setQrData(qrResult);
-      setActivePayment(qrResult.paymentData);
-      setSelectedChain(qrResult.networkInfo);
-
-      // Display QR in AR space (centered)
-      displayCenteredQRInAR(qrResult);
-
-      // Hide the payment cube
-      const cube = document.querySelector("#payment-cube");
-      if (cube) {
-        cube.setAttribute("visible", false);
-      }
-
-      setPaymentStatus("ready");
-      console.log("🎯 Dynamic QR payment ready for user action");
-    } catch (error) {
-      console.error("❌ Dynamic crypto QR payment error:", error);
-      setPaymentStatus("error");
-
-      // Show error message to user
-      showErrorInAR(error.message || "Failed to generate QR code");
+    if (error) {
+      const timer = setTimeout(() => setError(null), 5000);
+      return () => clearTimeout(timer);
     }
-  }; // Execute current payment (NEW)
-  const executeCurrentPayment = async () => {
-    if (!qrData) {
-      console.error("❌ No payment data available");
-      return;
-    }
+  }, [error]);
 
-    try {
-      setPaymentStatus("processing");
+  return (
+    <div className={className} style={{ width: "100%", height: "400px" }}>
+      <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
+        <ambientLight intensity={0.6} />
+        <pointLight position={[10, 10, 10]} />
 
-      console.log("� Executing payment...");
-      const result = await dynamicQRService.executePayment(qrData);
+        <group ref={cubeRef}>
+          {/* Front Face - Morph */}
+          <CubeFace
+            position={[0, 0, 0.5]}
+            rotation={[0, 0, 0]}
+            color="#FF6B6B"
+            text="Morph Chain"
+            onClick={() => handleFaceClick("morph")}
+            isActive={activeFace === "morph"}
+          />
 
-      console.log("✅ Payment successful:", result);
-      setPaymentStatus("completed");
+          {/* Back Face - Dynamic */}
+          <CubeFace
+            position={[0, 0, -0.5]}
+            rotation={[0, Math.PI, 0]}
+            color="#4ECDC4"
+            text="Dynamic QR"
+            onClick={() => handleFaceClick("dynamic")}
+            isActive={activeFace === "dynamic"}
+          />
 
-      // Show success message
-      showPaymentSuccess(result);
+          {/* Right Face - EVM */}
+          <CubeFace
+            position={[0.5, 0, 0]}
+            rotation={[0, Math.PI / 2, 0]}
+            color="#45B7D1"
+            text="EVM Payment"
+            onClick={() => handleFaceClick("evm")}
+            isActive={activeFace === "evm"}
+          />
 
-      // Notify parent component
-      if (onPaymentComplete) {
-        onPaymentComplete(result);
-      }
-    } catch (error) {
-      console.error("❌ Payment execution failed:", error);
-      setPaymentStatus("error");
-      showPaymentError(error.message);
-    }
-  };
+          {/* Left Face - QR Crypto */}
+          <CubeFace
+            position={[-0.5, 0, 0]}
+            rotation={[0, -Math.PI / 2, 0]}
+            color="#96CEB4"
+            text="Crypto QR Code"
+            onClick={() => handleFaceClick("qr")}
+            isActive={activeFace === "qr"}
+          />
 
-  // Handle Solana Payment
-  const handleSolanaPayment = async () => {
-    try {
-      setPaymentStatus("generating");
+          {/* Top Face - Info */}
+          <CubeFace
+            position={[0, 0.5, 0]}
+            rotation={[-Math.PI / 2, 0, 0]}
+            color="#FFEAA7"
+            text="Payment Cube"
+            onClick={() => {}}
+            isActive={false}
+          />
 
-      console.log("🟠 Generating Solana payment...");
-      solanaPaymentService.switchSolanaNetwork("TESTNET");
-      const solanaPayment = solanaPaymentService.generateSolanaAgentPayment(
-        agent,
-        amount,
-        "SOL"
-      );
-      setActivePayment(solanaPayment);
+          {/* Bottom Face - Logo */}
+          <CubeFace
+            position={[0, -0.5, 0]}
+            rotation={[Math.PI / 2, 0, 0]}
+            color="#DDA0DD"
+            text="AgentSphere"
+            onClick={() => {}}
+            isActive={false}
+          />
+        </group>
 
-      const qrResult = await generateQRCode(solanaPayment.qrData, "Solana");
-      setQrData(qrResult);
+        {/* QR Display */}
+        {qrData && (
+          <QRDisplay
+            qrData={qrData}
+            position={qrData.position}
+            onClose={closeQR}
+            onQRClick={handleQRClick}
+          />
+        )}
 
-      displayQRInAR(qrResult, solanaPayment, {
-        name: "Solana Testnet",
-        color: "#9945FF",
-      });
-      setPaymentStatus("waiting");
-    } catch (error) {
-      console.error("❌ Solana payment error:", error);
-      setPaymentStatus("error");
-      showErrorInAR(error.message);
-    }
-  };
+        <OrbitControls enableZoom={true} enablePan={true} />
+      </Canvas>
 
-  // Generate QR code with enhanced data
-  const generateQRCode = async (qrDataString, network) => {
-    try {
-      const qrCodeDataUrl = await qrCodeService.generateQRCode(qrDataString);
+      {/* Loading Overlay */}
+      {isLoading && (
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0, 0, 0, 0.7)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "white",
+            fontSize: "18px",
+          }}
+        >
+          Generating QR Code...
+        </div>
+      )}
 
-      return {
-        dataUrl: qrCodeDataUrl,
-        rawData: qrDataString,
-        network: network,
-        timestamp: Date.now(),
-      };
-    } catch (error) {
-      console.error("❌ QR generation failed:", error);
-      throw error;
-    }
-  };
-
-  // Display QR code centered on screen (IMPROVED)
-  const displayCenteredQRInAR = (qrResult) => {
-    try {
-      // Remove any existing payment display
-      closePaymentDisplay();
-
-      const scene = document.querySelector("a-scene");
-      if (!scene) {
-        console.error("❌ A-Frame scene not found");
-        return;
-      }
-
-      // Hide the payment cube
-      const cube = document.querySelector("#payment-cube");
-      if (cube) {
-        cube.setAttribute("visible", false);
-      }
-
-      // Create QR container (centered)
-      const qrContainer = document.createElement("a-entity");
-      qrContainer.setAttribute("id", "payment-qr-display");
-      qrContainer.setAttribute("position", "0 0 -2.5"); // Centered in front of camera
-
-      // QR Code Background with network color border
-      const qrBorder = document.createElement("a-plane");
-      qrBorder.setAttribute("position", "0 0.5 -0.01");
-      qrBorder.setAttribute("width", "2.4");
-      qrBorder.setAttribute("height", "2.4");
-      qrBorder.setAttribute(
-        "material",
-        `color: ${qrResult.networkInfo.color}; opacity: 0.8`
-      );
-      qrContainer.appendChild(qrBorder);
-
-      // QR Code Image (centered)
-      const qrPlane = document.createElement("a-plane");
-      qrPlane.setAttribute("position", "0 0.5 0");
-      qrPlane.setAttribute("width", "2.2");
-      qrPlane.setAttribute("height", "2.2");
-      qrPlane.setAttribute(
-        "material",
-        `src: ${qrResult.qrCodeUrl}; transparent: true`
-      );
-      qrContainer.appendChild(qrPlane);
-
-      // Payment Title
-      const titleText = document.createElement("a-text");
-      titleText.setAttribute("position", "0 1.5 0");
-      titleText.setAttribute("text", {
-        value: `💳 ${qrResult.networkInfo.name} Payment`,
-        align: "center",
-        color: qrResult.networkInfo.color,
-        width: 8,
-        font: "roboto",
-      });
-      qrContainer.appendChild(titleText);
-
-      // "Tap to Pay" button (clickable)
-      const payButton = document.createElement("a-entity");
-      payButton.setAttribute("id", "payment-instructions");
-      payButton.setAttribute("position", "0 -1.2 0");
-      payButton.setAttribute(
-        "geometry",
-        "primitive: plane; width: 1.8; height: 0.4"
-      );
-      payButton.setAttribute(
-        "material",
-        `color: ${qrResult.networkInfo.color}; opacity: 0.9`
-      );
-      payButton.setAttribute("text", {
-        value: "Tap to Pay",
-        align: "center",
-        color: "#000000",
-        width: 12,
-        font: "roboto",
-      });
-      payButton.setAttribute("class", "clickable payment-trigger");
-      payButton.setAttribute("cursor-listener", "");
-      payButton.addEventListener("click", () => {
-        document.dispatchEvent(new CustomEvent("payment-execute"));
-      });
-      qrContainer.appendChild(payButton);
-
-      // Amount display
-      const amountText = document.createElement("a-text");
-      amountText.setAttribute("position", "0 -1.8 0");
-      amountText.setAttribute("text", {
-        value: `$${qrResult.tokenInfo.amount} USD (${qrResult.tokenInfo.amount} USDC)`,
-        align: "center",
-        color: "#ffffff",
-        width: 8,
-      });
-      qrContainer.appendChild(amountText);
-
-      // Network info
-      const networkText = document.createElement("a-text");
-      networkText.setAttribute("position", "0 -2.2 0");
-      networkText.setAttribute("text", {
-        value: `Network: ${qrResult.networkInfo.name}`,
-        align: "center",
-        color: qrResult.networkInfo.color,
-        width: 6,
-      });
-      qrContainer.appendChild(networkText);
-
-      // Back to Cube button
-      const backButton = document.createElement("a-entity");
-      backButton.setAttribute("id", "back-to-cube-btn");
-      backButton.setAttribute("position", "0 -2.8 0");
-      backButton.setAttribute(
-        "geometry",
-        "primitive: plane; width: 1.6; height: 0.4"
-      );
-      backButton.setAttribute("material", "color: #333333; opacity: 0.8");
-      backButton.setAttribute("text", {
-        value: "← Back to Cube",
-        align: "center",
-        color: "#ffffff",
-        width: 10,
-      });
-      backButton.setAttribute("class", "clickable back-to-cube");
-      backButton.setAttribute("cursor-listener", "");
-      backButton.addEventListener("click", () => {
-        document.dispatchEvent(new CustomEvent("back-to-cube"));
-      });
-      qrContainer.appendChild(backButton);
-
-      // Add entrance animation
-      qrContainer.setAttribute(
-        "animation",
-        "property: scale; from: 0 0 0; to: 1 1 1; dur: 500; easing: easeOutBack"
-      );
-
-      // Add to scene
-      scene.appendChild(qrContainer);
-      qrDisplayRef.current = qrContainer;
-
-      console.log("✅ Centered QR code displayed in AR space");
-    } catch (error) {
-      console.error("❌ Failed to display centered QR in AR:", error);
-    }
-  };
-
-  // Show error message in AR space
-  const showErrorInAR = (errorMessage) => {
-    try {
-      const scene = document.querySelector("a-scene");
-      if (!scene) return;
-
-      closePaymentDisplay();
-
-      const errorContainer = document.createElement("a-entity");
-      errorContainer.setAttribute("id", "payment-error-display");
-      errorContainer.setAttribute("position", "0 2 -3");
-
-      const errorBackground = document.createElement("a-plane");
-      errorBackground.setAttribute("width", "4");
-      errorBackground.setAttribute("height", "2");
-      errorBackground.setAttribute("material", "color: #440000; opacity: 0.9");
-      errorContainer.appendChild(errorBackground);
-
-      const errorText = document.createElement("a-text");
-      errorText.setAttribute("position", "0 0.2 0.01");
-      errorText.setAttribute("text", {
-        value: "❌ Payment Error",
-        align: "center",
-        color: "#ff4444",
-        width: 8,
-      });
-      errorContainer.appendChild(errorText);
-
-      const errorDetails = document.createElement("a-text");
-      errorDetails.setAttribute("position", "0 -0.3 0.01");
-      errorDetails.setAttribute("text", {
-        value: errorMessage.substring(0, 50) + "...",
-        align: "center",
-        color: "#ffcccc",
-        width: 6,
-      });
-      errorContainer.appendChild(errorDetails);
-
-      scene.appendChild(errorContainer);
-      qrDisplayRef.current = errorContainer;
-
-      // Auto-hide error after 10 seconds
-      setTimeout(() => {
-        if (qrDisplayRef.current === errorContainer) {
-          closePaymentDisplay();
-        }
-      }, 10000);
-    } catch (error) {
-      console.error("❌ Failed to show error in AR:", error);
-    }
-  };
-
-  // Close payment display
-  const closePaymentDisplay = () => {
-    if (qrDisplayRef.current) {
-      const scene = document.querySelector("a-scene");
-      if (scene && qrDisplayRef.current.parentNode === scene) {
-        scene.removeChild(qrDisplayRef.current);
-      }
-      qrDisplayRef.current = null;
-    }
-
-    // Show the payment cube again
-    const cube = document.querySelector("#payment-cube");
-    if (cube) {
-      cube.setAttribute("visible", true);
-    }
-
-    setActivePayment(null);
-    setQrData(null);
-    setPaymentStatus("idle");
-    setSelectedChain(null);
-
-    console.log("💰 Payment session ended");
-  };
-
-  // Show payment success message in AR
-  const showPaymentSuccess = (result) => {
-    try {
-      const scene = document.querySelector("a-scene");
-      if (!scene) return;
-
-      closePaymentDisplay();
-
-      const successContainer = document.createElement("a-entity");
-      successContainer.setAttribute("id", "payment-success-display");
-      successContainer.setAttribute("position", "0 0 -2.5");
-
-      // Success background
-      const successBackground = document.createElement("a-plane");
-      successBackground.setAttribute("width", "4");
-      successBackground.setAttribute("height", "3");
-      successBackground.setAttribute(
-        "material",
-        "color: #004400; opacity: 0.9"
-      );
-      successContainer.appendChild(successBackground);
-
-      // Success icon
-      const successText = document.createElement("a-text");
-      successText.setAttribute("position", "0 0.8 0.01");
-      successText.setAttribute("text", {
-        value: "✅ Payment Successful!",
-        align: "center",
-        color: "#00ff00",
-        width: 10,
-        font: "roboto",
-      });
-      successContainer.appendChild(successText);
-
-      // Transaction details
-      const txText = document.createElement("a-text");
-      txText.setAttribute("position", "0 0.3 0.01");
-      txText.setAttribute("text", {
-        value: `${result.amount} ${result.token} sent`,
-        align: "center",
-        color: "#ccffcc",
-        width: 8,
-      });
-      successContainer.appendChild(txText);
-
-      // Network info
-      const networkText = document.createElement("a-text");
-      networkText.setAttribute("position", "0 -0.1 0.01");
-      networkText.setAttribute("text", {
-        value: `Network: ${result.network}`,
-        align: "center",
-        color: "#ccffcc",
-        width: 6,
-      });
-      successContainer.appendChild(networkText);
-
-      // Transaction hash (shortened)
-      const hashText = document.createElement("a-text");
-      hashText.setAttribute("position", "0 -0.5 0.01");
-      hashText.setAttribute("text", {
-        value: `TX: ${result.transactionHash.slice(0, 10)}...`,
-        align: "center",
-        color: "#aaffaa",
-        width: 6,
-      });
-      successContainer.appendChild(hashText);
-
-      // Back button
-      const backButton = document.createElement("a-entity");
-      backButton.setAttribute("position", "0 -1.2 0.01");
-      backButton.setAttribute(
-        "geometry",
-        "primitive: plane; width: 2; height: 0.4"
-      );
-      backButton.setAttribute("material", "color: #00aa00; opacity: 0.8");
-      backButton.setAttribute("text", {
-        value: "← Back to Cube",
-        align: "center",
-        color: "#ffffff",
-        width: 10,
-      });
-      backButton.setAttribute("class", "clickable");
-      backButton.addEventListener("click", () => {
-        document.dispatchEvent(new CustomEvent("back-to-cube"));
-      });
-      successContainer.appendChild(backButton);
-
-      scene.appendChild(successContainer);
-      qrDisplayRef.current = successContainer;
-
-      // Auto-close after 10 seconds
-      setTimeout(() => {
-        if (qrDisplayRef.current === successContainer) {
-          closePaymentDisplay();
-        }
-      }, 10000);
-    } catch (error) {
-      console.error("❌ Failed to show payment success:", error);
-    }
-  };
-
-  // Show payment error message in AR
-  const showPaymentError = (errorMessage) => {
-    try {
-      const scene = document.querySelector("a-scene");
-      if (!scene) return;
-
-      closePaymentDisplay();
-
-      const errorContainer = document.createElement("a-entity");
-      errorContainer.setAttribute("id", "payment-error-display");
-      errorContainer.setAttribute("position", "0 0 -2.5");
-
-      // Error background
-      const errorBackground = document.createElement("a-plane");
-      errorBackground.setAttribute("width", "4");
-      errorBackground.setAttribute("height", "2.5");
-      errorBackground.setAttribute("material", "color: #440000; opacity: 0.9");
-      errorContainer.appendChild(errorBackground);
-
-      // Error icon and title
-      const errorText = document.createElement("a-text");
-      errorText.setAttribute("position", "0 0.5 0.01");
-      errorText.setAttribute("text", {
-        value: "❌ Payment Failed",
-        align: "center",
-        color: "#ff4444",
-        width: 10,
-        font: "roboto",
-      });
-      errorContainer.appendChild(errorText);
-
-      // Error message
-      const errorDetails = document.createElement("a-text");
-      errorDetails.setAttribute("position", "0 0 0.01");
-      errorDetails.setAttribute("text", {
-        value:
-          errorMessage.substring(0, 60) +
-          (errorMessage.length > 60 ? "..." : ""),
-        align: "center",
-        color: "#ffcccc",
-        width: 6,
-      });
-      errorContainer.appendChild(errorDetails);
-
-      // Back button
-      const backButton = document.createElement("a-entity");
-      backButton.setAttribute("position", "0 -0.8 0.01");
-      backButton.setAttribute(
-        "geometry",
-        "primitive: plane; width: 2; height: 0.4"
-      );
-      backButton.setAttribute("material", "color: #aa0000; opacity: 0.8");
-      backButton.setAttribute("text", {
-        value: "← Back to Cube",
-        align: "center",
-        color: "#ffffff",
-        width: 10,
-      });
-      backButton.setAttribute("class", "clickable");
-      backButton.addEventListener("click", () => {
-        document.dispatchEvent(new CustomEvent("back-to-cube"));
-      });
-      errorContainer.appendChild(backButton);
-
-      scene.appendChild(errorContainer);
-      qrDisplayRef.current = errorContainer;
-
-      console.log("❌ Payment error displayed in AR");
-
-      // Auto-close after 8 seconds
-      setTimeout(() => {
-        if (qrDisplayRef.current === errorContainer) {
-          closePaymentDisplay();
-        }
-      }, 8000);
-    } catch (error) {
-      console.error("❌ Failed to show payment error:", error);
-    }
-  };
-
-  // This component manages events, no direct render
-  return null;
-};
+      {/* Error Display */}
+      {error && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: "10px",
+            left: "10px",
+            right: "10px",
+            background: "rgba(255, 0, 0, 0.9)",
+            color: "white",
+            padding: "10px",
+            borderRadius: "4px",
+            textAlign: "center",
+          }}
+        >
+          Error: {error}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default CubePaymentHandler;

@@ -3,6 +3,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Text, Html } from "@react-three/drei";
 import morphPaymentService from "../services/morphPaymentService";
 import solanaPaymentService from "../services/solanaPaymentService";
+import { dynamicQRService } from "../services/dynamicQRService"; // Add dynamic QR service
 import { hederaWalletService } from "../services/hederaWalletService";
 import { supabase } from "../lib/supabase";
 import QRCode from "react-qr-code";
@@ -772,7 +773,37 @@ const PaymentCube = ({
 };
 
 // QR Code Display Component (replaces cube when crypto QR is selected)
-const ARQRDisplay = ({ qrData, onBack, position = [0, 0, -3] }) => {
+const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
+  const handleQRClick = async () => {
+    console.log("🔥 QR Code clicked! Triggering transaction...");
+
+    try {
+      // Generate payment data from the EIP-681 URI
+      const result = await dynamicQRService.generateDynamicQR(agent);
+
+      // Use the click handler from dynamic service
+      const transactionResult = await dynamicQRService.handleQRClick(
+        result.paymentData
+      );
+
+      if (transactionResult.success) {
+        console.log(
+          "✅ Transaction successful:",
+          transactionResult.transactionHash
+        );
+        alert(
+          `Transaction submitted successfully!\nHash: ${transactionResult.transactionHash}`
+        );
+      } else {
+        console.error("❌ Transaction failed:", transactionResult.error);
+        alert(`Transaction failed: ${transactionResult.error}`);
+      }
+    } catch (error) {
+      console.error("❌ QR click error:", error);
+      alert(`Error: ${error.message}`);
+    }
+  };
+
   return (
     <group>
       {/* QR Code Background Plane */}
@@ -803,7 +834,9 @@ const ARQRDisplay = ({ qrData, onBack, position = [0, 0, -3] }) => {
             border: "3px solid #00ff00",
             boxShadow: "0 0 30px #00ff0080",
             transform: "translate(-50%, -50%)",
+            cursor: "pointer", // Make it obvious it's clickable
           }}
+          onClick={handleQRClick}
         >
           <QRCode
             value={qrData}
@@ -812,6 +845,7 @@ const ARQRDisplay = ({ qrData, onBack, position = [0, 0, -3] }) => {
               background: "white",
               padding: "10px",
               borderRadius: "10px",
+              cursor: "pointer",
             }}
           />
           <div
@@ -823,7 +857,7 @@ const ARQRDisplay = ({ qrData, onBack, position = [0, 0, -3] }) => {
               fontWeight: "bold",
             }}
           >
-            Scan to Pay
+            CLICK QR to Pay Now | Scan with Mobile
           </div>
         </div>
       </Html>
@@ -951,29 +985,21 @@ const CubePaymentEngine = ({
 
     try {
       console.log("🔄 Generating crypto QR payment...");
+      console.log("📊 Agent data for QR generation:", agent);
 
-      // Use wallet address from AgentSphere config if available
-      const walletAddress =
-        agentPaymentConfig?.config?.walletAddress ||
-        agentPaymentConfig?.config?.recipientAddress ||
-        agent?.agent_wallet_address ||
-        agent?.payment_recipient_address;
-
-      if (walletAddress) {
-        console.log("💼 Using configured wallet address:", walletAddress);
-      }
-
-      // Use existing Morph payment service (primary blockchain)
-      const morphPayment = await morphPaymentService.generateMorphAgentPayment(
+      // Use dynamic QR service for proper network detection
+      const result = await dynamicQRService.generateDynamicQR(
         agent,
-        paymentAmount || agent?.interaction_fee || 1
+        paymentAmount ||
+          agent?.interaction_fee_amount ||
+          agent?.interaction_fee ||
+          1
       );
-      const qrPaymentData =
-        morphPaymentService.generateMorphPaymentQRData(morphPayment);
 
-      console.log("✅ QR data generated:", qrPaymentData);
+      console.log("✅ Dynamic QR generated:", result);
 
-      setQrData(qrPaymentData);
+      // Use the EIP-681 URI for QR display
+      setQrData(result.eip681URI);
       setCurrentView("qr");
     } catch (error) {
       console.error("❌ Error generating QR:", error);
@@ -1091,6 +1117,7 @@ const CubePaymentEngine = ({
           {currentView === "qr" && qrData && (
             <ARQRDisplay
               qrData={qrData}
+              agent={agent}
               onBack={handleBackToCube}
               position={[0, 0, -3]}
             />

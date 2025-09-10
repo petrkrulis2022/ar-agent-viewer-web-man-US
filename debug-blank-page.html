@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Debug Blank Page</title>
+  </head>
+  <body>
+    <h1>Debug Test</h1>
+    <div id="debug-info"></div>
+
+    <script>
+      console.log("🔍 Debug page loaded");
+
+      // Test if main site responds
+      fetch("/")
+        .then((response) => response.text())
+        .then((html) => {
+          console.log("✅ Main site response length:", html.length);
+          if (html.length < 100) {
+            console.log("❌ Response too short:", html);
+          }
+          document.getElementById("debug-info").innerHTML = `
+                    <p>Main site response length: ${html.length} characters</p>
+                    <details>
+                        <summary>View HTML</summary>
+                        <pre>${html.substring(0, 1000)}...</pre>
+                    </details>
+                `;
+        })
+        .catch((error) => {
+          console.error("❌ Error fetching main site:", error);
+          document.getElementById("debug-info").innerHTML = `
+                    <p style="color: red;">Error: ${error.message}</p>
+                `;
+        });
+    </script>
+  </body>
+</html>

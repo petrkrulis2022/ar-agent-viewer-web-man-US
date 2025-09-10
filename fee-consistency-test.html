@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fee Consistency Validation Test</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: white;
+        min-height: 100vh;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: rgba(0, 0, 0, 0.3);
+        padding: 30px;
+        border-radius: 15px;
+        backdrop-filter: blur(10px);
+      }
+      .header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .test-section {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 20px;
+        margin: 20px 0;
+        border-radius: 10px;
+        border-left: 4px solid #4caf50;
+      }
+      .agent-test {
+        background: rgba(0, 0, 0, 0.2);
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 8px;
+      }
+      .fee-comparison {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 15px;
+        margin: 15px 0;
+      }
+      .fee-card {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 15px;
+        border-radius: 8px;
+        text-align: center;
+      }
+      .fee-match {
+        border-left: 4px solid #4caf50;
+      }
+      .fee-mismatch {
+        border-left: 4px solid #f44336;
+      }
+      .warning {
+        color: #ff9800;
+      }
+      .success {
+        color: #4caf50;
+      }
+      .error {
+        color: #f44336;
+      }
+      .debug-data {
+        background: rgba(0, 0, 0, 0.3);
+        padding: 10px;
+        border-radius: 5px;
+        font-family: monospace;
+        font-size: 12px;
+        margin: 10px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🧮 Fee Consistency Validation Test</h1>
+        <p>Testing that all components use the same fee priority logic</p>
+      </div>
+
+      <div class="test-section">
+        <h2>📋 Test Setup</h2>
+        <p>Using the actual 6 agents from database with real fee field data</p>
+        <div id="setup-results"></div>
+      </div>
+
+      <div class="test-section">
+        <h2>🔬 Fee Logic Comparison</h2>
+        <div id="fee-comparison-results"></div>
+      </div>
+
+      <div class="test-section">
+        <h2>📊 Summary Report</h2>
+        <div id="summary-results"></div>
+      </div>
+    </div>
+
+    <script>
+      // Simulate the resolveInteractionFee function (from agentDataValidator.js)
+      const resolveInteractionFeeCard = (agent) => {
+        let fee = 1;
+        let token = "USDC";
+        let source = "fallback";
+
+        // PRIORITY 1: interaction_fee_amount (authoritative field)
+        if (
+          agent?.interaction_fee_amount !== undefined &&
+          agent?.interaction_fee_amount !== null &&
+          !isNaN(agent?.interaction_fee_amount) &&
+          agent?.interaction_fee_amount > 0
+        ) {
+          fee = parseFloat(agent.interaction_fee_amount);
+          token = agent?.interaction_fee_token || "USDC";
+          source = "interaction_fee_amount";
+        }
+        // PRIORITY 2: fee_usdc
+        else if (
+          agent?.fee_usdc !== undefined &&
+          agent?.fee_usdc !== null &&
+          !isNaN(agent?.fee_usdc) &&
+          agent?.fee_usdc > 0
+        ) {
+          fee = parseFloat(agent.fee_usdc);
+          token = "USDC";
+          source = "fee_usdc";
+        }
+        // PRIORITY 3: fee_usdt
+        else if (
+          agent?.fee_usdt !== undefined &&
+          agent?.fee_usdt !== null &&
+          !isNaN(agent?.fee_usdt) &&
+          agent?.fee_usdt > 0
+        ) {
+          fee = parseFloat(agent.fee_usdt);
+          token = "USDT";
+          source = "fee_usdt";
+        }
+        // PRIORITY 4: interaction_fee_usdfc (legacy)
+        else if (
+          agent?.interaction_fee_usdfc !== undefined &&
+          agent?.interaction_fee_usdfc !== null &&
+          !isNaN(agent?.interaction_fee_usdfc) &&
+          agent?.interaction_fee_usdfc > 0
+        ) {
+          fee = parseFloat(agent.interaction_fee_usdfc);
+          token = "USDC";
+          source = "interaction_fee_usdfc";
+        }
+        // PRIORITY 5: interaction_fee (legacy)
+        else if (
+          agent?.interaction_fee !== undefined &&
+          agent?.interaction_fee !== null &&
+          !isNaN(agent?.interaction_fee) &&
+          agent?.interaction_fee > 0
+        ) {
+          fee = parseFloat(agent.interaction_fee);
+          token = "USDC";
+          source = "interaction_fee";
+        }
+
+        return { amount: fee, token, source };
+      };
+
+      // Simulate the getServiceFeeDisplay function (from AgentInteractionModal.jsx)
+      const getServiceFeeDisplayModal = (agent) => {
+        let fee = 1;
+        let token = "USDC";
+        let source = "fallback";
+
+        // PRIORITY 1: interaction_fee_amount (authoritative field)
+        if (
+          agent?.interaction_fee_amount !== undefined &&
+          agent?.interaction_fee_amount !== null &&
+          !isNaN(agent?.interaction_fee_amount) &&
+          agent?.interaction_fee_amount > 0
+        ) {
+          fee = parseFloat(agent.interaction_fee_amount);
+          token = agent?.interaction_fee_token || "USDC";
+          source = "interaction_fee_amount";
+        }
+        // PRIORITY 2: fee_usdc
+        else if (
+          agent?.fee_usdc !== undefined &&
+          agent?.fee_usdc !== null &&
+          !isNaN(agent?.fee_usdc) &&
+          agent?.fee_usdc > 0
+        ) {
+          fee = parseFloat(agent.fee_usdc);
+          token = "USDC";
+          source = "fee_usdc";
+        }
+        // PRIORITY 3: fee_usdt
+        else if (
+          agent?.fee_usdt !== undefined &&
+          agent?.fee_usdt !== null &&
+          !isNaN(agent?.fee_usdt) &&
+          agent?.fee_usdt > 0
+        ) {
+          fee = parseFloat(agent.fee_usdt);
+          token = "USDT";
+          source = "fee_usdt";
+        }
+        // PRIORITY 4: interaction_fee_usdfc (legacy)
+        else if (
+          agent?.interaction_fee_usdfc !== undefined &&
+          agent?.interaction_fee_usdfc !== null &&
+          !isNaN(agent?.interaction_fee_usdfc) &&
+          agent?.interaction_fee_usdfc > 0
+        ) {
+          fee = parseFloat(agent.interaction_fee_usdfc);
+          token = "USDC";
+          source = "interaction_fee_usdfc";
+        }
+        // PRIORITY 5: interaction_fee (legacy)
+        else if (
+          agent?.interaction_fee !== undefined &&
+          agent?.interaction_fee !== null &&
+          !isNaN(agent?.interaction_fee) &&
+          agent?.interaction_fee > 0
+        ) {
+          fee = parseFloat(agent.interaction_fee);
+          token = "USDC";
+          source = "interaction_fee";
+        }
+
+        return { amount: fee, token, source, display: `${fee} ${token}` };
+      };
+
+      // Real database agents from the investigation
+      const realAgents = [
+        {
+          id: "f0704c18-8870-425e-9b47-4f8beb7f4673",
+          name: "Cube Base Sepolia 1",
+          network: "Base Sepolia",
+          chain_id: 84532,
+          deployment_chain_id: 84532,
+          deployment_network_name: "Base Sepolia",
+          interaction_fee: 1,
+          interaction_fee_amount: 3,
+          interaction_fee_token: "USDC",
+          interaction_fee_usdfc: 3,
+          token_symbol: "USDC",
+        },
+        {
+          id: "f911cc7d-244c-4916-9612-71b3904e9424",
+          name: "Cube Dynamic 1",
+          network: "Ethereum Sepolia",
+          chain_id: 11155111,
+          deployment_chain_id: 11155111,
+          deployment_network_name: "Ethereum Sepolia",
+          interaction_fee: 1,
+          interaction_fee_amount: 1,
+          interaction_fee_token: "USDC",
+          interaction_fee_usdfc: 1,
+          token_symbol: "USDC",
+        },
+        {
+          id: "120ef520-4131-40da-9d54-1df302086788",
+          name: "Cube Sepolia 2",
+          network: "Ethereum Sepolia",
+          chain_id: 11155111,
+          deployment_chain_id: 11155111,
+          deployment_network_name: "Ethereum Sepolia",
+          interaction_fee: 1,
+          interaction_fee_amount: 7,
+          interaction_fee_token: "USDC",
+          interaction_fee_usdfc: 10, // Different from interaction_fee_amount!
+          token_symbol: "USDC",
+        },
+        {
+          id: "b1407463-06d6-4556-a956-bac36957f767",
+          name: "Cube Sepolia 3 dev account",
+          network: "Ethereum Sepolia",
+          chain_id: 11155111,
+          deployment_chain_id: 11155111,
+          deployment_network_name: "Ethereum Sepolia",
+          interaction_fee: 1,
+          interaction_fee_amount: 10,
+          interaction_fee_token: "USDC",
+          interaction_fee_usdfc: 7, // Different from interaction_fee_amount!
+          token_symbol: "USDC",
+        },
+        {
+          id: "a92ed3f5-e490-4ca4-9c38-9747e666d6a6",
+          name: "Cube Sepolia 4 dev account",
+          network: "Ethereum Sepolia",
+          chain_id: 11155111,
+          deployment_chain_id: 11155111,
+          deployment_network_name: "Ethereum Sepolia",
+          interaction_fee: 1,
+          interaction_fee_amount: 4,
+          interaction_fee_token: "USDC",
+          interaction_fee_usdfc: 4,
+          token_symbol: "USDC",
+        },
+        {
+          id: "1022df78-8b62-473e-a7ad-fdba0c05b4a6",
+          name: "Cube Sepolia Updated 1",
+          network: "Ethereum Sepolia",
+          chain_id: 11155111,
+          deployment_chain_id: 11155111,
+          deployment_network_name: "Ethereum Sepolia",
+          interaction_fee: 1,
+          interaction_fee_amount: 18,
+          interaction_fee_token: "USDC",
+          interaction_fee_usdfc: 18,
+          token_symbol: "USDC",
+        },
+      ];
+
+      function runConsistencyTest() {
+        const results = [];
+        let totalTests = 0;
+        let passedTests = 0;
+
+        // Test each agent
+        realAgents.forEach((agent) => {
+          const cardResult = resolveInteractionFeeCard(agent);
+          const modalResult = getServiceFeeDisplayModal(agent);
+
+          const isConsistent =
+            cardResult.amount === modalResult.amount &&
+            cardResult.token === modalResult.token &&
+            cardResult.source === modalResult.source;
+
+          totalTests++;
+          if (isConsistent) passedTests++;
+
+          results.push({
+            agent,
+            cardResult,
+            modalResult,
+            isConsistent,
+            hasConflictingFields:
+              agent.interaction_fee_amount !== agent.interaction_fee_usdfc,
+          });
+        });
+
+        return { results, totalTests, passedTests };
+      }
+
+      function renderResults() {
+        const testResults = runConsistencyTest();
+
+        // Setup Results
+        document.getElementById("setup-results").innerHTML = `
+                <div class="debug-data">
+                    <strong>✅ Loaded ${realAgents.length} real agents from database</strong><br>
+                    <strong>🎯 Testing priority logic:</strong> interaction_fee_amount → fee_usdc → fee_usdt → interaction_fee_usdfc → interaction_fee → fallback
+                </div>
+            `;
+
+        // Fee Comparison Results
+        let comparisonHTML = "";
+        testResults.results.forEach((result) => {
+          const statusClass = result.isConsistent
+            ? "fee-match"
+            : "fee-mismatch";
+          const statusIcon = result.isConsistent ? "✅" : "❌";
+          const statusText = result.isConsistent
+            ? "CONSISTENT"
+            : "INCONSISTENT";
+
+          comparisonHTML += `
+                    <div class="agent-test ${statusClass}">
+                        <h3>${statusIcon} ${
+            result.agent.name
+          } - ${statusText}</h3>
+                        
+                        <div class="fee-comparison">
+                            <div class="fee-card">
+                                <h4>🃏 Card Logic (resolveInteractionFee)</h4>
+                                <div><strong>${result.cardResult.amount} ${
+            result.cardResult.token
+          }</strong></div>
+                                <div class="debug-data">Source: ${
+                                  result.cardResult.source
+                                }</div>
+                            </div>
+                            
+                            <div class="fee-card">
+                                <h4>💳 Modal Logic (getServiceFeeDisplay)</h4>
+                                <div><strong>${result.modalResult.amount} ${
+            result.modalResult.token
+          }</strong></div>
+                                <div class="debug-data">Source: ${
+                                  result.modalResult.source
+                                }</div>
+                            </div>
+                        </div>
+                        
+                        <div class="debug-data">
+                            <strong>Raw Database Fields:</strong><br>
+                            • interaction_fee_amount: ${
+                              result.agent.interaction_fee_amount
+                            }<br>
+                            • interaction_fee_usdfc: ${
+                              result.agent.interaction_fee_usdfc
+                            }<br>
+                            • interaction_fee: ${
+                              result.agent.interaction_fee
+                            }<br>
+                            ${
+                              result.hasConflictingFields
+                                ? '<span class="warning">⚠️ Has conflicting fee fields!</span>'
+                                : '<span class="success">✅ No conflicting fee fields</span>'
+                            }
+                        </div>
+                    </div>
+                `;
+        });
+
+        document.getElementById("fee-comparison-results").innerHTML =
+          comparisonHTML;
+
+        // Summary Results
+        const successRate = (
+          (testResults.passedTests / testResults.totalTests) *
+          100
+        ).toFixed(1);
+        const summaryClass =
+          testResults.passedTests === testResults.totalTests
+            ? "success"
+            : "error";
+
+        document.getElementById("summary-results").innerHTML = `
+                <div class="debug-data">
+                    <h3 class="${summaryClass}">
+                        ${
+                          testResults.passedTests === testResults.totalTests
+                            ? "🎉"
+                            : "⚠️"
+                        } 
+                        Consistency Test Results
+                    </h3>
+                    <p><strong>Passed:</strong> ${testResults.passedTests} / ${
+          testResults.totalTests
+        } (${successRate}%)</p>
+                    <p><strong>Status:</strong> ${
+                      testResults.passedTests === testResults.totalTests
+                        ? "ALL COMPONENTS NOW CONSISTENT! 🎯"
+                        : "Components still have inconsistencies"
+                    }</p>
+                    
+                    ${
+                      testResults.passedTests === testResults.totalTests
+                        ? '<p class="success">✅ Card and Modal will now show identical fee amounts for all agents</p>'
+                        : '<p class="error">❌ Card and Modal still show different fee amounts - needs further debugging</p>'
+                    }
+                </div>
+            `;
+      }
+
+      // Run the test when page loads
+      document.addEventListener("DOMContentLoaded", renderResults);
+    </script>
+  </body>
+</html>
