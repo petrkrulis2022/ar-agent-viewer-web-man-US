@@ -21,6 +21,63 @@ import {
 import QRCode from "react-qr-code";
 import { USBDGToken, ContractAddresses } from "../config/blockdag-chain";
 
+// Helper functions for wallet address display
+const getAgentWalletAddress = (agent) => {
+  console.log("🔍 PaymentQRModal: Wallet info for agent:", {
+    name: agent?.name,
+    agent_wallet_address: agent?.agent_wallet_address,
+    owner_wallet: agent?.owner_wallet,
+    deployer_wallet_address: agent?.deployer_wallet_address,
+    user_id: agent?.user_id,
+  });
+
+  // Priority order for agent wallet address:
+  // 1. agent_wallet_address (primary field for agent's wallet)
+  // 2. owner_wallet (backup field)
+  // 3. deployer_wallet_address (fallback)
+  // 4. user_id (legacy fallback - might be wallet address)
+
+  let walletAddress = null;
+  let source = "fallback";
+
+  if (agent?.agent_wallet_address) {
+    walletAddress = agent.agent_wallet_address;
+    source = "agent_wallet_address";
+  } else if (agent?.owner_wallet) {
+    walletAddress = agent.owner_wallet;
+    source = "owner_wallet";
+  } else if (agent?.deployer_wallet_address) {
+    walletAddress = agent.deployer_wallet_address;
+    source = "deployer_wallet_address";
+  } else if (agent?.user_id && agent.user_id.startsWith("0x")) {
+    // Some legacy agents might have wallet address in user_id
+    walletAddress = agent.user_id;
+    source = "user_id (legacy)";
+  }
+
+  console.log("🔍 PaymentQRModal: Agent wallet resolved:", {
+    walletAddress,
+    source,
+    agent: agent?.name,
+    note: "Currently same as deployer's wallet - will change when agents get individual wallets",
+  });
+
+  return walletAddress || "No wallet configured";
+};
+
+const formatWalletAddress = (address) => {
+  if (!address || address === "No wallet configured") {
+    return address;
+  }
+
+  // Format as shortened address: 0x1234...5678
+  if (address.length > 10) {
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  }
+
+  return address;
+};
+
 const PaymentQRModal = ({
   agent,
   isOpen,
@@ -176,6 +233,15 @@ const PaymentQRModal = ({
                 <div className="flex justify-between items-center">
                   <span className="text-slate-400">Network:</span>
                   <span className="text-purple-400">{paymentData.network}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400">Receiving Wallet:</span>
+                  <span
+                    className="text-blue-400 font-mono text-sm"
+                    title={getAgentWalletAddress(agent)}
+                  >
+                    {formatWalletAddress(getAgentWalletAddress(agent))}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-slate-400">Agent:</span>

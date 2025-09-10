@@ -119,37 +119,37 @@ const PaymentCube = ({
     crypto_qr: {
       icon: "📱", // QR code icon will be added in text
       text: "Crypto QR",
-      color: "#00ff00",
+      color: "#00ff66",
       description: "",
     },
     virtual_card: {
       icon: "💳",
       text: "Virtual Card",
-      color: "#0080ff",
+      color: "#0088ff",
       description: "",
     },
     bank_qr: {
       icon: "🔲", // QR code icon instead of bank
       text: "Bank QR",
-      color: "#004080",
+      color: "#0066cc",
       description: "",
     },
     voice_pay: {
       icon: "🎤", // Microphone icon for voice
       text: "Voice Pay",
-      color: "#8000ff",
+      color: "#9900ff",
       description: "",
     },
     sound_pay: {
       icon: "🎵",
       text: "Sound Pay",
-      color: "#ff8000",
+      color: "#ff6600",
       description: "",
     },
     onboard_crypto: {
       icon: "🚀",
       text: "On / Off Ramp - Onboard User / Merchant",
-      color: "#ffff00",
+      color: "#ffdd00",
       description: "",
     },
   };
@@ -170,13 +170,18 @@ const PaymentCube = ({
     return Math.max(0, Math.min(enabledFaces.length - 1, faceIndex));
   };
 
-  // Auto-rotation and manual rotation with momentum
+  // Enhanced auto-rotation and pulsing animation
   useFrame((state, delta) => {
     if (meshRef.current) {
       if (isRotating && !isDragging) {
-        // Gentle auto-rotation
-        meshRef.current.rotation.y += delta * 0.2;
-        meshRef.current.rotation.x += delta * 0.05;
+        // Gentle auto-rotation with slight variation
+        meshRef.current.rotation.y += delta * 0.25;
+        meshRef.current.rotation.x += delta * 0.08;
+
+        // Add subtle pulsing scale effect
+        const time = state.clock.getElapsedTime();
+        const scale = 1 + Math.sin(time * 2) * 0.02;
+        meshRef.current.scale.setScalar(scale);
       } else if (
         !isDragging &&
         (Math.abs(rotationVelocity.x) > 0.01 ||
@@ -191,6 +196,12 @@ const PaymentCube = ({
           x: rotationVelocity.x * 0.95,
           y: rotationVelocity.y * 0.95,
         });
+      }
+
+      // Always apply subtle floating animation
+      if (!isDragging) {
+        const time = state.clock.getElapsedTime();
+        meshRef.current.position.y = Math.sin(time * 1.5) * 0.1;
       }
     }
   });
@@ -494,13 +505,14 @@ const PaymentCube = ({
       >
         <boxGeometry args={[2.5, 2.5, 2.5]} />
         <meshStandardMaterial
-          color={hoveredFace ? "#00ff88" : "#00ff00"}
+          color={hoveredFace ? "#00ff88" : "#22ff44"}
           transparent
-          opacity={0.85}
-          emissive={hoveredFace ? "#004400" : "#002200"}
-          emissiveIntensity={0.6}
-          roughness={0.1}
-          metalness={0.3}
+          opacity={0.95}
+          emissive={hoveredFace ? "#00aa44" : "#004422"}
+          emissiveIntensity={hoveredFace ? 1.2 : 0.9}
+          roughness={0.05}
+          metalness={0.7}
+          envMapIntensity={1.5}
         />
 
         {/* Face Textures - Create faces with payment methods using Text */}
@@ -569,7 +581,7 @@ const PaymentCube = ({
                   gl.domElement.style.cursor = "grab";
                 }}
               >
-                <boxGeometry args={[1.6, 0.8, 0.15]} />
+                <boxGeometry args={[1.9, 1.0, 0.18]} />
                 <meshStandardMaterial
                   color={config.color}
                   transparent
@@ -590,7 +602,7 @@ const PaymentCube = ({
                 ]}
                 rotation={faceRotations[faceIndex]}
               >
-                <planeGeometry args={[1.5, 0.7]} />
+                <planeGeometry args={[1.8, 0.9]} />
                 <meshBasicMaterial
                   color={isActiveFace ? "#ffffff" : "#f8f8f8"}
                   transparent
@@ -608,7 +620,7 @@ const PaymentCube = ({
                   facePositions[faceIndex][2] + textOffsets[faceIndex][2] * 2.2,
                 ]}
                 rotation={faceRotations[faceIndex]}
-                fontSize={0.2}
+                fontSize={0.3}
                 color={isActiveFace ? "#000000" : "#333333"}
                 anchorX="center"
                 anchorY="middle"
@@ -628,11 +640,11 @@ const PaymentCube = ({
                       textPosition[2],
                     ]}
                     rotation={faceRotations[faceIndex]}
-                    fontSize={0.15}
+                    fontSize={0.22}
                     color="#ffffff"
                     anchorX="center"
                     anchorY="middle"
-                    outlineWidth={0.02}
+                    outlineWidth={0.03}
                     outlineColor="#000000"
                     fontWeight="bold"
                   >
@@ -645,11 +657,11 @@ const PaymentCube = ({
                       textPosition[2],
                     ]}
                     rotation={faceRotations[faceIndex]}
-                    fontSize={0.15}
+                    fontSize={0.22}
                     color="#ffffff"
                     anchorX="center"
                     anchorY="middle"
-                    outlineWidth={0.02}
+                    outlineWidth={0.03}
                     outlineColor="#000000"
                     fontWeight="bold"
                   >
@@ -665,11 +677,11 @@ const PaymentCube = ({
                     textPosition[2],
                   ]}
                   rotation={faceRotations[faceIndex]}
-                  fontSize={0.15}
+                  fontSize={0.22}
                   color="#ffffff"
                   anchorX="center"
                   anchorY="middle"
-                  outlineWidth={0.02}
+                  outlineWidth={0.03}
                   outlineColor="#000000"
                   fontWeight="bold"
                 >
@@ -685,11 +697,11 @@ const PaymentCube = ({
                   textPosition[2],
                 ]}
                 rotation={faceRotations[faceIndex]}
-                fontSize={0.1}
+                fontSize={0.16}
                 color="#ffffff"
                 anchorX="center"
                 anchorY="middle"
-                outlineWidth={0.02}
+                outlineWidth={0.03}
                 outlineColor="#000000"
                 fontWeight="bold"
               >
@@ -727,46 +739,36 @@ const PaymentCube = ({
       </Html>
 
       {/* Amount Display - moved further down to avoid overlaying cube */}
-      <Html position={[2, -3.5, -3]} transform>
-        <div
-          style={{
-            color: "white",
-            fontSize: "28px",
-            fontWeight: "bold",
-            textAlign: "center",
-            textShadow: "0 0 25px #00ff00a0",
-            border: "3px solid #00ff00a0",
-            borderRadius: "20px",
-            padding: "12px 20px",
-            background: "rgba(0, 255, 0, 0.15)",
-            backdropFilter: "blur(15px)",
-            transform: "translate(-50%, -50%)",
-            fontFamily: "'Segoe UI', Arial, sans-serif",
-            boxShadow: "0 0 30px rgba(0, 255, 0, 0.3)",
-          }}
-        >
-          ${agent?.interaction_fee || "10.00"} USD
-        </div>
-      </Html>
-
-      {/* Enhanced Lighting */}
+      {/* Enhanced Dramatic Lighting */}
       <pointLight
         position={[0, 0, -1]}
-        color="#00ff00"
-        intensity={0.8}
-        distance={12}
+        color="#00ff66"
+        intensity={1.5}
+        distance={15}
       />
       <pointLight
         position={[3, 3, -3]}
-        color="#ffffff"
-        intensity={0.4}
-        distance={8}
+        color="#44ff88"
+        intensity={0.8}
+        distance={10}
       />
       <pointLight
         position={[-3, -3, -3]}
-        color="#0080ff"
-        intensity={0.3}
-        distance={8}
+        color="#88ffaa"
+        intensity={0.6}
+        distance={10}
+      />
+      <pointLight
+        position={[0, 5, 0]}
+        color="#66ff99"
+        intensity={0.7}
+        distance={12}
+      />
+      <pointLight
+        position={[0, -5, 0]}
+        color="#22dd55"
+        intensity={0.5}
+        distance={12}
       />
     </group>
   );
@@ -1064,8 +1066,9 @@ const CubePaymentEngine = ({
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
       style={{
-        background: "rgba(0, 0, 0, 0.3)",
-        backdropFilter: "blur(5px)",
+        background:
+          "radial-gradient(circle at center, rgba(0, 30, 15, 0.9) 0%, rgba(0, 0, 0, 0.95) 100%)",
+        backdropFilter: "blur(8px)",
       }}
     >
       {/* Close button */}
@@ -1098,10 +1101,32 @@ const CubePaymentEngine = ({
             height: "100%",
           }}
         >
-          {/* Lighting */}
-          <ambientLight intensity={0.4} />
-          <directionalLight position={[10, 10, 5]} intensity={1} />
-          <pointLight position={[0, 0, 10]} intensity={0.5} color="#00ff00" />
+          {/* Enhanced Dramatic Scene Lighting */}
+          <ambientLight intensity={0.3} color="#002200" />
+          <directionalLight
+            position={[10, 10, 5]}
+            intensity={0.8}
+            color="#88ff88"
+            castShadow
+          />
+          <pointLight
+            position={[0, 0, 10]}
+            intensity={1.2}
+            color="#00ff44"
+            distance={20}
+          />
+          <pointLight
+            position={[5, 0, 0]}
+            intensity={0.6}
+            color="#44ff88"
+            distance={15}
+          />
+          <pointLight
+            position={[-5, 0, 0]}
+            intensity={0.6}
+            color="#66ffaa"
+            distance={15}
+          />
 
           {/* Render current view */}
           {currentView === "cube" && !isLoadingConfig && (

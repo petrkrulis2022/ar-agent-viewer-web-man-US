@@ -11,6 +11,43 @@ import {
   Users,
 } from "lucide-react";
 
+// Helper functions for wallet address display
+const getAgentWalletAddress = (agent) => {
+  // Priority order for agent wallet address:
+  // 1. agent_wallet_address (primary field for agent's wallet)
+  // 2. owner_wallet (backup field)
+  // 3. deployer_wallet_address (fallback)
+  // 4. user_id (legacy fallback - might be wallet address)
+
+  let walletAddress = null;
+
+  if (agent?.agent_wallet_address) {
+    walletAddress = agent.agent_wallet_address;
+  } else if (agent?.owner_wallet) {
+    walletAddress = agent.owner_wallet;
+  } else if (agent?.deployer_wallet_address) {
+    walletAddress = agent.deployer_wallet_address;
+  } else if (agent?.user_id && agent.user_id.startsWith("0x")) {
+    // Some legacy agents might have wallet address in user_id
+    walletAddress = agent.user_id;
+  }
+
+  return walletAddress || "No wallet configured";
+};
+
+const formatWalletAddress = (address) => {
+  if (!address || address === "No wallet configured") {
+    return address;
+  }
+
+  // Format as shortened address: 0x1234...5678
+  if (address.length > 10) {
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  }
+
+  return address;
+};
+
 /**
  * Modern Agent Card Component
  * Clean, responsive design with proper data handling
@@ -212,6 +249,20 @@ const ModernAgentCard = ({ agent, onSelect, distance }) => {
           <div className="flex items-center space-x-2 text-sm text-gray-400">
             <MapPin className="w-4 h-4" />
             <span>{agentData.location.distance}</span>
+          </div>
+        </div>
+
+        {/* Receiving Wallet */}
+        <div className="mb-4">
+          <div className="flex items-center space-x-2 text-sm">
+            <Wallet className="w-4 h-4 text-blue-400" />
+            <span className="text-gray-400">Receiving:</span>
+            <span
+              className="text-blue-400 font-mono text-xs"
+              title={getAgentWalletAddress(agent)}
+            >
+              {formatWalletAddress(getAgentWalletAddress(agent))}
+            </span>
           </div>
         </div>
 
