@@ -101,6 +101,7 @@ const getAgentPaymentConfig = async (agentId) => {
 const PaymentCube = ({
   agent,
   onFaceSelected,
+  handleFaceClick,
   actualEnabledMethods = ["crypto_qr"],
   cubeRef,
   isVisible = true,
@@ -320,63 +321,6 @@ const PaymentCube = ({
     // Call existing onFaceSelected callback for backward compatibility
     if (onFaceSelected && activeFace) {
       onFaceSelected(activeFace, paymentMethods[activeFace]);
-    }
-  };
-
-  // Handle individual face clicks - for button-style interactions
-  const handleFaceClick = (method, faceIndex) => {
-    console.log(`🎯 Face clicked directly: ${method} (face ${faceIndex})`);
-
-    setSelectedFace(faceIndex);
-    setIsRotating(false);
-
-    // Dispatch the same events as cube click for consistency
-    switch (method) {
-      case "crypto_qr":
-        console.log("🔗 Dispatching crypto-qr-selected event from face click");
-        document.dispatchEvent(
-          new CustomEvent("crypto-qr-selected", {
-            detail: {
-              method: "crypto_qr",
-              agent: agent,
-              face: method,
-              config: paymentMethods[method],
-            },
-          })
-        );
-        break;
-
-      case "solana":
-        console.log("🟠 Dispatching solana-selected event from face click");
-        document.dispatchEvent(
-          new CustomEvent("solana-selected", {
-            detail: {
-              method: "solana",
-              agent: agent,
-              face: method,
-              config: paymentMethods[method],
-            },
-          })
-        );
-        break;
-
-      default:
-        console.log(`📱 Dispatching ${method}-selected event from face click`);
-        document.dispatchEvent(
-          new CustomEvent(`${method}-selected`, {
-            detail: {
-              method: method,
-              agent: agent,
-              face: method,
-              config: paymentMethods[method],
-            },
-          })
-        );
-    }
-
-    // Call onFaceSelected callback for backward compatibility
-    if (onFaceSelected) {
-      onFaceSelected(method, paymentMethods[method]);
     }
   };
 
@@ -780,12 +724,39 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
     console.log("🔥 QR Code clicked! Triggering transaction...");
 
     try {
-      // Generate payment data from the EIP-681 URI
-      const result = await dynamicQRService.generateDynamicQR(agent);
+      // Parse QR data to get transaction details
+      let transactionData;
+
+      if (typeof qrData === "string" && qrData.startsWith("data:image")) {
+        // Data URL format - regenerate transaction data
+        console.log(
+          "📱 QR data URL detected, regenerating transaction data..."
+        );
+        const qrResult = await dynamicQRService.generateDynamicQR(agent);
+        if (!qrResult.success) {
+          throw new Error(qrResult.error);
+        }
+        transactionData = qrResult.transactionData;
+      } else if (typeof qrData === "string") {
+        // Legacy string format
+        transactionData = {
+          to: agent.agent_wallet_address || agent.payment_recipient_address,
+          value: "0",
+          data: "0x",
+          amount: agent.interaction_fee_amount || "1.00",
+          token: agent.interaction_fee_token || "USDC",
+        };
+      } else {
+        // Already parsed transaction data
+        transactionData = qrData;
+      }
+
+      console.log("📤 Transaction data:", transactionData);
 
       // Use the click handler from dynamic service
       const transactionResult = await dynamicQRService.handleQRClick(
-        result.paymentData
+        agent,
+        transactionData
       );
 
       if (transactionResult.success) {
@@ -794,17 +765,27 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
           transactionResult.transactionHash
         );
         alert(
-          `Transaction submitted successfully!\nHash: ${transactionResult.transactionHash}`
+          `🎉 Payment Sent Successfully!\n\n💳 Transaction Hash:\n${transactionResult.transactionHash}\n\n🔗 You can view this transaction on the blockchain explorer.`
         );
       } else {
         console.error("❌ Transaction failed:", transactionResult.error);
-        alert(`Transaction failed: ${transactionResult.error}`);
+        alert(
+          `❌ Transaction Failed:\n${transactionResult.error}\n\nPlease check your wallet connection and try again.`
+        );
       }
     } catch (error) {
       console.error("❌ QR click error:", error);
-      alert(`Error: ${error.message}`);
+      alert(
+        `⚠️ Payment Error:\n${error.message}\n\nPlease ensure MetaMask is installed and connected.`
+      );
     }
   };
+
+  // Determine QR display value
+  const qrDisplayValue =
+    typeof qrData === "string" && qrData.startsWith("data:image")
+      ? qrData
+      : JSON.stringify(qrData);
 
   return (
     <group>
@@ -824,8 +805,8 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
       <Html position={position} transform>
         <div
           style={{
-            width: "250px",
-            height: "250px",
+            width: "280px",
+            height: "320px",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
@@ -836,30 +817,72 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
             border: "3px solid #00ff00",
             boxShadow: "0 0 30px #00ff0080",
             transform: "translate(-50%, -50%)",
-            cursor: "pointer", // Make it obvious it's clickable
+            cursor: "pointer",
           }}
           onClick={handleQRClick}
         >
-          <QRCode
-            value={qrData}
-            size={180}
-            style={{
-              background: "white",
-              padding: "10px",
-              borderRadius: "10px",
-              cursor: "pointer",
-            }}
-          />
+          {/* Agent Payment Info */}
           <div
             style={{
-              marginTop: "15px",
-              fontSize: "14px",
+              marginBottom: "15px",
+              fontSize: "16px",
               color: "#333",
               textAlign: "center",
               fontWeight: "bold",
             }}
           >
-            CLICK QR to Pay Now | Scan with Mobile
+            💳 Pay {agent?.name || "Agent"}
+          </div>
+
+          <div
+            style={{
+              marginBottom: "15px",
+              fontSize: "14px",
+              color: "#666",
+              textAlign: "center",
+            }}
+          >
+            {agent?.interaction_fee_amount || "1.00"}{" "}
+            {agent?.interaction_fee_token || "USDC"}
+          </div>
+
+          {/* QR Code Display */}
+          {typeof qrData === "string" && qrData.startsWith("data:image") ? (
+            <img
+              src={qrData}
+              alt="Payment QR Code"
+              style={{
+                width: "180px",
+                height: "180px",
+                borderRadius: "10px",
+                cursor: "pointer",
+              }}
+            />
+          ) : (
+            <QRCode
+              value={qrDisplayValue}
+              size={180}
+              style={{
+                background: "white",
+                padding: "10px",
+                borderRadius: "10px",
+                cursor: "pointer",
+              }}
+            />
+          )}
+
+          <div
+            style={{
+              marginTop: "15px",
+              fontSize: "12px",
+              color: "#333",
+              textAlign: "center",
+              fontWeight: "bold",
+            }}
+          >
+            🖱️ CLICK to Pay with MetaMask
+            <br />
+            📱 SCAN with Mobile Wallet
           </div>
         </div>
       </Html>
@@ -1049,6 +1072,55 @@ const CubePaymentEngine = ({
     setQrData(null);
   };
 
+  // Handle individual face clicks - for button-style interactions
+  const handleFaceClick = async (method, faceIndex) => {
+    console.log(`🎯 Face clicked directly: ${method} (face ${faceIndex})`);
+
+    // Handle QR generation for crypto_qr method
+    if (method === "crypto_qr") {
+      console.log("🔗 Generating QR code for crypto payment");
+      setIsGenerating(true);
+
+      try {
+        const qrResult = await dynamicQRService.generateDynamicQR(agent);
+
+        if (qrResult.success) {
+          console.log("✅ QR code generated successfully");
+          setQrData(qrResult.qrData);
+          setCurrentView("qr");
+
+          // Also dispatch the event for any listeners
+          document.dispatchEvent(
+            new CustomEvent("crypto-qr-generated", {
+              detail: {
+                method: "crypto_qr",
+                agent: agent,
+                qrData: qrResult.qrData,
+                transactionData: qrResult.transactionData,
+                network: qrResult.network,
+                amount: qrResult.amount,
+                token: qrResult.token,
+                recipient: qrResult.recipient,
+              },
+            })
+          );
+        } else {
+          console.error("❌ QR generation failed:", qrResult.error);
+          alert(`QR Generation Failed: ${qrResult.error}`);
+        }
+      } catch (error) {
+        console.error("❌ QR generation error:", error);
+        alert(`QR Generation Error: ${error.message}`);
+      } finally {
+        setIsGenerating(false);
+      }
+      return;
+    }
+
+    // For other methods, use existing handleFaceSelected logic
+    await handleFaceSelected(method, { text: method });
+  };
+
   // Handle close
   const handleClose = () => {
     setCurrentView("cube");
@@ -1133,6 +1205,7 @@ const CubePaymentEngine = ({
             <PaymentCube
               agent={agent}
               onFaceSelected={handleFaceSelected}
+              handleFaceClick={handleFaceClick}
               actualEnabledMethods={actualEnabledMethods}
               cubeRef={cubeRef}
               isVisible={true}
