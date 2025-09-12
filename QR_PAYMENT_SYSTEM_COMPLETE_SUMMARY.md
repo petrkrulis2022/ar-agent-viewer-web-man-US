@@ -461,7 +461,7 @@ class DynamicQRService {
 
 ---
 
-## 📁 **Key Files Reference**
+### 📁 **Key Files Reference**
 
 ### 🔧 **Core Implementation**
 
@@ -476,11 +476,36 @@ class DynamicQRService {
 - **`vite.config.js`**: Development server configuration
 - **`jsconfig.json`**: JavaScript project configuration
 
+### 🌿 **Branch Strategy**
+
+#### **Current Branch Structure:**
+
+```
+main (production)
+└── Cube-Crypto-QR (Phase 1 - Stable QR System) ✅ COMPLETE
+    └── CCIP-Cross-Chain-Phase2 (Phase 2 - CCIP Development) ✅ ACTIVE
+```
+
+#### **Development Workflow:**
+
+- **Phase 1 (Stable)**: `Cube-Crypto-QR` - Production-ready QR payment system
+- **Phase 2 (Development)**: `CCIP-Cross-Chain-Phase2` - CCIP cross-chain features
+- **Merge Strategy**: Phase 2 → Phase 1 → Main when complete
+- **Risk Management**: Phase 1 remains stable during Phase 2 development
+
+#### **Branch Benefits:**
+
+- ✅ **Safe Development**: Experiment with CCIP without breaking working system
+- ✅ **Parallel Work**: Fix Phase 1 bugs while developing Phase 2 features
+- ✅ **Clear Separation**: Distinct commits for QR vs CCIP functionality
+- ✅ **Easy Rollback**: Phase 1 always deployable if Phase 2 has issues
+
 ### 🌐 **Network Endpoints**
 
 - **Local Development**: `http://localhost:5173/`
 - **Git Repository**: `https://github.com/petrkrulis2022/ar-agent-viewer-web-man-US`
-- **Branch**: `Cube-Crypto-QR`
+- **Phase 1 Branch**: `Cube-Crypto-QR` (Stable QR Payment System)
+- **Phase 2 Branch**: `CCIP-Cross-Chain-Phase2` (CCIP Development) ✅ **ACTIVE**
 
 ---
 
@@ -549,6 +574,7 @@ class DynamicQRService {
 
 ---
 
-**🎯 Status: Ready for CCIP Cross-Chain Implementation!**
-**📅 Last Updated: September 12, 2025**
-**🚀 Next: Begin Chainlink CCIP Research and Development**
+**🎯 Status: CCIP Cross-Chain Development Branch Created!**
+**📅 Last Updated**: September 12, 2025
+**🚀 Current Branch**: `CCIP-Cross-Chain-Phase2`
+**🎯 Next**: Begin CCIP Router Configuration & Testing
