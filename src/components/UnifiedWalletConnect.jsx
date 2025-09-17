@@ -147,6 +147,8 @@ const UnifiedWalletConnect = ({ open, onOpenChange }) => {
 
   const updateConnectionState = useCallback(
     (network, state) => {
+      console.log(`🔄 UnifiedWalletConnect: Updating ${network} state:`, state);
+      
       setConnectionStates((prev) => {
         const newState = {
           ...prev,
@@ -155,7 +157,7 @@ const UnifiedWalletConnect = ({ open, onOpenChange }) => {
 
         // Notify parent component with updated connection status
         if (onOpenChange) {
-          onOpenChange({
+          const callbackData = {
             evm: {
               isConnected: walletConnected,
               address: walletAddress,
@@ -168,7 +170,10 @@ const UnifiedWalletConnect = ({ open, onOpenChange }) => {
             hasAnyConnection:
               walletConnected ||
               Object.values(newState).some((s) => s?.isConnected),
-          });
+          };
+          
+          console.log(`📤 UnifiedWalletConnect: Sending to parent:`, callbackData);
+          onOpenChange(callbackData);
         }
 
         return newState;
@@ -306,65 +311,80 @@ const UnifiedWalletConnect = ({ open, onOpenChange }) => {
   );
 
   // Render Other Networks Section
-  const renderOtherNetworks = () => (
-    <div className="space-y-4">
-      {/* Active Networks */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Active Networks</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <SolanaWalletConnect
-            onConnectionChange={(state) =>
-              updateConnectionState("solana", state)
-            }
-          />
-          <HederaWalletConnect
-            onConnectionChange={(state) =>
-              updateConnectionState("hedera", state)
-            }
-          />
-        </CardContent>
-      </Card>
+  const renderOtherNetworks = () => {
+    try {
+      return (
+        <div className="space-y-4">
+          {/* Active Networks */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Active Networks</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <SolanaWalletConnect
+                network="devnet"
+                onConnectionChange={(state) => {
+                  console.log("🟣 Solana connection change:", state);
+                  updateConnectionState("solana", state);
+                }}
+              />
+              <HederaWalletConnect
+                onConnectionChange={(state) => {
+                  console.log("🟢 Hedera connection change:", state);
+                  updateConnectionState("hedera", state);
+                }}
+              />
+            </CardContent>
+          </Card>
 
-      {/* Coming Soon Networks */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <span>Coming Soon</span>
-            <Badge variant="secondary">In Development</Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-3">
-            {OTHER_NETWORKS.comingSoon.map((network) => (
-              <div
-                key={network.id}
-                className="flex items-center justify-between p-3 border rounded-lg bg-gray-50 opacity-60"
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                    <Network className="h-4 w-4 text-gray-400" />
+          {/* Coming Soon Networks */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <span>Coming Soon</span>
+                <Badge variant="secondary">In Development</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3">
+                {OTHER_NETWORKS.comingSoon.map((network) => (
+                  <div
+                    key={network.id}
+                    className="flex items-center justify-between p-3 border rounded-lg bg-gray-50 opacity-60"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                        <Network className="h-4 w-4 text-gray-400" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm text-gray-600">
+                          {network.name}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {network.description}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge variant="secondary" className="text-xs">
+                      Soon
+                    </Badge>
                   </div>
-                  <div>
-                    <p className="font-medium text-sm text-gray-600">
-                      {network.name}
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      {network.description}
-                    </p>
-                  </div>
-                </div>
-                <Badge variant="secondary" className="text-xs">
-                  Soon
-                </Badge>
+                ))}
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
+            </CardContent>
+          </Card>
+        </div>
+      );
+    } catch (error) {
+      console.error("Error rendering Other Networks:", error);
+      return (
+        <div className="p-4 text-center text-red-500">
+          <p>Error loading Other Networks</p>
+          <p className="text-sm">Please refresh and try again</p>
+        </div>
+      );
+    }
+  };
 
   return (
     <div className="w-full space-y-4">
