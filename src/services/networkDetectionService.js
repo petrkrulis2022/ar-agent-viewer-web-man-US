@@ -68,6 +68,19 @@ export const SUPPORTED_EVM_NETWORKS = {
     color: "#E84142",
     isSupported: true,
   },
+  POLYGON_AMOY: {
+    chainId: 80002,
+    name: "Polygon Amoy",
+    shortName: "Amoy",
+    rpcUrl: "https://rpc-amoy.polygon.technology/",
+    nativeCurrency: "MATIC",
+    currency: "MATIC",
+    blockExplorer: "https://amoy.polygonscan.com",
+    usdcAddress: "0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582",
+    icon: "/icons/polygon.svg",
+    color: "#8247E5",
+    isSupported: true,
+  },
 };
 
 // Non-EVM Networks

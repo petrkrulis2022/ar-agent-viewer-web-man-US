@@ -30,6 +30,17 @@ import {
   getNetworkInfo,
 } from "../services/evmNetworkService";
 
+// Network to Chain ID mapping for consistency with ModernAgentCard
+const networkToChainId = {
+  "ethereum-sepolia": 11155111,
+  "polygon-amoy": 80002,
+  "Polygon Amoy": 80002, // ✅ CRITICAL: Handle the "Amoy 1" agent format
+  "arbitrum-sepolia": 421614,
+  "optimism-sepolia": 11155420,
+  "base-sepolia": 84532,
+  "solana-devnet": "devnet", // Special case for Solana
+};
+
 // Helper functions for dynamic agent payment data
 const getServiceFeeDisplay = (agent) => {
   // Use the same priority logic as resolveInteractionFee to ensure consistency
@@ -106,6 +117,12 @@ const getNetworkDisplay = (agent) => {
     network: agent?.network,
     chain_id: agent?.chain_id,
     deployment_chain_id: agent?.deployment_chain_id,
+    networkToChainIdKeys: Object.keys(networkToChainId),
+    networkFieldType: typeof agent?.network,
+    networkFieldValue: agent?.network,
+    networkMappingExists: agent?.network
+      ? networkToChainId[agent.network]
+      : "N/A",
     allKeys: agent
       ? Object.keys(agent).filter(
           (k) => k.includes("network") || k.includes("chain")
@@ -113,17 +130,36 @@ const getNetworkDisplay = (agent) => {
       : [],
   });
 
-  // 🔧 CRITICAL: Use chain_id as primary source (deployment_chain_id has wrong values)
-  const chainId = agent?.chain_id || agent?.deployment_chain_id;
-  console.log("🎯 AgentInteractionModal: Chain ID for network:", {
-    agentName: agent?.name,
-    deployment_chain_id: agent?.deployment_chain_id,
-    chain_id: agent?.chain_id,
-    finalChainId: chainId,
-    note: "Using chain_id as primary source",
-  });
+  // 🔧 CRITICAL: Use same logic as agent card for network detection
+  // Agent card uses agent.network (string like "polygon-amoy")
+  // Payment modal was using agent.chain_id (which has wrong values)
+  let chainId = null;
+  let networkSource = "unknown";
 
-  // 🔧 CRITICAL: Database network names are WRONG - always use chain_id
+  // 1. Try agent.network (string) - same as agent card
+  if (agent?.network && networkToChainId[agent.network]) {
+    chainId = networkToChainId[agent.network];
+    networkSource = "agent.network";
+  }
+
+  // 2. Fallback to agent.chain_id (has wrong values but better than nothing)
+  if (!chainId) {
+    chainId = agent?.chain_id || agent?.deployment_chain_id;
+    networkSource = "agent.chain_id";
+  }
+
+  console.log(
+    "🎯 AgentInteractionModal: Chain ID for network (UPDATED FOR POLYGON AMOY):",
+    {
+      agentName: agent?.name,
+      agentNetwork: agent?.network,
+      deployment_chain_id: agent?.deployment_chain_id,
+      chain_id: agent?.chain_id,
+      finalChainId: chainId,
+      networkSource: networkSource,
+      note: "Now using agent.network like agent card - includes Polygon Amoy support",
+    }
+  ); // 🔧 CRITICAL: Database network names are WRONG - always use chain_id
   // Don't trust: agent?.deployment_network_name || agent?.network
   let network = "Unknown Network";
 
@@ -229,19 +265,32 @@ const getTokenContractDisplay = (agent) => {
       : [],
   });
 
-  // 🔧 CRITICAL: Use the chainId from getNetworkDisplay function (already declared above)
-  // Using same logic as getNetworkDisplay to ensure consistency
-  const primaryChainId = agent?.chain_id || agent?.deployment_chain_id;
+  // 🔧 CRITICAL: Use same logic as getNetworkDisplay for consistency
+  // Use agent.network field (like ModernAgentCard) instead of chain_id
+  let chainId;
 
-  console.log("🎯 AgentInteractionModal: Chain ID determination:", {
-    agentName: agent?.name,
-    deployment_chain_id: agent?.deployment_chain_id,
-    chain_id: agent?.chain_id,
-    finalChainId: primaryChainId,
-    note: "Using chain_id as primary (deployment_chain_id has wrong values)",
-  });
+  if (agent?.network && networkToChainId[agent.network]) {
+    chainId = networkToChainId[agent.network];
+    console.log("🎯 AgentInteractionModal: Using agent.network for contract:", {
+      agentName: agent?.name,
+      networkField: agent.network,
+      mappedChainId: chainId,
+      source: "agent.network + networkToChainId mapping",
+    });
+  } else {
+    // Fallback to chain_id if network mapping not found
+    chainId = agent?.chain_id || agent?.deployment_chain_id;
+    console.log(
+      "🎯 AgentInteractionModal: Fallback to chain_id for contract:",
+      {
+        agentName: agent?.name,
+        chainId: chainId,
+        source: "fallback chain_id/deployment_chain_id",
+      }
+    );
+  }
 
-  if (!primaryChainId) {
+  if (!chainId) {
     console.log(
       "⚠️ AgentInteractionModal: No chain ID found for agent:",
       agent?.name
@@ -249,7 +298,7 @@ const getTokenContractDisplay = (agent) => {
     return "Contract not available";
   }
 
-  const usdcContract = getUSDCContractForChain(primaryChainId);
+  const usdcContract = getUSDCContractForChain(chainId);
 
   if (usdcContract) {
     // Format: 0x1c7D4B...79C7238
@@ -258,17 +307,14 @@ const getTokenContractDisplay = (agent) => {
     )}`;
     console.log("✅ AgentInteractionModal: Token contract display:", {
       display,
-      chainId: primaryChainId,
+      chainId: chainId,
       agent: agent?.name,
       fullContract: usdcContract,
     });
     return display;
   }
 
-  console.log(
-    "⚠️ AgentInteractionModal: No USDC contract for chain:",
-    primaryChainId
-  );
+  console.log("⚠️ AgentInteractionModal: No USDC contract for chain:", chainId);
   return "Contract not available";
 };
 

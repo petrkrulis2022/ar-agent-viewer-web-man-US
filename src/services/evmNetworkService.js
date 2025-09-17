@@ -38,6 +38,13 @@ const EVM_TESTNETS = {
     rpc_url: "api.avax-test.network/ext/bc/C/rpc",
     currency_symbol: "AVAX",
   },
+  80002: {
+    // Polygon Amoy
+    name: "Polygon Amoy",
+    usdc_contract: "0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582",
+    rpc_url: "rpc-amoy.polygon.technology",
+    currency_symbol: "MATIC",
+  },
 };
 
 /**
@@ -46,8 +53,18 @@ const EVM_TESTNETS = {
  * @returns {string|null} USDC contract address or null if not found
  */
 export const getUSDCContractForChain = (chainId) => {
+  console.log(
+    "🔍 evmNetworkService: Getting USDC contract for chainId:",
+    chainId
+  );
   const network = EVM_TESTNETS[chainId];
-  return network ? network.usdc_contract : null;
+  const result = network ? network.usdc_contract : null;
+  console.log("🔍 evmNetworkService: USDC contract result:", {
+    chainId,
+    network: network?.name,
+    contract: result,
+  });
+  return result;
 };
 
 /**
@@ -56,7 +73,16 @@ export const getUSDCContractForChain = (chainId) => {
  * @returns {object|null} Network information object or null if not found
  */
 export const getNetworkInfo = (chainId) => {
-  return EVM_TESTNETS[chainId] || null;
+  console.log(
+    "🔍 evmNetworkService: Getting network info for chainId:",
+    chainId
+  );
+  const result = EVM_TESTNETS[chainId] || null;
+  console.log("🔍 evmNetworkService: Network info result:", {
+    chainId,
+    result,
+  });
+  return result;
 };
 
 /**

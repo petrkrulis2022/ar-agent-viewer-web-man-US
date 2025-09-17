@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+// Force refresh after Polygon Amoy network fixes
 import {
   BrowserRouter as Router,
   Routes,

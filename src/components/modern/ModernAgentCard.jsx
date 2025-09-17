@@ -125,10 +125,10 @@ const ModernAgentCard = ({ agent, onSelect, distance }) => {
         color: "bg-red-600",
         chain: 43113,
       },
-      "polygon-mumbai": {
-        name: "Polygon Mumbai",
+      "polygon-amoy": {
+        name: "Polygon Amoy",
         color: "bg-purple-500",
-        chain: 80001,
+        chain: 80002,
       },
       "cube-sepolia": {
         name: "Cube Sepolia",

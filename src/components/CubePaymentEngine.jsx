@@ -720,6 +720,134 @@ const PaymentCube = ({
 
 // QR Code Display Component (replaces cube when crypto QR is selected)
 const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
+  const [selectedNetwork, setSelectedNetwork] = useState("11155111"); // Default to Ethereum Sepolia
+  const [isGeneratingQR, setIsGeneratingQR] = useState(false);
+  const [currentQRData, setCurrentQRData] = useState(qrData);
+  const [walletBalance, setWalletBalance] = useState(null);
+  const [isLoadingBalance, setIsLoadingBalance] = useState(false);
+
+  // Network configuration for dropdown
+  const supportedNetworks = {
+    11155111: { name: "Ethereum Sepolia", color: "#627EEA", symbol: "USDC" },
+    421614: { name: "Arbitrum Sepolia", color: "#28A0F0", symbol: "USDC" },
+    84532: { name: "Base Sepolia", color: "#0052FF", symbol: "USDC" },
+    11155420: { name: "OP Sepolia", color: "#FF0420", symbol: "USDC" },
+    43113: { name: "Avalanche Fuji", color: "#E84142", symbol: "USDC" },
+    80002: { name: "Polygon Amoy", color: "#8247E5", symbol: "USDC" },
+    "solana-devnet": {
+      name: "Solana Devnet",
+      color: "#9945FF",
+      symbol: "USDC",
+    },
+  };
+
+  // Initialize network based on agent deployment
+  useEffect(() => {
+    if (agent) {
+      let detectedNetwork = "11155111"; // Default fallback
+
+      // Debug: Log agent data
+      console.log("🔍 Agent data for network detection:", agent);
+
+      // Network detection logic based on agent name or properties
+      const agentName = (agent.name || "").toLowerCase();
+      console.log("🔍 Agent name for detection:", agentName);
+
+      if (agentName.includes("amoy") || agentName.includes("polygon")) {
+        detectedNetwork = "80002"; // Polygon Amoy
+        console.log("🌐 Detected Polygon Amoy network for agent:", agent.name);
+      } else if (agentName.includes("arbitrum")) {
+        detectedNetwork = "421614"; // Arbitrum Sepolia
+      } else if (agentName.includes("base")) {
+        detectedNetwork = "84532"; // Base Sepolia
+      } else if (agentName.includes("optimism") || agentName.includes("op")) {
+        detectedNetwork = "11155420"; // OP Sepolia
+      } else if (
+        agentName.includes("avalanche") ||
+        agentName.includes("fuji")
+      ) {
+        detectedNetwork = "43113"; // Avalanche Fuji
+      } else if (agentName.includes("solana")) {
+        detectedNetwork = "solana-devnet"; // Solana Devnet
+      }
+
+      // Check agent's chain_id property if available
+      if (agent.chain_id) {
+        const chainId = String(agent.chain_id);
+        if (supportedNetworks[chainId]) {
+          detectedNetwork = chainId;
+          console.log("🌐 Using agent's chain_id for network:", chainId);
+        }
+      }
+
+      // Update selected network if different from current
+      console.log(
+        `🔍 Current network: ${selectedNetwork}, Detected: ${detectedNetwork}`
+      );
+      if (detectedNetwork !== selectedNetwork) {
+        console.log(
+          `🔄 Auto-switching from ${supportedNetworks[selectedNetwork]?.name} to ${supportedNetworks[detectedNetwork]?.name}`
+        );
+        setSelectedNetwork(detectedNetwork);
+      }
+    }
+  }, [agent]); // Removed selectedNetwork dependency to prevent infinite loop
+
+  // Load wallet balance when network changes
+  useEffect(() => {
+    const loadBalance = async () => {
+      setIsLoadingBalance(true);
+      try {
+        const balance = await dynamicQRService.getCurrentWalletBalance(
+          selectedNetwork
+        );
+        setWalletBalance(balance);
+      } catch (error) {
+        console.error("Balance load error:", error);
+        setWalletBalance(null);
+      } finally {
+        setIsLoadingBalance(false);
+      }
+    };
+
+    loadBalance();
+  }, [selectedNetwork]);
+
+  // Handle network change
+  const handleNetworkChange = async (newNetwork) => {
+    setSelectedNetwork(newNetwork);
+    setIsGeneratingQR(true);
+
+    try {
+      console.log(`🔄 Switching to ${supportedNetworks[newNetwork].name}...`);
+
+      // Generate new QR for selected network
+      const result = await dynamicQRService.generateDynamicQR(
+        { ...agent, preferred_network: newNetwork },
+        agent?.interaction_fee_amount || "1.00"
+      );
+
+      if (result.success) {
+        setCurrentQRData(result.eip681URI || result.qrData);
+        console.log(
+          `✅ QR generated for ${supportedNetworks[newNetwork].name}`
+        );
+      } else {
+        console.error("❌ QR generation failed:", result.error);
+        alert(
+          `Failed to generate QR for ${supportedNetworks[newNetwork].name}: ${result.error}`
+        );
+      }
+    } catch (error) {
+      console.error("❌ Network switch error:", error);
+      alert(
+        `Error switching to ${supportedNetworks[newNetwork].name}: ${error.message}`
+      );
+    } finally {
+      setIsGeneratingQR(false);
+    }
+  };
+
   const handleQRClick = async () => {
     console.log("🔥 QR Code clicked! Triggering transaction...");
 
@@ -727,17 +855,23 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
       // Parse QR data to get transaction details
       let transactionData;
 
-      if (typeof qrData === "string" && qrData.startsWith("data:image")) {
+      if (
+        typeof currentQRData === "string" &&
+        currentQRData.startsWith("data:image")
+      ) {
         // Data URL format - regenerate transaction data
         console.log(
           "📱 QR data URL detected, regenerating transaction data..."
         );
-        const qrResult = await dynamicQRService.generateDynamicQR(agent);
+        const qrResult = await dynamicQRService.generateDynamicQR({
+          ...agent,
+          preferred_network: selectedNetwork,
+        });
         if (!qrResult.success) {
           throw new Error(qrResult.error);
         }
         transactionData = qrResult.transactionData;
-      } else if (typeof qrData === "string") {
+      } else if (typeof currentQRData === "string") {
         // Legacy string format
         transactionData = {
           to: agent.agent_wallet_address || agent.payment_recipient_address,
@@ -745,17 +879,18 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
           data: "0x",
           amount: agent.interaction_fee_amount || "1.00",
           token: agent.interaction_fee_token || "USDC",
+          chainId: selectedNetwork,
         };
       } else {
         // Already parsed transaction data
-        transactionData = qrData;
+        transactionData = currentQRData;
       }
 
       console.log("📤 Transaction data:", transactionData);
 
       // Use the click handler from dynamic service
       const transactionResult = await dynamicQRService.handleQRClick(
-        agent,
+        { ...agent, preferred_network: selectedNetwork },
         transactionData
       );
 
@@ -765,8 +900,16 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
           transactionResult.transactionHash
         );
         alert(
-          `🎉 Payment Sent Successfully!\n\n💳 Transaction Hash:\n${transactionResult.transactionHash}\n\n🔗 You can view this transaction on the blockchain explorer.`
+          `🎉 Payment Sent Successfully!\n\n💳 Transaction Hash:\n${transactionResult.transactionHash}\n\n🔗 Network: ${supportedNetworks[selectedNetwork].name}\n\nYou can view this transaction on the blockchain explorer.`
         );
+
+        // Refresh balance after successful transaction
+        setTimeout(async () => {
+          const newBalance = await dynamicQRService.getCurrentWalletBalance(
+            selectedNetwork
+          );
+          setWalletBalance(newBalance);
+        }, 2000);
       } else {
         console.error("❌ Transaction failed:", transactionResult.error);
         alert(
@@ -776,22 +919,22 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
     } catch (error) {
       console.error("❌ QR click error:", error);
       alert(
-        `⚠️ Payment Error:\n${error.message}\n\nPlease ensure MetaMask is installed and connected.`
+        `⚠️ Payment Error:\n${error.message}\n\nPlease ensure your wallet is installed and connected.`
       );
     }
   };
 
   // Determine QR display value
   const qrDisplayValue =
-    typeof qrData === "string" && qrData.startsWith("data:image")
-      ? qrData
-      : JSON.stringify(qrData);
+    typeof currentQRData === "string" && currentQRData.startsWith("data:image")
+      ? currentQRData
+      : JSON.stringify(currentQRData);
 
   return (
     <group>
       {/* QR Code Background Plane */}
       <mesh position={position}>
-        <planeGeometry args={[3, 3]} />
+        <planeGeometry args={[4.5, 4.5]} />
         <meshStandardMaterial
           color="white"
           transparent
@@ -801,12 +944,12 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
         />
       </mesh>
 
-      {/* QR Code */}
+      {/* Network Selection & QR Code */}
       <Html position={position} transform>
         <div
           style={{
-            width: "280px",
-            height: "320px",
+            width: "400px",
+            height: "500px",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
@@ -819,8 +962,87 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
             transform: "translate(-50%, -50%)",
             cursor: "pointer",
           }}
-          onClick={handleQRClick}
         >
+          {/* Network Selection Dropdown */}
+          <div style={{ marginBottom: "15px", width: "100%" }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "14px",
+                color: "#333",
+                marginBottom: "8px",
+                fontWeight: "bold",
+              }}
+            >
+              🌐 Select Network:
+            </label>
+            <select
+              value={selectedNetwork}
+              onChange={(e) => handleNetworkChange(e.target.value)}
+              disabled={isGeneratingQR}
+              style={{
+                width: "100%",
+                padding: "8px 12px",
+                borderRadius: "8px",
+                border: "2px solid #00ff00",
+                backgroundColor: "#f8f9fa",
+                fontSize: "14px",
+                fontWeight: "bold",
+                color: "#333",
+                cursor: isGeneratingQR ? "wait" : "pointer",
+              }}
+            >
+              {Object.entries(supportedNetworks).map(([chainId, network]) => (
+                <option key={chainId} value={chainId}>
+                  {network.name} ({network.symbol})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Wallet Balance Display */}
+          <div
+            style={{
+              marginBottom: "10px",
+              width: "100%",
+              textAlign: "center",
+              padding: "8px",
+              backgroundColor: "#f0f8ff",
+              borderRadius: "8px",
+              border: "1px solid #ddd",
+            }}
+          >
+            <div
+              style={{ fontSize: "12px", color: "#666", marginBottom: "4px" }}
+            >
+              💰 Your Wallet Balance:
+            </div>
+            <div
+              style={{
+                fontSize: "14px",
+                fontWeight: "bold",
+                color: isLoadingBalance
+                  ? "#999"
+                  : walletBalance?.success
+                  ? "#007c00"
+                  : "#cc0000",
+              }}
+            >
+              {isLoadingBalance
+                ? "🔄 Loading..."
+                : walletBalance?.success
+                ? walletBalance.formatted
+                : "❌ Unable to fetch balance"}
+            </div>
+            {walletBalance?.note && (
+              <div
+                style={{ fontSize: "10px", color: "#888", marginTop: "2px" }}
+              >
+                {walletBalance.note}
+              </div>
+            )}
+          </div>
+
           {/* Agent Payment Info */}
           <div
             style={{
@@ -843,32 +1065,62 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
             }}
           >
             {agent?.interaction_fee_amount || "1.00"}{" "}
-            {agent?.interaction_fee_token || "USDC"}
+            {supportedNetworks[selectedNetwork]?.symbol || "USDC"}
+            <br />
+            <span
+              style={{
+                fontSize: "12px",
+                color: supportedNetworks[selectedNetwork]?.color,
+              }}
+            >
+              on {supportedNetworks[selectedNetwork]?.name}
+            </span>
           </div>
 
           {/* QR Code Display */}
-          {typeof qrData === "string" && qrData.startsWith("data:image") ? (
-            <img
-              src={qrData}
-              alt="Payment QR Code"
+          {isGeneratingQR ? (
+            <div
               style={{
-                width: "180px",
-                height: "180px",
+                width: "200px",
+                height: "200px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: "#f0f0f0",
                 borderRadius: "10px",
-                cursor: "pointer",
+                fontSize: "14px",
+                color: "#666",
               }}
-            />
+            >
+              🔄 Generating QR...
+            </div>
           ) : (
-            <QRCode
-              value={qrDisplayValue}
-              size={180}
-              style={{
-                background: "white",
-                padding: "10px",
-                borderRadius: "10px",
-                cursor: "pointer",
-              }}
-            />
+            <div onClick={handleQRClick}>
+              {typeof currentQRData === "string" &&
+              currentQRData.startsWith("data:image") ? (
+                <img
+                  src={currentQRData}
+                  alt="Payment QR Code"
+                  style={{
+                    width: "200px",
+                    height: "200px",
+                    borderRadius: "10px",
+                    cursor: "pointer",
+                  }}
+                />
+              ) : (
+                <QRCode
+                  value={qrDisplayValue}
+                  size={200}
+                  style={{
+                    background: "white",
+                    padding: "10px",
+                    borderRadius: "10px",
+                    cursor: "pointer",
+                  }}
+                />
+              )}
+            </div>
           )}
 
           <div
@@ -880,7 +1132,8 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
               fontWeight: "bold",
             }}
           >
-            🖱️ CLICK to Pay with MetaMask
+            🖱️ CLICK to Pay with{" "}
+            {selectedNetwork === "solana-devnet" ? "Phantom" : "MetaMask"}
             <br />
             📱 SCAN with Mobile Wallet
           </div>
@@ -888,7 +1141,7 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
       </Html>
 
       {/* Back Button */}
-      <Html position={[0, position[1] - 2.5, position[2]]} transform>
+      <Html position={[0, position[1] - 3.0, position[2]]} transform>
         <button
           onClick={onBack}
           style={{
