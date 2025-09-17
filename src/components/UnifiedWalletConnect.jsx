@@ -108,6 +108,8 @@ const UnifiedWalletConnect = ({ open, onOpenChange }) => {
               balance: (parseInt(balance, 16) / 1e18).toFixed(4),
               network: currentNetwork,
             },
+            solana: connectionStates.solana, // Include Solana state
+            hedera: connectionStates.hedera, // Include Hedera state
             hasAnyConnection: true,
           });
         }
@@ -134,6 +136,8 @@ const UnifiedWalletConnect = ({ open, onOpenChange }) => {
           balance: null,
           network: null,
         },
+        solana: connectionStates.solana, // Keep Solana state
+        hedera: connectionStates.hedera, // Keep Hedera state
         hasAnyConnection: Object.values(connectionStates).some(
           (state) => state?.isConnected
         ),
@@ -158,7 +162,9 @@ const UnifiedWalletConnect = ({ open, onOpenChange }) => {
               balance: balance,
               network: currentNetwork,
             },
-            [network]: state,
+            solana: newState.solana || prev.solana, // Include Solana state
+            hedera: newState.hedera || prev.hedera, // Include Hedera state
+            [network]: state, // Include the specific network being updated
             hasAnyConnection:
               walletConnected ||
               Object.values(newState).some((s) => s?.isConnected),

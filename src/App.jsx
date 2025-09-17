@@ -40,10 +40,6 @@ function AppContent() {
     createGlobalNotificationFunctions(notifications);
   }, [notifications]);
 
-  const handleWalletConnectionChange = (connection) => {
-    setWalletConnection(connection);
-  };
-
   const handleShowWallet = () => {
     setShowWalletModal(true);
   };
@@ -110,7 +106,41 @@ function AppContent() {
             </div>
 
             <UnifiedWalletConnect
-              onConnectionChange={handleWalletConnectionChange}
+              open={showWalletModal}
+              onOpenChange={(connectionData) => {
+                // 🔧 CRITICAL FIX: Prioritize Solana address when connected
+                console.log("🔍 App: Received connection data:", connectionData);
+                
+                if (connectionData) {
+                  let address = null;
+                  let isConnected = false;
+                  let networkType = "unknown";
+
+                  // 1. Check Solana connection first (PRIORITY)
+                  if (connectionData.solana?.isConnected && connectionData.solana?.address) {
+                    address = connectionData.solana.address;
+                    isConnected = true;
+                    networkType = "solana";
+                    console.log("🟢 App: Using Solana address:", address);
+                  }
+                  // 2. Fallback to EVM if Solana not connected
+                  else if (connectionData.evm?.isConnected && connectionData.evm?.address) {
+                    address = connectionData.evm.address;
+                    isConnected = true;
+                    networkType = "evm";
+                    console.log("🟡 App: Using EVM address:", address);
+                  }
+
+                  console.log("🎯 App: Final wallet state:", { address, isConnected, networkType });
+
+                  setWalletConnection({
+                    isConnected,
+                    address,
+                    networkType,
+                    connectionData // Store full data for debugging
+                  });
+                }
+              }}
             />
 
             {walletConnection.isConnected && (
