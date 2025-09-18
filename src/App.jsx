@@ -15,6 +15,7 @@ import SimpleCubeTest from "./components/SimpleCubeTest";
 import CameraTest from "./components/CameraTest";
 import UnifiedWalletConnect from "./components/UnifiedWalletConnect";
 import AgentFeeValidationDashboard from "./components/AgentFeeValidationDashboard";
+import SimpleTest from "./components/SimpleTest"; // Add simple test component
 import ThirdWebProviderWrapper from "./providers/ThirdWebProvider";
 import NotificationProvider, {
   useNotifications,
@@ -51,6 +52,8 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <Routes>
+        {/* Debug Route for Simple Test */}
+        <Route path="/test" element={<SimpleTest />} />
         {/* New Agent Marketplace Route (Cube-Ready) */}
         <Route path="/new-marketplace" element={<AgentMarketplace />} />
         {/* Main Landing Screen Route */}

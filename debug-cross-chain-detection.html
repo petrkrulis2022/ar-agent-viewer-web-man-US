@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🔍 Cross-Chain Detection Debug</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+      .container {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+      }
+      h1 {
+        text-align: center;
+        margin-bottom: 30px;
+        font-size: 2.5em;
+      }
+      .debug-section {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 15px;
+        padding: 20px;
+        margin: 20px 0;
+        border-left: 5px solid #00ff88;
+      }
+      .error-section {
+        border-left-color: #ff4757;
+      }
+      .test-button {
+        background: linear-gradient(45deg, #00ff88, #00d4ff);
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: bold;
+        margin: 10px;
+        transition: transform 0.2s;
+      }
+      .test-button:hover {
+        transform: translateY(-2px);
+      }
+      .results {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 10px;
+        padding: 20px;
+        margin: 10px 0;
+        font-family: "Courier New", monospace;
+        white-space: pre-wrap;
+        max-height: 400px;
+        overflow-y: auto;
+      }
+      .network-info {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin: 20px 0;
+      }
+      .network-card {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        padding: 15px;
+        border: 2px solid transparent;
+      }
+      .network-card.active {
+        border-color: #00ff88;
+      }
+      .status-indicator {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 8px;
+      }
+      .status-success {
+        background-color: #00ff88;
+      }
+      .status-error {
+        background-color: #ff4757;
+      }
+      .status-warning {
+        background-color: #ffa726;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔍 Cross-Chain Detection Debug Tool</h1>
+
+      <div class="debug-section">
+        <h2>🎯 Purpose</h2>
+        <p>
+          Debug why your Base → Ethereum payment became a same-chain USDC
+          transfer instead of a CCIP cross-chain transaction.
+        </p>
+        <p>
+          <strong>Transaction Hash:</strong>
+          <code
+            >0xa6f1b209b92dfffb22383f792fcee7dd03c9cf482f876f94ef66db8edf7d1b81</code
+          >
+        </p>
+      </div>
+
+      <div class="debug-section">
+        <h2>🧪 Quick Tests</h2>
+        <button class="test-button" onclick="testCCIPConfig()">
+          Test CCIP Config Loading
+        </button>
+        <button class="test-button" onclick="testNetworkDetection()">
+          Test Network Detection
+        </button>
+        <button class="test-button" onclick="testCrossChainDetection()">
+          Test Cross-Chain Detection
+        </button>
+        <button class="test-button" onclick="testQRGeneration()">
+          Test QR Generation
+        </button>
+        <button class="test-button" onclick="runFullDiagnostic()">
+          🔥 Full Diagnostic
+        </button>
+      </div>
+
+      <div class="debug-section">
+        <h2>📊 Current Network Status</h2>
+        <div class="network-info" id="networkStatus">
+          <!-- Dynamic network status will be shown here -->
+        </div>
+      </div>
+
+      <div class="debug-section">
+        <h2>📋 Test Results</h2>
+        <div class="results" id="testResults">
+          Click a test button above to see results...
+        </div>
+      </div>
+
+      <div class="debug-section error-section">
+        <h2>🚨 Known Issues & Fixes</h2>
+        <ul>
+          <li>
+            <strong>Issue 1:</strong> Agent network_id not properly set → Check
+            agent database record
+          </li>
+          <li>
+            <strong>Issue 2:</strong> User chain detection failing → Check
+            wallet connection
+          </li>
+          <li>
+            <strong>Issue 3:</strong> CCIP service not initialized → Check
+            service imports
+          </li>
+          <li>
+            <strong>Issue 4:</strong> Cross-chain detection logic bypassed →
+            Check conditional logic
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <script type="module">
+      // Import services for testing
+      let dynamicQRService;
+      let ccipConfigService;
+
+      try {
+        const dynamicQRModule = await import(
+          "./src/services/dynamicQRService.js"
+        );
+        dynamicQRService = dynamicQRModule.default;
+        console.log("✅ DynamicQRService loaded");
+      } catch (error) {
+        console.error("❌ Failed to load DynamicQRService:", error);
+      }
+
+      try {
+        const ccipModule = await import("./src/services/ccipConfigService.js");
+        ccipConfigService = ccipModule.default;
+        console.log("✅ CCIPConfigService loaded");
+      } catch (error) {
+        console.error("❌ Failed to load CCIPConfigService:", error);
+      }
+
+      // Test agent data (from your actual transaction)
+      const testAgent = {
+        id: "debug-agent",
+        name: "Debug Agent",
+        network_id: "11155111", // Ethereum Sepolia
+        chain_id: "11155111",
+        agent_wallet_address: "0x6ef27E391c7eac228c26300aA92187382cc7fF8a",
+        payment_recipient_address: "0x6ef27E391c7eac228c26300aA92187382cc7fF8a",
+        interaction_fee_amount: "4.00",
+      };
+
+      const testUserChain = "84532"; // Base Sepolia (your actual user chain)
+
+      // Utility functions
+      function logResult(test, result) {
+        const timestamp = new Date().toLocaleTimeString();
+        const resultElement = document.getElementById("testResults");
+        resultElement.innerHTML += `[${timestamp}] ${test}:\n${JSON.stringify(
+          result,
+          null,
+          2
+        )}\n\n`;
+        resultElement.scrollTop = resultElement.scrollHeight;
+      }
+
+      function updateNetworkStatus() {
+        const networks = [
+          {
+            id: "84532",
+            name: "Base Sepolia",
+            status: "active",
+            role: "User Network",
+          },
+          {
+            id: "11155111",
+            name: "Ethereum Sepolia",
+            status: "target",
+            role: "Agent Network",
+          },
+        ];
+
+        const statusHTML = networks
+          .map(
+            (net) => `
+                <div class="network-card ${net.status}">
+                    <h3><span class="status-indicator status-${
+                      net.status === "active" ? "success" : "warning"
+                    }"></span>${net.name}</h3>
+                    <p><strong>Chain ID:</strong> ${net.id}</p>
+                    <p><strong>Role:</strong> ${net.role}</p>
+                    <p><strong>Status:</strong> ${net.status}</p>
+                </div>
+            `
+          )
+          .join("");
+
+        document.getElementById("networkStatus").innerHTML = statusHTML;
+      }
+
+      // Test functions
+      window.testCCIPConfig = async function () {
+        try {
+          if (!ccipConfigService) {
+            throw new Error("CCIP Config Service not loaded");
+          }
+
+          const config = ccipConfigService.getFullConfig();
+          const baseConfig = ccipConfigService.getNetworkConfig("84532");
+          const ethConfig = ccipConfigService.getNetworkConfig("11155111");
+
+          logResult("CCIP Config Test", {
+            configLoaded: !!config,
+            baseSepoliaConfig: baseConfig,
+            ethereumSepoliaConfig: ethConfig,
+            supportedNetworks: Object.keys(config || {}),
+          });
+        } catch (error) {
+          logResult("CCIP Config Test - ERROR", { error: error.message });
+        }
+      };
+
+      window.testNetworkDetection = async function () {
+        try {
+          if (!dynamicQRService) {
+            throw new Error("Dynamic QR Service not loaded");
+          }
+
+          const userNetwork = await dynamicQRService.detectUserNetwork();
+          const agentNetwork = await dynamicQRService.getAgentNetwork(
+            testAgent
+          );
+
+          logResult("Network Detection Test", {
+            detectedUserNetwork: userNetwork,
+            agentNetworkFromData: agentNetwork,
+            testUserChain: testUserChain,
+            testAgentChain: testAgent.network_id,
+          });
+        } catch (error) {
+          logResult("Network Detection Test - ERROR", { error: error.message });
+        }
+      };
+
+      window.testCrossChainDetection = async function () {
+        try {
+          if (!dynamicQRService) {
+            throw new Error("Dynamic QR Service not loaded");
+          }
+
+          const crossChainResult = await dynamicQRService.detectCrossChainNeed(
+            testAgent,
+            testUserChain
+          );
+
+          logResult("Cross-Chain Detection Test", {
+            userChain: testUserChain,
+            agentChain: testAgent.network_id,
+            crossChainDetectionResult: crossChainResult,
+            shouldBeCrossChain: testUserChain !== testAgent.network_id,
+          });
+        } catch (error) {
+          logResult("Cross-Chain Detection Test - ERROR", {
+            error: error.message,
+          });
+        }
+      };
+
+      window.testQRGeneration = async function () {
+        try {
+          if (!dynamicQRService) {
+            throw new Error("Dynamic QR Service not loaded");
+          }
+
+          // Test cross-chain QR generation
+          const crossChainQR = await dynamicQRService.generateCrossChainQR(
+            testAgent,
+            testUserChain, // Base Sepolia
+            testAgent.network_id, // Ethereum Sepolia
+            "4.00",
+            "native"
+          );
+
+          logResult("QR Generation Test", {
+            crossChainQRResult: crossChainQR,
+            expectedCCIPRouter: "0xD3b06cEbF099CE7DA4AcCf578aaebFDBd6e88a93",
+            actualTransaction: "Will show in qrData",
+          });
+        } catch (error) {
+          logResult("QR Generation Test - ERROR", { error: error.message });
+        }
+      };
+
+      window.runFullDiagnostic = async function () {
+        logResult("🔥 FULL DIAGNOSTIC STARTED", {
+          timestamp: new Date().toISOString(),
+        });
+
+        await testCCIPConfig();
+        await testNetworkDetection();
+        await testCrossChainDetection();
+        await testQRGeneration();
+
+        logResult("🎯 DIAGNOSTIC COMPLETE", {
+          timestamp: new Date().toISOString(),
+          nextSteps: [
+            "Check test results above",
+            "Identify which test failed",
+            "Apply corresponding fix",
+            "Re-test cross-chain payment",
+          ],
+        });
+      };
+
+      // Initialize
+      updateNetworkStatus();
+
+      // Auto-run basic tests on load
+      setTimeout(() => {
+        console.log("🚀 Auto-running basic diagnostic...");
+        testCCIPConfig();
+      }, 1000);
+    </script>
+  </body>
+</html>

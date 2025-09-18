@@ -33,6 +33,9 @@ const UnifiedWalletConnect = ({ open, onOpenChange }) => {
   const [isNetworkSwitching, setIsNetworkSwitching] = useState(false);
   const modalRef = useRef(null);
 
+  // Stable reference for callback data to prevent unnecessary re-renders
+  const callbackDataRef = useRef({});
+
   // Network detection effect
   useEffect(() => {
     if (open) {
@@ -145,42 +148,57 @@ const UnifiedWalletConnect = ({ open, onOpenChange }) => {
     }
   };
 
-  const updateConnectionState = useCallback(
-    (network, state) => {
-      console.log(`🔄 UnifiedWalletConnect: Updating ${network} state:`, state);
-      
-      setConnectionStates((prev) => {
-        const newState = {
-          ...prev,
-          [network]: state,
-        };
+  const updateConnectionState = useCallback((network, state) => {
+    console.log(`🔄 UnifiedWalletConnect: Updating ${network} state:`, state);
 
-        // Notify parent component with updated connection status
-        if (onOpenChange) {
-          const callbackData = {
-            evm: {
-              isConnected: walletConnected,
-              address: walletAddress,
-              balance: balance,
-              network: currentNetwork,
-            },
-            solana: newState.solana || prev.solana, // Include Solana state
-            hedera: newState.hedera || prev.hedera, // Include Hedera state
-            [network]: state, // Include the specific network being updated
-            hasAnyConnection:
-              walletConnected ||
-              Object.values(newState).some((s) => s?.isConnected),
-          };
-          
-          console.log(`📤 UnifiedWalletConnect: Sending to parent:`, callbackData);
-          onOpenChange(callbackData);
-        }
+    setConnectionStates((prev) => {
+      const newState = {
+        ...prev,
+        [network]: state,
+      };
 
-        return newState;
-      });
-    },
-    [onOpenChange, walletConnected, walletAddress, balance, currentNetwork]
-  );
+      return newState;
+    });
+  }, []);
+
+  // Separate effect to handle parent notifications without dependency cycles
+  useEffect(() => {
+    if (onOpenChange) {
+      const newCallbackData = {
+        evm: {
+          isConnected: walletConnected,
+          address: walletAddress,
+          balance: balance,
+          network: currentNetwork,
+        },
+        solana: connectionStates.solana,
+        hedera: connectionStates.hedera,
+        hasAnyConnection:
+          walletConnected ||
+          Object.values(connectionStates).some((s) => s?.isConnected),
+      };
+
+      // Only call parent if data has actually changed
+      const currentDataJson = JSON.stringify(callbackDataRef.current);
+      const newDataJson = JSON.stringify(newCallbackData);
+
+      if (currentDataJson !== newDataJson) {
+        console.log(
+          `📤 UnifiedWalletConnect: Sending to parent:`,
+          newCallbackData
+        );
+        callbackDataRef.current = newCallbackData;
+        onOpenChange(newCallbackData);
+      }
+    }
+  }, [
+    onOpenChange,
+    walletConnected,
+    walletAddress,
+    balance,
+    currentNetwork,
+    connectionStates,
+  ]);
 
   // Render EVM Networks Section
   const renderEVMNetworks = () => (

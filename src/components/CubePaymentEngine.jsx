@@ -726,6 +726,14 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
   const [walletBalance, setWalletBalance] = useState(null);
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
 
+  // CCIP Cross-Chain State
+  const [userNetwork, setUserNetwork] = useState(null);
+  const [agentNetwork, setAgentNetwork] = useState(null);
+  const [crossChainOptions, setCrossChainOptions] = useState([]);
+  const [showCrossChainUI, setShowCrossChainUI] = useState(false);
+  const [crossChainFeeEstimate, setCrossChainFeeEstimate] = useState(null);
+  const [paymentMode, setPaymentMode] = useState("same-chain"); // 'same-chain', 'cross-chain', 'switch-network'
+
   // Network configuration for dropdown
   const supportedNetworks = {
     11155111: { name: "Ethereum Sepolia", color: "#627EEA", symbol: "USDC" },
@@ -741,9 +749,11 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
     },
   };
 
-  // Initialize network based on agent deployment
+  // Initialize network based on agent deployment and detect cross-chain needs
   useEffect(() => {
-    if (agent) {
+    const initializeNetworkAndCrossChain = async () => {
+      if (!agent) return;
+
       let detectedNetwork = "11155111"; // Default fallback
 
       // Debug: Log agent data
@@ -780,6 +790,61 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
         }
       }
 
+      setAgentNetwork(detectedNetwork);
+
+      // Detect user's current network
+      let currentUserNetwork = null;
+      try {
+        if (typeof window !== "undefined" && window.ethereum) {
+          const chainId = await window.ethereum.request({
+            method: "eth_chainId",
+          });
+          currentUserNetwork = parseInt(chainId, 16).toString();
+          console.log("🌐 Detected user network:", currentUserNetwork);
+        }
+      } catch (error) {
+        console.warn("⚠️ Could not detect user network:", error);
+      }
+
+      setUserNetwork(currentUserNetwork);
+
+      // Check for cross-chain opportunities
+      if (currentUserNetwork && dynamicQRService.getCCIPService) {
+        try {
+          const ccipService = dynamicQRService.getCCIPService();
+          const crossChainDetection =
+            await dynamicQRService.detectCrossChainNeed(
+              agent,
+              currentUserNetwork
+            );
+
+          console.log("🌉 Cross-chain detection result:", crossChainDetection);
+
+          if (crossChainDetection.needsCrossChain) {
+            setShowCrossChainUI(true);
+            const paymentOptions = dynamicQRService.getAvailablePaymentOptions(
+              agent,
+              currentUserNetwork
+            );
+            setCrossChainOptions(paymentOptions.options || []);
+            console.log("💳 Available payment options:", paymentOptions);
+
+            // Set default payment mode
+            if (crossChainDetection.supportedRoute) {
+              setPaymentMode("cross-chain");
+            } else {
+              setPaymentMode("switch-network");
+            }
+          } else {
+            setShowCrossChainUI(false);
+            setPaymentMode("same-chain");
+          }
+        } catch (error) {
+          console.error("❌ Cross-chain detection failed:", error);
+          setShowCrossChainUI(false);
+        }
+      }
+
       // Update selected network if different from current
       console.log(
         `🔍 Current network: ${selectedNetwork}, Detected: ${detectedNetwork}`
@@ -790,7 +855,9 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
         );
         setSelectedNetwork(detectedNetwork);
       }
-    }
+    };
+
+    initializeNetworkAndCrossChain();
   }, [agent]); // Removed selectedNetwork dependency to prevent infinite loop
 
   // Load wallet balance when network changes
@@ -798,8 +865,16 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
     const loadBalance = async () => {
       setIsLoadingBalance(true);
       try {
+        // For cross-chain payments, use user's current network for balance check
+        const networkForBalance = showCrossChainUI
+          ? userNetwork
+          : selectedNetwork;
+        console.log(
+          `💰 Loading balance for network: ${networkForBalance} (cross-chain: ${showCrossChainUI})`
+        );
+
         const balance = await dynamicQRService.getCurrentWalletBalance(
-          selectedNetwork
+          networkForBalance
         );
         setWalletBalance(balance);
       } catch (error) {
@@ -811,7 +886,7 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
     };
 
     loadBalance();
-  }, [selectedNetwork]);
+  }, [selectedNetwork, showCrossChainUI, userNetwork]);
 
   // Handle network change
   const handleNetworkChange = async (newNetwork) => {
@@ -848,11 +923,152 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
     }
   };
 
+  // CCIP Cross-Chain Payment Mode Handlers
+  const handlePaymentModeChange = async (newMode) => {
+    setPaymentMode(newMode);
+    setIsGeneratingQR(true);
+
+    try {
+      console.log(`🌉 Switching to payment mode: ${newMode}`);
+
+      switch (newMode) {
+        case "same-chain":
+          await handleSameChainMode();
+          break;
+        case "cross-chain":
+          await handleCrossChainMode();
+          break;
+        case "switch-network":
+          await handleNetworkSwitchMode();
+          break;
+        default:
+          throw new Error(`Unknown payment mode: ${newMode}`);
+      }
+    } catch (error) {
+      console.error(`❌ Payment mode switch error:`, error);
+      alert(`Error switching to ${newMode} mode: ${error.message}`);
+    } finally {
+      setIsGeneratingQR(false);
+    }
+  };
+
+  const handleSameChainMode = async () => {
+    console.log("📱 Generating same-chain payment QR");
+    const result = await dynamicQRService.generateDynamicQR(
+      agent,
+      agent?.interaction_fee_amount || "1.00"
+    );
+
+    if (result.success) {
+      setCurrentQRData(result.eip681URI || result.qrData);
+      setCrossChainFeeEstimate(null);
+      console.log("✅ Same-chain QR generated");
+    } else {
+      throw new Error(result.error);
+    }
+  };
+
+  const handleCrossChainMode = async () => {
+    if (!userNetwork || !agentNetwork) {
+      throw new Error("Network information not available");
+    }
+
+    console.log(
+      `🌉 Generating cross-chain payment QR: ${userNetwork} → ${agentNetwork}`
+    );
+
+    const result = await dynamicQRService.generateCrossChainQR(
+      agent,
+      userNetwork,
+      agentNetwork,
+      agent?.interaction_fee_amount || "1.00",
+      "native" // Default to native token for fees
+    );
+
+    if (result.success) {
+      setCurrentQRData(result.qrData);
+      setCrossChainFeeEstimate(result.estimatedFee);
+      console.log("✅ Cross-chain QR generated", result);
+    } else {
+      throw new Error(result.error);
+    }
+  };
+
+  const handleNetworkSwitchMode = async () => {
+    console.log("🔄 Suggesting network switch to agent network");
+    // This mode just shows a message to switch networks
+    // The actual QR will be generated once user switches
+    setCurrentQRData(null);
+    setCrossChainFeeEstimate(null);
+  };
+
+  const handleCrossChainFeeEstimate = async () => {
+    if (!userNetwork || !agentNetwork || !dynamicQRService.getCCIPService) {
+      return;
+    }
+
+    try {
+      const ccipService = dynamicQRService.getCCIPService();
+      const feeEstimate = await ccipService.estimateCCIPFees(
+        userNetwork,
+        agentNetwork,
+        agent?.interaction_fee_amount || "1.00",
+        agent.agent_wallet_address || agent.payment_recipient_address,
+        "native"
+      );
+
+      if (feeEstimate.success) {
+        setCrossChainFeeEstimate(feeEstimate.estimatedFee);
+      }
+    } catch (error) {
+      console.error("❌ Fee estimation failed:", error);
+    }
+  };
+
   const handleQRClick = async () => {
     console.log("🔥 QR Code clicked! Triggering transaction...");
 
     try {
-      // Parse QR data to get transaction details
+      // Check if this is a cross-chain transaction
+      if (
+        paymentMode === "cross-chain" &&
+        currentQRData?.type === "ccip-cross-chain"
+      ) {
+        console.log("🌉 Handling cross-chain CCIP transaction");
+
+        const transactionResult =
+          await dynamicQRService.handleCrossChainQRClick(currentQRData);
+
+        if (transactionResult.success) {
+          console.log(
+            "✅ Cross-chain transaction successful:",
+            transactionResult.transactionHash
+          );
+          alert(
+            `✅ Cross-chain payment initiated!\n\n` +
+              `Transaction: ${transactionResult.transactionHash}\n` +
+              `From: ${transactionResult.sourceChain}\n` +
+              `To: ${transactionResult.destinationChain}\n\n` +
+              `The transaction will be processed across chains. Please check the destination network for completion.`
+          );
+        } else {
+          throw new Error(transactionResult.error);
+        }
+        return;
+      }
+
+      // For switch-network mode, show instructions
+      if (paymentMode === "switch-network") {
+        alert(
+          `🔄 Network Switch Required\n\n` +
+            `Please switch your wallet to ${supportedNetworks[agentNetwork]?.name} ` +
+            `to complete this payment.\n\n` +
+            `Once switched, the QR code will be generated automatically.`
+        );
+        return;
+      }
+
+      // Continue with existing Phase 1 logic for same-chain transactions
       let transactionData;
 
       if (
@@ -925,10 +1141,33 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
   };
 
   // Determine QR display value
-  const qrDisplayValue =
-    typeof currentQRData === "string" && currentQRData.startsWith("data:image")
-      ? currentQRData
-      : JSON.stringify(currentQRData);
+  const qrDisplayValue = (() => {
+    if (!currentQRData) return "";
+
+    // Handle cross-chain CCIP QR data
+    if (
+      typeof currentQRData === "object" &&
+      currentQRData.type === "ccip-cross-chain"
+    ) {
+      return currentQRData.uri || JSON.stringify(currentQRData);
+    }
+
+    // Handle data URL images
+    if (
+      typeof currentQRData === "string" &&
+      currentQRData.startsWith("data:image")
+    ) {
+      return currentQRData;
+    }
+
+    // Handle string URIs
+    if (typeof currentQRData === "string") {
+      return currentQRData;
+    }
+
+    // Fallback to JSON representation
+    return JSON.stringify(currentQRData);
+  })();
 
   return (
     <group>
@@ -999,6 +1238,135 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
               ))}
             </select>
           </div>
+
+          {/* CCIP Cross-Chain Payment Options */}
+          {showCrossChainUI && (
+            <div style={{ marginBottom: "15px", width: "100%" }}>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "14px",
+                  color: "#333",
+                  marginBottom: "8px",
+                  fontWeight: "bold",
+                }}
+              >
+                🌉 Payment Mode:
+              </label>
+
+              {/* Payment Mode Selection */}
+              <div style={{ marginBottom: "10px" }}>
+                {Array.isArray(crossChainOptions) &&
+                  crossChainOptions.map((option, index) => (
+                    <div
+                      key={index}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        marginBottom: "6px",
+                        padding: "8px",
+                        backgroundColor:
+                          paymentMode === option.type ? "#e8f5e8" : "#f8f9fa",
+                        borderRadius: "6px",
+                        border:
+                          paymentMode === option.type
+                            ? "2px solid #00ff00"
+                            : "1px solid #ddd",
+                        cursor: "pointer",
+                      }}
+                      onClick={() => handlePaymentModeChange(option.type)}
+                    >
+                      <input
+                        type="radio"
+                        name="paymentMode"
+                        value={option.type}
+                        checked={paymentMode === option.type}
+                        onChange={() => handlePaymentModeChange(option.type)}
+                        style={{ marginRight: "8px" }}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <div
+                          style={{
+                            fontSize: "13px",
+                            fontWeight: "bold",
+                            color: "#333",
+                          }}
+                        >
+                          {option.type === "same-chain" && "📱 Same Network"}
+                          {option.type === "cross-chain" && "🌉 Cross-Chain"}
+                          {option.type === "switch-network" &&
+                            "🔄 Switch Network"}
+                          {option.recommended && (
+                            <span
+                              style={{ color: "#00aa00", fontSize: "11px" }}
+                            >
+                              {" "}
+                              (Recommended)
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: "11px", color: "#666" }}>
+                          {option.description}
+                        </div>
+                        <div style={{ fontSize: "10px", color: "#888" }}>
+                          Fee: {option.fee}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+
+              {/* Cross-Chain Route Info */}
+              {paymentMode === "cross-chain" && userNetwork && agentNetwork && (
+                <div
+                  style={{
+                    padding: "10px",
+                    backgroundColor: "#fff3cd",
+                    borderRadius: "6px",
+                    border: "1px solid #ffc107",
+                    fontSize: "12px",
+                    color: "#856404",
+                  }}
+                >
+                  <div style={{ fontWeight: "bold", marginBottom: "4px" }}>
+                    🌉 Cross-Chain Route:
+                  </div>
+                  <div>
+                    {supportedNetworks[userNetwork]?.name} →{" "}
+                    {supportedNetworks[agentNetwork]?.name}
+                  </div>
+                  {crossChainFeeEstimate && (
+                    <div style={{ marginTop: "4px", fontSize: "11px" }}>
+                      Estimated Fee: {parseFloat(crossChainFeeEstimate) / 1e18}{" "}
+                      ETH
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Network Switch Prompt */}
+              {paymentMode === "switch-network" && agentNetwork && (
+                <div
+                  style={{
+                    padding: "10px",
+                    backgroundColor: "#d1ecf1",
+                    borderRadius: "6px",
+                    border: "1px solid #bee5eb",
+                    fontSize: "12px",
+                    color: "#0c5460",
+                  }}
+                >
+                  <div style={{ fontWeight: "bold", marginBottom: "4px" }}>
+                    🔄 Network Switch Required:
+                  </div>
+                  <div>
+                    Please switch to {supportedNetworks[agentNetwork]?.name} in
+                    your wallet to continue.
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Wallet Balance Display */}
           <div
@@ -1094,7 +1462,34 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
             >
               🔄 Generating QR...
             </div>
-          ) : (
+          ) : paymentMode === "switch-network" ? (
+            <div
+              style={{
+                width: "200px",
+                height: "200px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: "#f8f9fa",
+                borderRadius: "10px",
+                border: "2px dashed #007bff",
+                fontSize: "14px",
+                color: "#007bff",
+                textAlign: "center",
+                padding: "20px",
+              }}
+            >
+              <div style={{ fontSize: "24px", marginBottom: "10px" }}>🔄</div>
+              <div style={{ fontWeight: "bold", marginBottom: "8px" }}>
+                Switch Network
+              </div>
+              <div style={{ fontSize: "12px" }}>
+                Please switch to {supportedNetworks[agentNetwork]?.name} in your
+                wallet
+              </div>
+            </div>
+          ) : currentQRData ? (
             <div onClick={handleQRClick}>
               {typeof currentQRData === "string" &&
               currentQRData.startsWith("data:image") ? (
@@ -1106,23 +1501,71 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
                     height: "200px",
                     borderRadius: "10px",
                     cursor: "pointer",
+                    border:
+                      paymentMode === "cross-chain"
+                        ? "2px solid #ff9500"
+                        : "2px solid #00ff00",
                   }}
                 />
               ) : (
-                <QRCode
-                  value={qrDisplayValue}
-                  size={200}
-                  style={{
-                    background: "white",
-                    padding: "10px",
-                    borderRadius: "10px",
-                    cursor: "pointer",
-                  }}
-                />
+                <div style={{ position: "relative" }}>
+                  <QRCode
+                    value={qrDisplayValue}
+                    size={200}
+                    style={{
+                      background: "white",
+                      padding: "10px",
+                      borderRadius: "10px",
+                      cursor: "pointer",
+                      border:
+                        paymentMode === "cross-chain"
+                          ? "2px solid #ff9500"
+                          : "2px solid #00ff00",
+                    }}
+                  />
+                  {paymentMode === "cross-chain" && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "-5px",
+                        right: "-5px",
+                        backgroundColor: "#ff9500",
+                        color: "white",
+                        borderRadius: "50%",
+                        width: "30px",
+                        height: "30px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "16px",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      🌉
+                    </div>
+                  )}
+                </div>
               )}
+            </div>
+          ) : (
+            <div
+              style={{
+                width: "200px",
+                height: "200px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: "#f0f0f0",
+                borderRadius: "10px",
+                fontSize: "14px",
+                color: "#666",
+              }}
+            >
+              No QR Code Available
             </div>
           )}
 
+          {/* Payment Instructions */}
           <div
             style={{
               marginTop: "15px",
@@ -1132,10 +1575,39 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
               fontWeight: "bold",
             }}
           >
-            🖱️ CLICK to Pay with{" "}
-            {selectedNetwork === "solana-devnet" ? "Phantom" : "MetaMask"}
-            <br />
-            📱 SCAN with Mobile Wallet
+            {paymentMode === "cross-chain" ? (
+              <>
+                🌉 CROSS-CHAIN PAYMENT
+                <br />
+                🖱️ CLICK to Pay from {supportedNetworks[userNetwork]?.name}
+                <br />
+                📱 SCAN with Mobile Wallet
+                {crossChainFeeEstimate && (
+                  <div
+                    style={{
+                      fontSize: "10px",
+                      color: "#ff9500",
+                      marginTop: "4px",
+                    }}
+                  >
+                    Additional cross-chain fee applies
+                  </div>
+                )}
+              </>
+            ) : paymentMode === "switch-network" ? (
+              <>
+                🔄 NETWORK SWITCH REQUIRED
+                <br />
+                Switch to {supportedNetworks[agentNetwork]?.name} first
+              </>
+            ) : (
+              <>
+                🖱️ CLICK to Pay with{" "}
+                {selectedNetwork === "solana-devnet" ? "Phantom" : "MetaMask"}
+                <br />
+                📱 SCAN with Mobile Wallet
+              </>
+            )}
           </div>
         </div>
       </Html>

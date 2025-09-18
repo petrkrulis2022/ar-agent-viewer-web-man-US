@@ -1,9 +1,8 @@
-// Dynamic QR Service for AR Viewer - CCIP Cross-Chain Enhanced
+// Dynamic QR Service for AR Viewer
 // Handles EVM network autodetection and QR generation
-// Phase 2: Implements dual QR logic for same-chain vs cross-chain payments
+// Based on existing payment patterns from main branch
 
 import QRCode from "qrcode";
-import ccipConfigService from "./ccipConfigService.js";
 
 class DynamicQRService {
   constructor() {
@@ -100,159 +99,10 @@ class DynamicQRService {
   }
 
   getNetworkInfo(chainId) {
-    const networkInfo = this.supportedNetworks[chainId];
-    if (networkInfo) {
-      // Add USDC address to network info
-      return {
-        ...networkInfo,
-        usdcAddress: this.usdcTokenAddresses[chainId],
-      };
-    }
-    return null;
+    return this.supportedNetworks[chainId] || null;
   }
 
-  // 🔍 CROSS-CHAIN DETECTION METHODS (for debugging)
-  async detectUserNetwork() {
-    if (typeof window !== "undefined" && window.ethereum) {
-      try {
-        const chainId = await window.ethereum.request({
-          method: "eth_chainId",
-        });
-        return String(parseInt(chainId, 16));
-      } catch (error) {
-        console.warn("Could not detect user network:", error);
-        return null;
-      }
-    }
-    return null;
-  }
-
-  async getAgentNetwork(agentData) {
-    return String(agentData.chain_id || agentData.network_id || 11155111);
-  }
-
-  async detectCrossChainNeed(agentData, userChainId = null) {
-    const agentChainId = await this.getAgentNetwork(agentData);
-    const currentUserChain = userChainId || (await this.detectUserNetwork());
-
-    return {
-      userChain: currentUserChain,
-      agentChain: agentChainId,
-      needsCrossChain: currentUserChain && currentUserChain !== agentChainId,
-      supportedRoute:
-        currentUserChain && agentChainId
-          ? ccipConfigService.isRouteSupported(currentUserChain, agentChainId)
-          : false,
-    };
-  }
-
-  // 🌉 CROSS-CHAIN QR GENERATION using CCIP
-  async generateCrossChainQR(
-    agentData,
-    sourceChainId,
-    destChainId,
-    amount,
-    feeToken = "native"
-  ) {
-    try {
-      console.log("🌉 Generating CCIP cross-chain QR:", {
-        source: sourceChainId,
-        destination: destChainId,
-        amount: amount,
-        feeToken: feeToken,
-      });
-
-      // Get CCIP configuration for the source chain
-      const sourceConfig = ccipConfigService.getNetworkConfig(sourceChainId);
-      if (!sourceConfig) {
-        throw new Error(`CCIP not supported on source chain: ${sourceChainId}`);
-      }
-
-      // Get destination chain selector
-      const destConfig = ccipConfigService.getNetworkConfig(destChainId);
-      if (!destConfig) {
-        throw new Error(
-          `CCIP not supported on destination chain: ${destChainId}`
-        );
-      }
-
-      // Build CCIP transaction
-      const ccipTx = await ccipConfigService.buildCCIPTransaction(
-        sourceChainId,
-        destChainId,
-        amount,
-        agentData.agent_wallet_address || agentData.payment_recipient_address,
-        feeToken
-      );
-
-      if (!ccipTx || !ccipTx.success) {
-        throw new Error(
-          `CCIP transaction build failed: ${
-            ccipTx?.error || "undefined result"
-          }`
-        );
-      }
-
-      console.log("✅ CCIP transaction built successfully:", {
-        to: ccipTx.to,
-        value: ccipTx.value,
-        dataLength: ccipTx.data?.length,
-        chainId: ccipTx.chainId,
-      });
-
-      // Create EIP-681 URI for CCIP Router transaction
-      const routerAddress = sourceConfig.router;
-      const transactionData = ccipTx.data;
-      const feeValue = ccipTx.fee || "0";
-
-      // Format as EIP-681 URI pointing to CCIP Router (not token contract!)
-      const paymentUri = `ethereum:${routerAddress}@${sourceChainId}?value=${feeValue}&data=${transactionData}`;
-
-      console.log("🎯 CCIP QR Generated:", {
-        router: routerAddress,
-        uri: paymentUri,
-        fee: feeValue,
-        dataLength: transactionData.length,
-      });
-
-      // Generate QR code
-      const qrCodeDataUrl = await QRCode.toDataURL(paymentUri, {
-        width: 256,
-        margin: 2,
-        color: { dark: "#000000", light: "#ffffff" },
-        errorCorrectionLevel: "M",
-      });
-
-      return {
-        success: true,
-        qrData: qrCodeDataUrl,
-        paymentUri: paymentUri,
-        transactionData: {
-          to: routerAddress, // CCIP Router address (not USDC!)
-          value: feeValue,
-          data: transactionData,
-          chainId: parseInt(sourceChainId),
-          chainType: "EVM",
-          isCrossChain: true,
-          sourceChain: sourceChainId,
-          destChain: destChainId,
-          amount: amount,
-          recipient: agentData.agent_wallet_address,
-          agentName: agentData.name || "Agent",
-        },
-        ccipDetails: ccipTx,
-      };
-    } catch (error) {
-      console.error("❌ Cross-chain QR generation failed:", error);
-      return {
-        success: false,
-        error: error.message,
-        isCrossChain: true,
-      };
-    }
-  }
-
-  // Enhanced QR generation with DUAL LOGIC: same-chain vs cross-chain
+  // Enhanced QR generation with multi-chain support
   async generateDynamicQR(agentData, amountUSD = null) {
     try {
       console.log(
@@ -271,52 +121,14 @@ class DynamicQRService {
         agentData.interaction_fee_amount || agentData.fee_amount || "1.00";
       const feeToken =
         agentData.interaction_fee_token || agentData.fee_token || "USDC";
-      const agentChainId = String(
-        agentData.chain_id || agentData.network_id || 11155111
-      );
+      const chainId = agentData.chain_id || 11155111; // Default to Ethereum Sepolia
 
       if (!walletAddress) {
         throw new Error("No wallet address found for QR generation");
       }
 
-      // 🎯 DUAL QR LOGIC: Detect user's current network and compare with agent's network
-      let userChainId = null;
-      if (typeof window !== "undefined" && window.ethereum) {
-        try {
-          const currentChainId = await window.ethereum.request({
-            method: "eth_chainId",
-          });
-          userChainId = String(parseInt(currentChainId, 16));
-          console.log("🌐 User connected to network:", userChainId);
-        } catch (error) {
-          console.warn("⚠️ Could not detect user network:", error);
-        }
-      }
-
-      console.log("🎯 Network comparison:", {
-        userNetwork: userChainId,
-        agentNetwork: agentChainId,
-        needsCrossChain: userChainId && userChainId !== agentChainId,
-      });
-
-      // 🎯 DECISION POINT: Same-chain vs Cross-chain
-      if (userChainId && userChainId !== agentChainId) {
-        // 🌉 DIFFERENT NETWORKS → Use CCIP Cross-Chain Logic
-        console.log("🌉 Cross-chain payment detected, generating CCIP QR");
-        return await this.generateCrossChainQR(
-          agentData,
-          userChainId, // Source chain (user's current network)
-          agentChainId, // Destination chain (agent's network)
-          feeAmount,
-          "native" // Fee token preference
-        );
-      }
-
-      // ✅ SAME NETWORK OR NO USER NETWORK DETECTED → Use Standard Logic
-      console.log("✅ Same-chain payment, using standard QR generation");
-
-      // Use agent's network as target (original logic)
-      let targetNetwork = parseInt(agentChainId) || 11155111;
+      // Detect current network if connected
+      let targetNetwork = chainId;
       let chainType = this.detectChainType(targetNetwork);
 
       // For EVM networks, try to detect current network
@@ -415,7 +227,6 @@ class DynamicQRService {
         recipient: walletAddress,
         agentName: agentData.name || "Agent",
         networkInfo: networkInfo,
-        isCrossChain: false, // This is same-chain logic
       };
 
       // Generate QR code using the appropriate URI format
@@ -542,7 +353,6 @@ class DynamicQRService {
       value: transactionParams.value,
       dataLength: transactionParams.data.length,
       gas: transactionParams.gas,
-      isCrossChain: qrData.isCrossChain || false,
     });
 
     // Check if we need to switch networks
@@ -581,7 +391,6 @@ class DynamicQRService {
       transactionHash: txHash,
       message: "Transaction sent successfully!",
       chainType: "EVM",
-      isCrossChain: qrData.isCrossChain || false,
     };
   }
 
@@ -613,7 +422,7 @@ class DynamicQRService {
     };
   }
 
-  // Balance fetching methods (keeping original functionality)
+  // USDC Balance fetching methods
   async fetchUSDCBalance(walletAddress, chainId) {
     try {
       console.log(
@@ -669,14 +478,6 @@ class DynamicQRService {
           ])
         : this.encodeBalanceOfCall(walletAddress);
 
-      console.log(
-        `🔍 Using encoding method:`,
-        window.ethereum.utils?.encodeFunctionCall
-          ? "MetaMask utils"
-          : "Custom encoding"
-      );
-      console.log(`🔍 Encoded call data:`, data);
-
       // Call contract
       const balance = await window.ethereum.request({
         method: "eth_call",
@@ -689,21 +490,9 @@ class DynamicQRService {
         ],
       });
 
-      console.log(`🔍 Raw balance response:`, balance);
-      console.log(`🔍 USDC contract address:`, networkInfo.usdcAddress);
-      console.log(`🔍 Call data:`, data);
-
       // Parse balance (USDC has 6 decimals)
       const balanceInWei = parseInt(balance, 16);
-      console.log(`🔍 Balance in wei:`, balanceInWei);
-
       const balanceInUSDC = balanceInWei / Math.pow(10, 6);
-      console.log(
-        `🔍 Balance calculation: ${balanceInWei} / ${Math.pow(
-          10,
-          6
-        )} = ${balanceInUSDC}`
-      );
 
       console.log(`✅ EVM USDC Balance: ${balanceInUSDC} USDC`);
 
@@ -733,9 +522,15 @@ class DynamicQRService {
     }
 
     try {
+      // For Solana Devnet USDC balance, we would need to:
+      // 1. Connect to Solana RPC
+      // 2. Get associated token account for USDC mint
+      // 3. Query token account balance
+
       // Placeholder implementation - would need @solana/web3.js and @solana/spl-token
       console.log("🔄 Fetching Solana USDC balance (placeholder)...");
 
+      // Return placeholder data for now
       return {
         success: true,
         balance: "1000000", // 1 USDC in micro-units (6 decimals)
@@ -796,56 +591,6 @@ class DynamicQRService {
       console.error("❌ Current wallet balance error:", error);
       return null;
     }
-  }
-
-  // 🔧 COMPATIBILITY METHODS for CubePaymentEngine
-  getCCIPService() {
-    // Return the imported CCIP service for compatibility
-    return ccipConfigService;
-  }
-
-  getAvailablePaymentOptions(agent, userNetwork) {
-    // Return available payment options based on network
-    const agentNetwork = String(agent.chain_id || agent.network_id || 11155111);
-    const isInnerChain = userNetwork === agentNetwork;
-    const supportsCrossChain =
-      !isInnerChain &&
-      ccipConfigService.isRouteSupported(userNetwork, agentNetwork);
-
-    const options = [];
-
-    // Add same-chain option if available
-    if (isInnerChain) {
-      options.push({
-        type: "same-chain",
-        label: "Direct Payment",
-        description: "Pay directly on the same network",
-        available: true,
-      });
-    }
-
-    // Add cross-chain option if available
-    if (supportsCrossChain) {
-      options.push({
-        type: "cross-chain",
-        label: "Cross-Chain Payment",
-        description: "Pay from your current network using CCIP",
-        available: true,
-      });
-    }
-
-    // Return both object format (for backward compatibility) and array format
-    return {
-      sameChain: isInnerChain,
-      crossChain: supportsCrossChain,
-      supportedMethods: ["standard", "ccip"],
-      options: options, // Array format for React components
-    };
-  }
-
-  async handleCrossChainQRClick(qrData) {
-    // Handle cross-chain QR click - delegate to standard handler
-    return await this.handleQRClick(null, qrData);
   }
 }
 

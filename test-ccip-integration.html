@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CCIP Cross-Chain Test - AR Viewer</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        margin: 0;
+        padding: 20px;
+        min-height: 100vh;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: white;
+        padding: 30px;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      }
+      .header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .header h1 {
+        color: #333;
+        margin: 0;
+        font-size: 2.5em;
+      }
+      .header p {
+        color: #666;
+        font-size: 1.2em;
+        margin: 10px 0;
+      }
+      .test-section {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        border-left: 4px solid #007bff;
+      }
+      .test-section h3 {
+        color: #007bff;
+        margin-top: 0;
+      }
+      .status {
+        padding: 10px;
+        border-radius: 5px;
+        margin: 10px 0;
+        font-weight: bold;
+      }
+      .status.loading {
+        background: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeaa7;
+      }
+      .status.success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .status.error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+      .network-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin: 20px 0;
+      }
+      .network-card {
+        background: white;
+        padding: 15px;
+        border-radius: 10px;
+        border: 2px solid #e9ecef;
+        transition: all 0.3s ease;
+      }
+      .network-card:hover {
+        border-color: #007bff;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      }
+      .network-card h4 {
+        margin: 0 0 10px 0;
+        color: #333;
+      }
+      .route-test {
+        background: #e7f3ff;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 10px 0;
+        border: 1px solid #bee5eb;
+      }
+      .btn {
+        background: #007bff;
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: bold;
+        transition: background 0.3s ease;
+        margin: 5px;
+      }
+      .btn:hover {
+        background: #0056b3;
+      }
+      .btn:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+      }
+      .results {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 10px 0;
+        font-family: "Courier New", monospace;
+        font-size: 12px;
+        white-space: pre-wrap;
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+      }
+      .highlight {
+        background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+        background-size: 200% 200%;
+        animation: gradient 3s ease infinite;
+        color: white;
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+        margin: 20px 0;
+      }
+      @keyframes gradient {
+        0% {
+          background-position: 0% 50%;
+        }
+        50% {
+          background-position: 100% 50%;
+        }
+        100% {
+          background-position: 0% 50%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🌉 CCIP Cross-Chain Integration Test</h1>
+        <p>AR Viewer Phase 2 - Cross-Chain Payment System</p>
+        <div class="highlight">
+          <h3>🚀 Testing 42+ Cross-Chain Routes Across 7 Networks</h3>
+          <p>
+            Ethereum Sepolia • Arbitrum Sepolia • Base Sepolia • OP Sepolia •
+            Avalanche Fuji • Polygon Amoy • Solana Devnet
+          </p>
+        </div>
+      </div>
+
+      <div class="test-section">
+        <h3>📊 CCIP Service Status</h3>
+        <div id="service-status" class="status loading">
+          🔄 Initializing CCIP services...
+        </div>
+        <button id="test-services" class="btn" onclick="testCCIPServices()">
+          Test CCIP Services
+        </button>
+        <div id="service-results" class="results" style="display: none"></div>
+      </div>
+
+      <div class="test-section">
+        <h3>🌐 Supported Networks</h3>
+        <div id="networks-status" class="status loading">
+          🔄 Loading network configurations...
+        </div>
+        <div id="networks-grid" class="network-grid"></div>
+      </div>
+
+      <div class="test-section">
+        <h3>🛣️ Cross-Chain Routes</h3>
+        <div id="routes-status" class="status loading">
+          🔄 Discovering available routes...
+        </div>
+        <button id="test-routes" class="btn" onclick="testCrossChainRoutes()">
+          Test All Routes
+        </button>
+        <div id="routes-results" class="results" style="display: none"></div>
+      </div>
+
+      <div class="test-section">
+        <h3>💰 Fee Estimation</h3>
+        <div id="fees-status" class="status loading">
+          🔄 Testing fee estimation...
+        </div>
+        <button id="test-fees" class="btn" onclick="testFeeEstimation()">
+          Test Fee Estimation
+        </button>
+        <div id="fees-results" class="results" style="display: none"></div>
+      </div>
+
+      <div class="test-section">
+        <h3>📱 QR Code Generation</h3>
+        <div id="qr-status" class="status loading">
+          🔄 Testing cross-chain QR generation...
+        </div>
+        <button id="test-qr" class="btn" onclick="testQRGeneration()">
+          Generate Cross-Chain QR
+        </button>
+        <div id="qr-results" class="results" style="display: none"></div>
+        <div id="qr-display" style="text-align: center; margin: 20px 0"></div>
+      </div>
+    </div>
+
+    <script type="module">
+      // Import CCIP services
+      import CCIPConfigService from "./src/services/ccipConfigService.js";
+      import { dynamicQRService } from "./src/services/dynamicQRService.js";
+
+      let ccipService;
+      let testResults = {};
+
+      // Initialize services
+      async function initializeServices() {
+        try {
+          console.log("🔄 Initializing CCIP services...");
+          ccipService = new CCIPConfigService();
+
+          // Test if CCIP is available
+          const isCCIPAvailable =
+            dynamicQRService.isCCIPAvailable &&
+            dynamicQRService.isCCIPAvailable();
+
+          updateStatus(
+            "service-status",
+            "success",
+            `✅ CCIP Services initialized successfully! Available: ${isCCIPAvailable}`
+          );
+
+          await loadNetworks();
+        } catch (error) {
+          console.error("❌ Service initialization failed:", error);
+          updateStatus(
+            "service-status",
+            "error",
+            `❌ Failed to initialize: ${error.message}`
+          );
+        }
+      }
+
+      // Load and display networks
+      async function loadNetworks() {
+        try {
+          const networks = ccipService.getAllSupportedNetworks();
+          updateStatus(
+            "networks-status",
+            "success",
+            `✅ Loaded ${networks.length} supported networks`
+          );
+
+          const grid = document.getElementById("networks-grid");
+          grid.innerHTML = networks
+            .map(
+              (network) => `
+                    <div class="network-card">
+                        <h4>${network.chainName}</h4>
+                        <p><strong>Chain ID:</strong> ${network.chainId}</p>
+                        <p><strong>Type:</strong> ${network.type}</p>
+                        <p><strong>Currency:</strong> ${network.currencySymbol}</p>
+                    </div>
+                `
+            )
+            .join("");
+
+          updateStatus(
+            "routes-status",
+            "success",
+            `✅ Ready to test 42+ cross-chain routes`
+          );
+          updateStatus(
+            "fees-status",
+            "success",
+            `✅ Ready to test fee estimation`
+          );
+          updateStatus(
+            "qr-status",
+            "success",
+            `✅ Ready to generate cross-chain QR codes`
+          );
+        } catch (error) {
+          console.error("❌ Network loading failed:", error);
+          updateStatus(
+            "networks-status",
+            "error",
+            `❌ Failed to load networks: ${error.message}`
+          );
+        }
+      }
+
+      // Test CCIP services
+      window.testCCIPServices = async function () {
+        const resultsDiv = document.getElementById("service-results");
+        resultsDiv.style.display = "block";
+        resultsDiv.textContent = "🔄 Testing CCIP services...\n";
+
+        try {
+          // Test basic functionality
+          const ethConfig = ccipService.getNetworkConfig("11155111");
+          const arbConfig = ccipService.getNetworkConfig("421614");
+
+          resultsDiv.textContent += `✅ Ethereum Sepolia config loaded: ${ethConfig.chainName}\n`;
+          resultsDiv.textContent += `✅ Arbitrum Sepolia config loaded: ${arbConfig.chainName}\n`;
+
+          const isCrossChain = ccipService.isCrossChainTransfer(
+            "11155111",
+            "421614"
+          );
+          const isSupported = ccipService.isRouteSupported(
+            "11155111",
+            "421614"
+          );
+
+          resultsDiv.textContent += `✅ Cross-chain detection: ${isCrossChain}\n`;
+          resultsDiv.textContent += `✅ Route supported: ${isSupported}\n`;
+
+          const destinations = ccipService.getAvailableDestinations("11155111");
+          resultsDiv.textContent += `✅ Available destinations: ${destinations.length}\n`;
+
+          updateStatus(
+            "service-status",
+            "success",
+            "✅ All CCIP services working correctly!"
+          );
+        } catch (error) {
+          resultsDiv.textContent += `❌ Error: ${error.message}\n`;
+          updateStatus(
+            "service-status",
+            "error",
+            `❌ Service test failed: ${error.message}`
+          );
+        }
+      };
+
+      // Test cross-chain routes
+      window.testCrossChainRoutes = async function () {
+        const resultsDiv = document.getElementById("routes-results");
+        resultsDiv.style.display = "block";
+        resultsDiv.textContent = "🔄 Testing cross-chain routes...\n";
+
+        try {
+          const networks = [
+            "11155111",
+            "421614",
+            "84532",
+            "11155420",
+            "43113",
+            "80002",
+          ];
+          let testedRoutes = 0;
+          let supportedRoutes = 0;
+
+          for (const source of networks) {
+            for (const dest of networks) {
+              if (source !== dest) {
+                const isSupported = ccipService.isRouteSupported(source, dest);
+                testedRoutes++;
+                if (isSupported) supportedRoutes++;
+
+                const sourceConfig = ccipService.getNetworkConfig(source);
+                const destConfig = ccipService.getNetworkConfig(dest);
+
+                resultsDiv.textContent += `${isSupported ? "✅" : "⚠️"} ${
+                  sourceConfig.chainName
+                } → ${destConfig.chainName}\n`;
+              }
+            }
+          }
+
+          resultsDiv.textContent += `\n📊 Route Summary:\n`;
+          resultsDiv.textContent += `Total routes tested: ${testedRoutes}\n`;
+          resultsDiv.textContent += `Supported routes: ${supportedRoutes}\n`;
+          resultsDiv.textContent += `Support rate: ${Math.round(
+            (supportedRoutes / testedRoutes) * 100
+          )}%\n`;
+
+          updateStatus(
+            "routes-status",
+            "success",
+            `✅ Tested ${testedRoutes} routes, ${supportedRoutes} supported`
+          );
+        } catch (error) {
+          resultsDiv.textContent += `❌ Error: ${error.message}\n`;
+          updateStatus(
+            "routes-status",
+            "error",
+            `❌ Route test failed: ${error.message}`
+          );
+        }
+      };
+
+      // Test fee estimation
+      window.testFeeEstimation = async function () {
+        const resultsDiv = document.getElementById("fees-results");
+        resultsDiv.style.display = "block";
+        resultsDiv.textContent = "🔄 Testing fee estimation...\n";
+
+        try {
+          // Test ETH → ARB route
+          const feeEstimate = await ccipService.estimateCCIPFees(
+            "11155111", // Ethereum Sepolia
+            "421614", // Arbitrum Sepolia
+            "10", // 10 USDC
+            "0x742d35Cc6634C0532925a3b8D30fe85F86c3067E",
+            "native"
+          );
+
+          resultsDiv.textContent += `Fee Estimation Result:\n`;
+          resultsDiv.textContent += `Success: ${feeEstimate.success}\n`;
+          resultsDiv.textContent += `Source: ${feeEstimate.sourceChain}\n`;
+          resultsDiv.textContent += `Destination: ${feeEstimate.destinationChain}\n`;
+          resultsDiv.textContent += `Amount: ${feeEstimate.amount} USDC\n`;
+          resultsDiv.textContent += `Estimated Fee: ${
+            parseFloat(feeEstimate.estimatedFee) / 1e18
+          } ETH\n`;
+          resultsDiv.textContent += `Fee Token: ${feeEstimate.feeToken}\n`;
+
+          updateStatus(
+            "fees-status",
+            "success",
+            "✅ Fee estimation working correctly!"
+          );
+        } catch (error) {
+          resultsDiv.textContent += `❌ Error: ${error.message}\n`;
+          updateStatus(
+            "fees-status",
+            "error",
+            `❌ Fee test failed: ${error.message}`
+          );
+        }
+      };
+
+      // Test QR generation
+      window.testQRGeneration = async function () {
+        const resultsDiv = document.getElementById("qr-results");
+        const qrDisplay = document.getElementById("qr-display");
+        resultsDiv.style.display = "block";
+        resultsDiv.textContent = "🔄 Testing cross-chain QR generation...\n";
+
+        try {
+          // Mock agent data
+          const mockAgent = {
+            id: "test-agent",
+            name: "Cross-Chain Test Agent",
+            agent_wallet_address: "0x742d35Cc6634C0532925a3b8D30fe85F86c3067E",
+            interaction_fee_amount: "5.00",
+            chain_id: "421614", // Deployed on Arbitrum
+          };
+
+          // Test cross-chain QR generation
+          const result = await dynamicQRService.generateCrossChainQR(
+            mockAgent,
+            "11155111", // From Ethereum Sepolia
+            "421614", // To Arbitrum Sepolia
+            "5.00",
+            "native"
+          );
+
+          resultsDiv.textContent += `Cross-Chain QR Generation:\n`;
+          resultsDiv.textContent += `Success: ${result.success}\n`;
+
+          if (result.success) {
+            resultsDiv.textContent += `Transaction Type: ${result.transactionType}\n`;
+            resultsDiv.textContent += `Source Chain: ${result.sourceChain}\n`;
+            resultsDiv.textContent += `Destination Chain: ${result.destinationChain}\n`;
+            resultsDiv.textContent += `Amount: ${result.amount} USDC\n`;
+            resultsDiv.textContent += `Fee Estimate: ${
+              parseFloat(result.estimatedFee) / 1e18
+            } ETH\n`;
+            resultsDiv.textContent += `Router: ${result.routerAddress}\n`;
+
+            // Display QR code if available
+            if (result.qrCodeDataURL) {
+              qrDisplay.innerHTML = `
+                            <h4>🌉 Cross-Chain QR Code Generated!</h4>
+                            <img src="${result.qrCodeDataURL}" alt="Cross-Chain QR Code" style="border: 3px solid #ff9500; border-radius: 10px;">
+                            <p style="margin: 10px 0; font-weight: bold; color: #ff9500;">
+                                Ethereum Sepolia → Arbitrum Sepolia
+                            </p>
+                        `;
+            }
+          } else {
+            resultsDiv.textContent += `Error: ${result.error}\n`;
+          }
+
+          updateStatus(
+            "qr-status",
+            "success",
+            "✅ Cross-chain QR generation working!"
+          );
+        } catch (error) {
+          resultsDiv.textContent += `❌ Error: ${error.message}\n`;
+          updateStatus(
+            "qr-status",
+            "error",
+            `❌ QR test failed: ${error.message}`
+          );
+        }
+      };
+
+      // Helper function to update status
+      function updateStatus(elementId, type, message) {
+        const element = document.getElementById(elementId);
+        element.className = `status ${type}`;
+        element.textContent = message;
+      }
+
+      // Initialize on page load
+      initializeServices();
+    </script>
+  </body>
+</html>

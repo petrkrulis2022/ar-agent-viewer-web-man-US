@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AR Viewer Service Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background: #1a1a2e;
+        color: white;
+      }
+      .result {
+        background: #16213e;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 8px;
+      }
+      .success {
+        border-left: 4px solid #4caf50;
+      }
+      .error {
+        border-left: 4px solid #f44336;
+      }
+      button {
+        background: #0f3460;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        margin: 5px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #16213e;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🔧 AR Viewer Service Test</h1>
+    <p>
+      Testing individual service imports to identify the blank page cause...
+    </p>
+
+    <button onclick="testDynamicQRService()">Test Dynamic QR Service</button>
+    <button onclick="testCCIPService()">Test CCIP Service</button>
+    <button onclick="testAllServices()">Test All Services</button>
+
+    <div id="results"></div>
+
+    <script type="module">
+      function addResult(title, content, isSuccess = true) {
+        const results = document.getElementById("results");
+        const div = document.createElement("div");
+        div.className = `result ${isSuccess ? "success" : "error"}`;
+        div.innerHTML = `<h3>${title}</h3><pre>${JSON.stringify(
+          content,
+          null,
+          2
+        )}</pre>`;
+        results.appendChild(div);
+      }
+
+      window.testDynamicQRService = async function () {
+        try {
+          addResult("Dynamic QR Service", "Loading...", true);
+          const module = await import("./src/services/dynamicQRService.js");
+          const service = module.default;
+
+          addResult(
+            "Dynamic QR Service - SUCCESS",
+            {
+              loaded: true,
+              hasGenerateDynamicQR:
+                typeof service.generateDynamicQR === "function",
+              hasGenerateCrossChainQR:
+                typeof service.generateCrossChainQR === "function",
+              hasGetCCIPService: typeof service.getCCIPService === "function",
+              hasDetectUserNetwork:
+                typeof service.detectUserNetwork === "function",
+            },
+            true
+          );
+        } catch (error) {
+          addResult(
+            "Dynamic QR Service - ERROR",
+            {
+              error: error.message,
+              stack: error.stack,
+            },
+            false
+          );
+        }
+      };
+
+      window.testCCIPService = async function () {
+        try {
+          addResult("CCIP Service", "Loading...", true);
+          const module = await import("./src/services/ccipConfigService.js");
+          const service = module.default;
+
+          addResult(
+            "CCIP Service - SUCCESS",
+            {
+              loaded: true,
+              hasGetNetworkConfig:
+                typeof service.getNetworkConfig === "function",
+              hasBuildCCIPTransaction:
+                typeof service.buildCCIPTransaction === "function",
+              hasIsRouteSupported:
+                typeof service.isRouteSupported === "function",
+            },
+            true
+          );
+        } catch (error) {
+          addResult(
+            "CCIP Service - ERROR",
+            {
+              error: error.message,
+              stack: error.stack,
+            },
+            false
+          );
+        }
+      };
+
+      window.testAllServices = async function () {
+        document.getElementById("results").innerHTML = "";
+        await testDynamicQRService();
+        await testCCIPService();
+
+        // Test React basics
+        try {
+          addResult("React Environment", "Checking...", true);
+          const hasReact = typeof React !== "undefined";
+          const hasReactDOM = typeof ReactDOM !== "undefined";
+
+          addResult(
+            "React Environment - INFO",
+            {
+              hasReact,
+              hasReactDOM,
+              isProduction: process.env.NODE_ENV === "production",
+              hasFetch: typeof fetch === "function",
+              hasWindow: typeof window !== "undefined",
+            },
+            true
+          );
+        } catch (error) {
+          addResult(
+            "React Environment - ERROR",
+            {
+              error: error.message,
+            },
+            false
+          );
+        }
+      };
+
+      // Auto-run test
+      setTimeout(testAllServices, 1000);
+    </script>
+  </body>
+</html>
