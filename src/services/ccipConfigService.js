@@ -355,7 +355,7 @@ class CCIPConfigService {
         feeToken: feeToken,
         message: message,
         routerAddress: sourceConfig.router,
-        gasLimit: "200000",
+        gasLimit: "300000", // FIXED: Standardized gas limit
       };
     } catch (error) {
       console.error("❌ CCIP fee estimation failed:", error);
@@ -379,15 +379,34 @@ class CCIPConfigService {
     // Convert amount to wei (USDC has 6 decimals)
     const amountWei = ethers.utils.parseUnits(amount.toString(), 6);
 
-    // Determine fee token address
+    // FIXED: Use native ETH for CCIP fees (standard practice) with reasonable amounts
+    // Fee token address resolution
     let feeTokenAddress;
     if (feeToken === "native") {
-      feeTokenAddress = ethers.constants.AddressZero; // Use native token
-    } else if (feeToken === "LINK" && sourceConfig.feeTokens.LINK) {
+      // Use native ETH for fees (standard CCIP practice)
+      feeTokenAddress = ethers.constants.AddressZero;
+      console.log("💰 Using native ETH for CCIP fees (standard practice)");
+    } else if (
+      feeToken === "LINK" &&
+      sourceConfig.feeTokens &&
+      sourceConfig.feeTokens.LINK
+    ) {
       feeTokenAddress = sourceConfig.feeTokens.LINK;
+      console.log("💰 Using LINK token for CCIP fees:", feeTokenAddress);
     } else {
+      // Default to native ETH with warning
+      console.warn(
+        "⚠️ Fee token not found or invalid, defaulting to native ETH"
+      );
       feeTokenAddress = ethers.constants.AddressZero;
     }
+
+    console.log(`🔧 Fee Token Resolution:`, {
+      requestedFeeToken: feeToken,
+      resolvedAddress: feeTokenAddress,
+      isNative: feeTokenAddress === ethers.constants.AddressZero,
+      availableTokens: Object.keys(sourceConfig.feeTokens || {}),
+    });
 
     return {
       receiver: ethers.utils.defaultAbiCoder.encode(["address"], [recipient]),
@@ -399,7 +418,7 @@ class CCIPConfigService {
         },
       ],
       feeToken: feeTokenAddress,
-      extraArgs: this.encodeExtraArgs({ gasLimit: 200000 }),
+      extraArgs: this.encodeExtraArgs({ gasLimit: 300000 }), // FIXED: Standardized gas limit
     };
   }
 
@@ -486,16 +505,62 @@ class CCIPConfigService {
 
       console.log("✅ Transaction data encoded");
 
+      // CRITICAL FIX: Transaction value logic for CCIP
+      let transactionValue = "0";
+
+      // For CCIP transactions, we need to handle different scenarios:
+      // 1. USDC transfers: value = 0 (ERC-20 token transfer)
+      // 2. Native ETH transfers: value = transfer amount
+      // 3. CCIP fees: handled separately by the router
+
+      if (feeToken === "native") {
+        // For native fee payments, the router will pull the fee from msg.value
+        // But since this is a USDC transfer, we only send the fee amount, not transfer amount
+        const maxFeeWei = ethers.utils.parseEther("0.001").toString();
+        const requestedFeeWei = feeEstimate.estimatedFee;
+        transactionValue =
+          BigInt(requestedFeeWei) > BigInt(maxFeeWei)
+            ? maxFeeWei
+            : requestedFeeWei;
+
+        console.log(`� CCIP Fee Payment (Native ETH):`, {
+          transferType: "USDC (ERC-20)",
+          feeETH: ethers.utils.formatEther(requestedFeeWei),
+          cappedFeeETH: ethers.utils.formatEther(transactionValue),
+          wasCapped: BigInt(requestedFeeWei) > BigInt(maxFeeWei),
+          note: "Transaction value = CCIP fee only (USDC transfer uses ERC-20)",
+        });
+      } else {
+        // For LINK fee payments, no ETH value needed
+        transactionValue = "0";
+        console.log(`💰 CCIP Fee Payment (LINK Token):`, {
+          transferType: "USDC (ERC-20)",
+          valueETH: "0",
+          note: "No ETH value needed - fees paid in LINK token",
+        });
+      }
+
+      console.log(`⛽ GAS & FEE TOKEN ANALYSIS:`, {
+        feeToken: feeToken,
+        gasLimit: "300000",
+        gasPrice: "wallet-estimated",
+        transactionValueETH: ethers.utils.formatEther(transactionValue),
+        transferAmount: `${amount} USDC`,
+        feeTokenUsage:
+          feeToken === "native" ? "Using ETH for fees" : "Using LINK for fees",
+        gasEstimateUSD: `~$${(300000 * 20 * 0.000000001 * 2500).toFixed(2)}`, // 300k gas * 20 gwei * ETH price
+      });
+
       return {
         success: true,
         to: sourceConfig.router,
         data: txData,
-        value: feeToken === "native" ? feeEstimate.estimatedFee : "0",
+        value: transactionValue, // EMERGENCY: Capped transaction value
         chainId: sourceConfig.chainId,
-        gasLimit: "300000",
+        gasLimit: "300000", // FIXED: Standardized gas limit
         gasPrice: null, // Let wallet estimate
         estimatedFee: feeEstimate.estimatedFee,
-        feeToken: feeToken,
+        feeToken: feeToken, // Keep original fee token preference
         sourceChain: sourceConfig.chainName,
         destinationChain: destConfig.chainName,
         amount: amount,
@@ -517,15 +582,15 @@ class CCIPConfigService {
    * @returns {string} Estimated fee in wei
    */
   getEstimatedFeeForRoute(sourceChain, destinationChain) {
-    // Placeholder fee estimation based on route complexity
+    // FIXED: Much more reasonable CCIP fee estimation for testnets
     const sourceConfig = this.getNetworkConfig(sourceChain);
     const destConfig = this.getNetworkConfig(destinationChain);
 
-    // Base fees by network type
+    // REALISTIC Base fees for testnet CCIP (based on actual testnet usage)
     const baseFees = {
-      "EVM->EVM": "0.002", // 0.002 ETH
-      "EVM->Solana": "0.003", // 0.003 ETH
-      "Solana->EVM": "0.002", // 0.002 ETH
+      "EVM->EVM": "0.0001", // EMERGENCY: 0.0001 ETH (~$0.25) - ultra low
+      "EVM->Solana": "0.0002", // EMERGENCY: 0.0002 ETH (~$0.50)
+      "Solana->EVM": "0.0001", // EMERGENCY: 0.0001 ETH (~$0.25)
     };
 
     let routeType;
@@ -539,7 +604,28 @@ class CCIPConfigService {
       routeType = "EVM->EVM"; // fallback
     }
 
-    return ethers.utils.parseEther(baseFees[routeType]).toString();
+    const feeInEth = baseFees[routeType];
+    const feeInWei = ethers.utils.parseEther(feeInEth).toString();
+
+    // EMERGENCY: Hard cap at 0.001 ETH (~$2.50) maximum
+    const maxFeeWei = ethers.utils.parseEther("0.001").toString();
+    const finalFeeWei =
+      BigInt(feeInWei) > BigInt(maxFeeWei) ? maxFeeWei : feeInWei;
+
+    console.log(`💰 EMERGENCY Fee Calculation:`, {
+      route: `${sourceChain} -> ${destinationChain}`,
+      routeType: routeType,
+      requestedFeeETH: feeInEth,
+      calculatedWei: feeInWei,
+      cappedWei: finalFeeWei,
+      finalETH: ethers.utils.formatEther(finalFeeWei),
+      finalUSD: `$${(
+        parseFloat(ethers.utils.formatEther(finalFeeWei)) * 2500
+      ).toFixed(2)}`,
+      isCapped: BigInt(feeInWei) > BigInt(maxFeeWei),
+    });
+
+    return finalFeeWei;
   }
 
   /**

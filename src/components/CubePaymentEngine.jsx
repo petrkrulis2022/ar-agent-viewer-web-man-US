@@ -4,9 +4,11 @@ import { Text, Html } from "@react-three/drei";
 import morphPaymentService from "../services/morphPaymentService";
 import solanaPaymentService from "../services/solanaPaymentService";
 import { dynamicQRService } from "../services/dynamicQRService"; // Add dynamic QR service
+import ccipConfigService from "../services/ccipConfigService"; // CCIP transaction building (default export)
 import { hederaWalletService } from "../services/hederaWalletService";
 import { supabase } from "../lib/supabase";
 import QRCode from "react-qr-code";
+import IntermediatePaymentModal from "./IntermediatePaymentModal"; // Transaction validation modal
 
 // AgentSphere Payment Configuration Reader
 const getAgentPaymentConfig = async (agentId) => {
@@ -732,9 +734,7 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
   const [crossChainOptions, setCrossChainOptions] = useState([]);
   const [showCrossChainUI, setShowCrossChainUI] = useState(false);
   const [crossChainFeeEstimate, setCrossChainFeeEstimate] = useState(null);
-  const [paymentMode, setPaymentMode] = useState("same-chain"); // 'same-chain', 'cross-chain', 'switch-network'
-
-  // Network configuration for dropdown
+  const [paymentMode, setPaymentMode] = useState("same-chain"); // 'same-chain', 'cross-chain', 'switch-network'  // Network configuration for dropdown
   const supportedNetworks = {
     11155111: { name: "Ethereum Sepolia", color: "#627EEA", symbol: "USDC" },
     421614: { name: "Arbitrum Sepolia", color: "#28A0F0", symbol: "USDC" },
@@ -963,32 +963,6 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
       setCurrentQRData(result.eip681URI || result.qrData);
       setCrossChainFeeEstimate(null);
       console.log("✅ Same-chain QR generated");
-    } else {
-      throw new Error(result.error);
-    }
-  };
-
-  const handleCrossChainMode = async () => {
-    if (!userNetwork || !agentNetwork) {
-      throw new Error("Network information not available");
-    }
-
-    console.log(
-      `🌉 Generating cross-chain payment QR: ${userNetwork} → ${agentNetwork}`
-    );
-
-    const result = await dynamicQRService.generateCrossChainQR(
-      agent,
-      userNetwork,
-      agentNetwork,
-      agent?.interaction_fee_amount || "1.00",
-      "native" // Default to native token for fees
-    );
-
-    if (result.success) {
-      setCurrentQRData(result.qrData);
-      setCrossChainFeeEstimate(result.estimatedFee);
-      console.log("✅ Cross-chain QR generated", result);
     } else {
       throw new Error(result.error);
     }
@@ -1679,6 +1653,11 @@ const CubePaymentEngine = ({
   const [isLoadingConfig, setIsLoadingConfig] = useState(true);
   const cubeRef = useRef();
 
+  // Intermediate Payment Modal State
+  const [showIntermediateModal, setShowIntermediateModal] = useState(false);
+  const [intermediateTransactionData, setIntermediateTransactionData] =
+    useState(null);
+
   // Load payment configuration from AgentSphere when component opens
   useEffect(() => {
     const loadPaymentConfig = async () => {
@@ -1737,20 +1716,44 @@ const CubePaymentEngine = ({
       console.log("🔄 Generating crypto QR payment...");
       console.log("📊 Agent data for QR generation:", agent);
 
-      // Use dynamic QR service for proper network detection
-      const result = await dynamicQRService.generateDynamicQR(
-        agent,
-        paymentAmount ||
-          agent?.interaction_fee_amount ||
-          agent?.interaction_fee ||
-          1
-      );
+      // STEP 1: Detect network configuration for cross-chain vs same-chain
+      const userNetwork = window.ethereum?.chainId
+        ? parseInt(window.ethereum.chainId, 16)
+        : null;
 
-      console.log("✅ Dynamic QR generated:", result);
+      const agentNetwork = agent?.network_id || agent?.chain_id;
 
-      // Use the EIP-681 URI for QR display
-      setQrData(result.eip681URI);
-      setCurrentView("qr");
+      console.log("🌐 Network Detection:", {
+        userNetwork,
+        agentNetwork,
+        needsCrossChain:
+          userNetwork && agentNetwork && userNetwork !== agentNetwork,
+      });
+
+      // STEP 2: Route to appropriate flow
+      if (userNetwork && agentNetwork && userNetwork !== agentNetwork) {
+        // 🌉 CROSS-CHAIN: Show intermediate modal first
+        console.log("🌉 Cross-chain detected → Triggering intermediate modal");
+        await handleCrossChainMode();
+        return; // Exit here - modal will handle QR generation after confirmation
+      } else {
+        // 📱 SAME-CHAIN: Direct QR generation
+        console.log("📱 Same-chain detected → Direct QR generation");
+
+        const result = await dynamicQRService.generateDynamicQR(
+          agent,
+          paymentAmount ||
+            agent?.interaction_fee_amount ||
+            agent?.interaction_fee ||
+            1
+        );
+
+        console.log("✅ Same-chain QR generated:", result);
+
+        // Use the EIP-681 URI for QR display
+        setQrData(result.eip681URI);
+        setCurrentView("qr");
+      }
     } catch (error) {
       console.error("❌ Error generating QR:", error);
       alert("Error generating payment QR. Please try again.");
@@ -1790,6 +1793,124 @@ const CubePaymentEngine = ({
     );
   };
 
+  // Intermediate Payment Modal Handlers
+  const handleModalConfirm = async (validatedTransactionData) => {
+    try {
+      console.log(
+        "✅ User confirmed transaction, proceeding with QR generation..."
+      );
+      setShowIntermediateModal(false);
+
+      // Generate final cross-chain QR using the validated transaction data
+      const result = await dynamicQRService.generateCrossChainQR(
+        agent,
+        validatedTransactionData.sourceChain,
+        validatedTransactionData.destinationChain,
+        validatedTransactionData.amount,
+        "native" // Fee token
+      );
+
+      if (result.success) {
+        setQrData(result.qrData);
+        console.log(
+          "✅ Cross-chain QR generated after modal confirmation",
+          result
+        );
+        setCurrentView("qr");
+        setSelectedMethod("crypto_qr");
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      console.error(
+        "❌ Failed to generate QR after modal confirmation:",
+        error
+      );
+      alert(`Error generating payment QR: ${error.message}`);
+    }
+  };
+
+  const handleModalCancel = () => {
+    console.log("❌ User cancelled transaction in intermediate modal");
+    setShowIntermediateModal(false);
+    setIntermediateTransactionData(null);
+  };
+
+  // Handle Cross-Chain Mode - Shows intermediate modal for transaction review
+  const handleCrossChainMode = async () => {
+    // Get current network info from crypto QR selection context
+    const userNetwork = window.ethereum?.chainId
+      ? parseInt(window.ethereum.chainId, 16)
+      : null;
+
+    const agentNetwork = agent?.network_id || agent?.chain_id;
+
+    if (!userNetwork || !agentNetwork) {
+      throw new Error("Network information not available");
+    }
+
+    console.log(
+      `🌉 Cross-chain transaction detected: ${userNetwork} → ${agentNetwork}`
+    );
+
+    // STEP 1: Build CCIP transaction data for inspection
+    try {
+      console.log("🔧 Building CCIP transaction for intermediate modal...");
+
+      const ccipTransactionData = await ccipConfigService.buildCCIPTransaction(
+        userNetwork, // Source chain
+        agentNetwork, // Destination chain
+        agent?.interaction_fee_amount || "1.00", // USDC amount
+        agent?.agent_wallet_address || agent?.payment_recipient_address, // Recipient
+        "native" // Fee token (ETH)
+      );
+
+      if (!ccipTransactionData.success) {
+        throw new Error(
+          `CCIP transaction build failed: ${ccipTransactionData.error}`
+        );
+      }
+
+      console.log(
+        "✅ CCIP transaction built successfully:",
+        ccipTransactionData
+      );
+
+      // STEP 2: Show Intermediate Payment Modal for Cross-Chain Review
+      setIntermediateTransactionData({
+        ...ccipTransactionData,
+        // Add cross-chain specific metadata for the modal
+        sourceChain: userNetwork,
+        destinationChain: agentNetwork,
+        amount: agent?.interaction_fee_amount || "1.00",
+        recipient:
+          agent?.agent_wallet_address || agent?.payment_recipient_address,
+        isCrossChain: true,
+        transactionType: "CCIP Cross-Chain",
+        debugInfo: {
+          userChainId: userNetwork,
+          agentChainId: agentNetwork,
+          needsCrossChain: true,
+          ccipRouter: ccipTransactionData.to,
+          chainSelector: ccipTransactionData.destinationChain,
+          extraArgs: ccipTransactionData.data
+            ? ccipTransactionData.data.substring(0, 100) + "..."
+            : "N/A",
+          transactionValue: ccipTransactionData.value,
+          gasLimit: ccipTransactionData.gasLimit,
+        },
+      });
+
+      setShowIntermediateModal(true);
+      console.log(
+        "🔍 Intermediate modal opened for cross-chain transaction review"
+      );
+    } catch (error) {
+      console.error("❌ Failed to build CCIP transaction for modal:", error);
+      throw error;
+    }
+  };
+
   // Handle back to cube
   const handleBackToCube = () => {
     setCurrentView("cube");
@@ -1801,44 +1922,12 @@ const CubePaymentEngine = ({
   const handleFaceClick = async (method, faceIndex) => {
     console.log(`🎯 Face clicked directly: ${method} (face ${faceIndex})`);
 
-    // Handle QR generation for crypto_qr method
+    // Handle QR generation for crypto_qr method with cross-chain detection
     if (method === "crypto_qr") {
       console.log("🔗 Generating QR code for crypto payment");
-      setIsGenerating(true);
 
-      try {
-        const qrResult = await dynamicQRService.generateDynamicQR(agent);
-
-        if (qrResult.success) {
-          console.log("✅ QR code generated successfully");
-          setQrData(qrResult.qrData);
-          setCurrentView("qr");
-
-          // Also dispatch the event for any listeners
-          document.dispatchEvent(
-            new CustomEvent("crypto-qr-generated", {
-              detail: {
-                method: "crypto_qr",
-                agent: agent,
-                qrData: qrResult.qrData,
-                transactionData: qrResult.transactionData,
-                network: qrResult.network,
-                amount: qrResult.amount,
-                token: qrResult.token,
-                recipient: qrResult.recipient,
-              },
-            })
-          );
-        } else {
-          console.error("❌ QR generation failed:", qrResult.error);
-          alert(`QR Generation Failed: ${qrResult.error}`);
-        }
-      } catch (error) {
-        console.error("❌ QR generation error:", error);
-        alert(`QR Generation Error: ${error.message}`);
-      } finally {
-        setIsGenerating(false);
-      }
+      // Use our updated crypto QR selection logic that includes modal
+      await handleCryptoQRSelection();
       return;
     }
 
@@ -2004,6 +2093,15 @@ const CubePaymentEngine = ({
             }
           }
         `}</style>
+
+        {/* Intermediate Payment Modal - For Cross-Chain Transaction Review */}
+        <IntermediatePaymentModal
+          isOpen={showIntermediateModal}
+          onClose={handleModalCancel}
+          onConfirm={handleModalConfirm}
+          transactionData={intermediateTransactionData}
+          agentData={agent}
+        />
       </div>
     </div>
   );

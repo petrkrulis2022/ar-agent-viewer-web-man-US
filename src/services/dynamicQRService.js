@@ -3,6 +3,7 @@
 // Phase 2: Implements dual QR logic for same-chain vs cross-chain payments
 
 import QRCode from "qrcode";
+import { ethers } from "ethers";
 import ccipConfigService from "./ccipConfigService.js";
 
 class DynamicQRService {
@@ -146,6 +147,94 @@ class DynamicQRService {
     };
   }
 
+  // 📱 METAMASK-OPTIMIZED QR GENERATION
+  async generateMetaMaskCompatibleQR(
+    agentData,
+    sourceChainId,
+    destChainId,
+    amount,
+    feeToken = "native"
+  ) {
+    try {
+      console.log("📱 Generating MetaMask-optimized cross-chain QR");
+
+      // Get CCIP configuration
+      const sourceConfig = ccipConfigService.getNetworkConfig(sourceChainId);
+      const destConfig = ccipConfigService.getNetworkConfig(destChainId);
+
+      if (!sourceConfig || !destConfig) {
+        throw new Error("Network configuration not found");
+      }
+
+      // Build simplified CCIP transaction with minimal data
+      const ccipTx = await ccipConfigService.buildCCIPTransaction(
+        sourceChainId,
+        destChainId,
+        amount,
+        agentData.agent_wallet_address || agentData.payment_recipient_address,
+        feeToken
+      );
+
+      if (!ccipTx.success) {
+        throw new Error(`CCIP transaction build failed: ${ccipTx.error}`);
+      }
+
+      // Create MetaMask-friendly URI for USDC CCIP transfer
+      const routerAddress = sourceConfig.router;
+
+      // CRITICAL FIX: For USDC transfers, value should be 0 (no ETH transfer)
+      // The CCIP fee is paid through the router's logic, not transaction value
+      const transferValue = "0"; // USDC is ERC-20, no ETH value needed
+      const gasLimit = "300000";
+
+      // MetaMask URI for CCIP USDC transfer - value=0 because we're calling a contract
+      const metaMaskUri = `ethereum:${routerAddress}@${sourceChainId}?value=${transferValue}&gas=${gasLimit}`;
+
+      // Add function selector for CCIP send (first 10 chars of data)
+      const functionSelector = ccipTx.data.substring(0, 10);
+      const metaMaskUriWithFunc = `${metaMaskUri}&data=${functionSelector}`;
+
+      console.log("📱 MetaMask USDC CCIP URI:", {
+        basic: metaMaskUri,
+        withFunction: metaMaskUriWithFunc,
+        transferType: "USDC (ERC-20)",
+        ethValue: transferValue,
+        ccipFeeETH: ethers.utils.formatEther(ccipTx.estimatedFee || "0"),
+        length: metaMaskUriWithFunc.length,
+      });
+
+      // Generate high-quality QR for MetaMask scanning
+      const metaMaskQR = await QRCode.toDataURL(metaMaskUriWithFunc, {
+        width: 280,
+        margin: 4,
+        color: { dark: "#000000", light: "#ffffff" },
+        errorCorrectionLevel: "H",
+        type: "image/png",
+      });
+
+      return {
+        success: true,
+        qrData: metaMaskQR,
+        uri: metaMaskUriWithFunc,
+        optimizedFor: "MetaMask",
+        transactionData: {
+          to: routerAddress,
+          value: transferValue,
+          gas: gasLimit,
+          data: ccipTx.data, // Full data for execution
+          chainId: parseInt(sourceChainId),
+          type: "ccip-metamask-optimized",
+        },
+      };
+    } catch (error) {
+      console.error("❌ MetaMask QR generation failed:", error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
   // 🌉 CROSS-CHAIN QR GENERATION using CCIP
   async generateCrossChainQR(
     agentData,
@@ -193,6 +282,26 @@ class DynamicQRService {
         );
       }
 
+      // VALIDATION: Check fee amounts before proceeding
+      const feeInETH = parseFloat(
+        ethers.utils.formatEther(ccipTx.estimatedFee || "0")
+      );
+      console.log("🔍 CCIP Fee Validation:", {
+        estimatedFee: ccipTx.estimatedFee,
+        feeInETH: feeInETH,
+        feeInUSD: `$${(feeInETH * 2500).toFixed(2)}`,
+        isReasonable: feeInETH < 0.01, // Should be less than 0.01 ETH (~$25)
+        transactionValue: ccipTx.value,
+      });
+
+      // Safety check: Reject if fee is too high
+      if (feeInETH > 0.01) {
+        console.error("🚨 CCIP fee is too high:", feeInETH, "ETH");
+        throw new Error(
+          `CCIP fee too high: ${feeInETH} ETH. Max allowed: 0.01 ETH`
+        );
+      }
+
       console.log("✅ CCIP transaction built successfully:", {
         to: ccipTx.to,
         value: ccipTx.value,
@@ -205,19 +314,34 @@ class DynamicQRService {
       const transactionData = ccipTx.data;
       const feeValue = ccipTx.fee || "0";
 
-      // Format as EIP-681 URI pointing to CCIP Router (not token contract!)
-      const paymentUri = `ethereum:${routerAddress}@${sourceChainId}?value=${feeValue}&data=${transactionData}`;
+      // Enhanced EIP-681 format with MetaMask compatibility
+      // Add gas parameter and simplified format for better scanning
+      const gasLimit = "300000"; // 300k gas for CCIP transactions
+      const paymentUri = `ethereum:${routerAddress}@${sourceChainId}?value=${feeValue}&gas=${gasLimit}&data=${transactionData}`;
 
       console.log("🎯 CCIP QR Generated:", {
         router: routerAddress,
         uri: paymentUri,
         fee: feeValue,
+        gas: gasLimit,
         dataLength: transactionData.length,
+        uriLength: paymentUri.length,
       });
 
-      // Generate QR code
+      // Generate QR code with enhanced settings for better MetaMask compatibility
       const qrCodeDataUrl = await QRCode.toDataURL(paymentUri, {
-        width: 256,
+        width: 300, // Slightly larger for better scan quality
+        margin: 3, // More margin for scanning apps
+        color: { dark: "#000000", light: "#ffffff" },
+        errorCorrectionLevel: "H", // Higher error correction for complex data
+        type: "image/png", // Explicit PNG format
+        quality: 1.0, // Maximum quality
+      });
+
+      // Also create a simplified fallback QR for basic scanners
+      const simplifiedUri = `ethereum:${routerAddress}@${sourceChainId}`;
+      const simplifiedQR = await QRCode.toDataURL(simplifiedUri, {
+        width: 200,
         margin: 2,
         color: { dark: "#000000", light: "#ffffff" },
         errorCorrectionLevel: "M",
@@ -227,10 +351,23 @@ class DynamicQRService {
         success: true,
         qrData: qrCodeDataUrl,
         paymentUri: paymentUri,
+        simplifiedQR: simplifiedQR,
+        simplifiedUri: simplifiedUri,
+        debug: {
+          routerAddress: routerAddress,
+          sourceChain: sourceChainId,
+          destinationChain: destChainId,
+          feeValue: feeValue,
+          gasLimit: gasLimit,
+          dataLength: transactionData.length,
+          uriLength: paymentUri.length,
+          isMetaMaskCompatible: true,
+        },
         transactionData: {
           to: routerAddress, // CCIP Router address (not USDC!)
           value: feeValue,
           data: transactionData,
+          gas: gasLimit,
           chainId: parseInt(sourceChainId),
           chainType: "EVM",
           isCrossChain: true,
@@ -239,6 +376,7 @@ class DynamicQRService {
           amount: amount,
           recipient: agentData.agent_wallet_address,
           agentName: agentData.name || "Agent",
+          tokenAddress: sourceConfig.usdc.tokenAddress, // Add for external scanners
         },
         ccipDetails: ccipTx,
       };
@@ -303,6 +441,41 @@ class DynamicQRService {
       if (userChainId && userChainId !== agentChainId) {
         // 🌉 DIFFERENT NETWORKS → Use CCIP Cross-Chain Logic
         console.log("🌉 Cross-chain payment detected, generating CCIP QR");
+
+        // Try MetaMask-optimized QR first for better compatibility
+        try {
+          const metaMaskQR = await this.generateMetaMaskCompatibleQR(
+            agentData,
+            userChainId, // Source chain (user's current network)
+            agentChainId, // Destination chain (agent's network)
+            feeAmount,
+            "native" // Fee token preference
+          );
+
+          if (metaMaskQR.success) {
+            console.log("✅ MetaMask-optimized QR generated successfully");
+            return {
+              success: true,
+              qrData: metaMaskQR.qrData,
+              eip681URI: metaMaskQR.uri,
+              transactionData: metaMaskQR.transactionData,
+              networkInfo: { name: "Cross-Chain CCIP", type: "EVM" },
+              chainType: "EVM",
+              amount: feeAmount,
+              token: feeToken,
+              recipient: agentData.agent_wallet_address,
+              optimizedFor: "MetaMask",
+              isCrossChain: true,
+            };
+          }
+        } catch (metaMaskError) {
+          console.warn(
+            "⚠️ MetaMask QR failed, falling back to standard:",
+            metaMaskError.message
+          );
+        }
+
+        // Fallback to standard CCIP QR
         return await this.generateCrossChainQR(
           agentData,
           userChainId, // Source chain (user's current network)
@@ -353,6 +526,15 @@ class DynamicQRService {
       const tokenAddress = this.usdcTokenAddresses[targetNetwork];
       const networkInfo = this.getNetworkInfo(targetNetwork);
 
+      console.log(`🔍 DEBUGGING TOKEN ADDRESS LOOKUP:`, {
+        targetNetwork: targetNetwork,
+        targetNetworkType: typeof targetNetwork,
+        tokenAddress: tokenAddress,
+        hasTokenAddress: !!tokenAddress,
+        availableNetworks: Object.keys(this.usdcTokenAddresses),
+        networkInfo: networkInfo,
+      });
+
       if (!networkInfo) {
         throw new Error(`Unsupported network: ${targetNetwork}`);
       }
@@ -381,11 +563,20 @@ class DynamicQRService {
             `📱 Generated EIP-681 for ERC-20 on chain ${targetNetwork}: ${paymentUri}`
           );
         } else {
-          // Direct ETH transfer URI format with chain ID
-          const amountInWei = this.parseAmount(feeAmount);
-          paymentUri = `ethereum:${walletAddress}@${targetNetwork}?value=${amountInWei}`;
-          console.log(
-            `📱 Generated EIP-681 for ETH on chain ${targetNetwork}: ${paymentUri}`
+          // CRITICAL FIX: Never generate direct ETH transfers for AR payments
+          // All AR payments should be USDC transfers, if token address is missing, it's an error
+          console.error(
+            `❌ USDC token address not found for network ${targetNetwork}`
+          );
+          console.error(
+            `Available networks:`,
+            Object.keys(this.usdcTokenAddresses)
+          );
+          throw new Error(
+            `USDC token address not configured for network ${targetNetwork}. ` +
+              `Available networks: ${Object.keys(this.usdcTokenAddresses).join(
+                ", "
+              )}`
           );
         }
       } else if (this.isSolanaNetwork(targetNetwork)) {
@@ -431,6 +622,8 @@ class DynamicQRService {
 
       console.log("✅ QR code generated successfully");
       console.log(`📱 Payment URI (${chainType}):`, paymentUri);
+      console.log(`🔍 URI Length: ${paymentUri.length} characters`);
+      console.log(`🔍 QR Data URL Length: ${qrCodeDataUrl.length} characters`);
 
       return {
         success: true,
