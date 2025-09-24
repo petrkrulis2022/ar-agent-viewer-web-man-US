@@ -725,7 +725,6 @@ class CCIPConfigService {
    * @param {string} amount - USDC amount
    * @param {string} recipient - Recipient address
    * @param {string} feeToken - Fee token preference
-   * @param {boolean} skipSimulation - Skip pre-execution simulation (default: false)
    * @returns {Promise<Object>} Transaction data
    */
   async buildCCIPTransaction(
@@ -733,8 +732,7 @@ class CCIPConfigService {
     destinationChain,
     amount,
     recipient,
-    feeToken = "native",
-    skipSimulation = false
+    feeToken = "native"
   ) {
     try {
       console.log("🔧 Building CCIP transaction:", {
@@ -749,15 +747,10 @@ class CCIPConfigService {
       const destConfig = this.getNetworkConfig(destinationChain);
 
       if (!sourceConfig || !destConfig) {
-        throw new Error("Network configuration not found");
+        throw new Error("Invalid source or destination chain");
       }
 
-      console.log("✅ Network configs loaded:", {
-        sourceConfig: sourceConfig.chainName,
-        destConfig: destConfig.chainName,
-      });
-
-      // Build CCIP message
+      // Build CCIP message first to pass to fee estimator
       const message = this.buildCCIPMessage(
         recipient,
         amount,
@@ -765,173 +758,6 @@ class CCIPConfigService {
         destConfig,
         feeToken
       );
-
-      console.log("✅ CCIP message built:", message);
-
-      // 🔍 ULTRA-DETAILED CCIP MESSAGE VALIDATION AND LOGGING
-      console.log("🔍==== ULTRA-DETAILED CCIP MESSAGE ANALYSIS ====");
-      console.log(
-        "📋 Final ccipMessage sent to router:",
-        JSON.stringify(message, null, 2)
-      );
-
-      // Individual component verification
-      console.log("🔍 RECEIVER VERIFICATION:");
-      console.log("  - message.receiver:", message.receiver);
-      console.log("  - receiver type:", typeof message.receiver);
-      console.log("  - receiver length:", message.receiver.length);
-      console.log("  - is valid hex:", message.receiver.startsWith("0x"));
-      console.log(
-        "  - decoded address:",
-        ethers.utils.defaultAbiCoder.decode(["address"], message.receiver)[0]
-      );
-      console.log("  - expected recipient:", recipient);
-      console.log(
-        "  - addresses match:",
-        ethers.utils.defaultAbiCoder
-          .decode(["address"], message.receiver)[0]
-          .toLowerCase() === recipient.toLowerCase()
-      );
-
-      console.log("🔍 DATA VERIFICATION:");
-      console.log("  - message.data:", message.data);
-      console.log("  - data type:", typeof message.data);
-      console.log("  - data length:", message.data.length);
-      console.log("  - is empty (0x):", message.data === "0x");
-      console.log(
-        "  - explanation: Empty data for simple token transfer to EOA"
-      );
-
-      console.log("🔍 TOKEN AMOUNTS VERIFICATION:");
-      console.log(
-        "  - message.tokenAmounts:",
-        JSON.stringify(message.tokenAmounts, null, 2)
-      );
-      console.log("  - tokenAmounts length:", message.tokenAmounts.length);
-      if (message.tokenAmounts.length > 0) {
-        const tokenAmount = message.tokenAmounts[0];
-        console.log("  - token address:", tokenAmount.token);
-        console.log("  - token type:", typeof tokenAmount.token);
-        console.log(
-          "  - expected USDC (Base Sepolia):",
-          sourceConfig.usdc.tokenAddress
-        );
-        console.log(
-          "  - token addresses match:",
-          tokenAmount.token.toLowerCase() ===
-            sourceConfig.usdc.tokenAddress.toLowerCase()
-        );
-        console.log("  - amount:", tokenAmount.amount);
-        console.log("  - amount type:", typeof tokenAmount.amount);
-        console.log(
-          "  - amount in USDC:",
-          ethers.utils.formatUnits(tokenAmount.amount, 6)
-        );
-        console.log("  - expected amount:", amount);
-
-        // CRITICAL: Verify amount is valid for CCIP
-        try {
-          const amountBN = ethers.BigNumber.from(tokenAmount.amount);
-          console.log("  - amount as BigNumber:", amountBN.toString());
-          console.log("  - amount > 0:", amountBN.gt(0));
-          console.log(
-            "  - amount reasonable (<1000 USDC):",
-            amountBN.lt(ethers.utils.parseUnits("1000", 6))
-          );
-        } catch (amountError) {
-          console.log("  - amount BigNumber error:", amountError.message);
-        }
-      }
-
-      console.log("🔍 FEE TOKEN VERIFICATION:");
-      console.log("  - message.feeToken:", message.feeToken);
-      console.log("  - feeToken type:", typeof message.feeToken);
-      console.log(
-        "  - is native ETH (zero address):",
-        message.feeToken === "0x0000000000000000000000000000000000000000"
-      );
-      console.log("  - expected feeToken param:", feeToken);
-
-      console.log("🔍 EXTRA ARGS VERIFICATION:");
-      console.log("  - message.extraArgs:", message.extraArgs);
-      console.log("  - extraArgs type:", typeof message.extraArgs);
-      console.log("  - extraArgs length:", message.extraArgs.length);
-      console.log(
-        "  - has correct tag (0x97a657c9):",
-        message.extraArgs.startsWith("0x97a657c9")
-      );
-
-      try {
-        // Decode the extra args to verify gas limit
-        const tagLength = 10; // "0x97a657c9" is 10 characters
-        const encodedGasLimit = "0x" + message.extraArgs.slice(tagLength);
-        const decodedGasLimit = ethers.utils.defaultAbiCoder.decode(
-          ["uint256"],
-          encodedGasLimit
-        )[0];
-        console.log("  - decoded gasLimit:", decodedGasLimit.toString());
-        console.log(
-          "  - gasLimit reasonable (>50000):",
-          decodedGasLimit.gt(50000)
-        );
-      } catch (decodeError) {
-        console.log("  - extraArgs decode error:", decodeError.message);
-      }
-
-      console.log("🔍 DESTINATION CHAIN VERIFICATION:");
-      console.log("  - destination selector:", destConfig.chainSelector);
-      console.log(
-        "  - destination selector type:",
-        typeof destConfig.chainSelector
-      );
-      console.log("  - destination chain name:", destConfig.chainName);
-      console.log("  - destination chain ID:", destConfig.chainId);
-
-      // CRITICAL: Verify chain selector format and value
-      try {
-        if (typeof destConfig.chainSelector === "string") {
-          const selectorBN = ethers.BigNumber.from(destConfig.chainSelector);
-          console.log("  - selector as BigNumber:", selectorBN.toString());
-          console.log("  - selector > 0:", selectorBN.gt(0));
-          console.log("  - selector hex:", selectorBN.toHexString());
-        } else {
-          console.log(
-            "  - selector already numeric:",
-            destConfig.chainSelector
-          );
-        }
-
-        // Verify this is a valid CCIP chain selector for Ethereum Sepolia
-        const expectedEthSepoliaSelector = "16015286601757825753"; // Ethereum Sepolia
-        console.log(
-          "  - expected Eth Sepolia selector:",
-          expectedEthSepoliaSelector
-        );
-        console.log(
-          "  - selectors match:",
-          destConfig.chainSelector.toString() === expectedEthSepoliaSelector
-        );
-      } catch (selectorError) {
-        console.log("  - chain selector error:", selectorError.message);
-      }
-
-      console.log("🔍 COMPLETE MESSAGE STRUCTURE CHECK:");
-      const requiredFields = [
-        "receiver",
-        "data",
-        "tokenAmounts",
-        "feeToken",
-        "extraArgs",
-      ];
-      requiredFields.forEach((field) => {
-        console.log(`  - ${field} present:`, field in message);
-        console.log(
-          `  - ${field} not null/undefined:`,
-          message[field] !== null && message[field] !== undefined
-        );
-      });
-
-      console.log("🔍==== END CCIP MESSAGE ANALYSIS ====");
 
       // Get provider for fee estimation (using source chain's RPC URL)
       let rpcUrl = sourceConfig.rpcUrl;
@@ -960,14 +786,6 @@ class CCIPConfigService {
 
       // Encode transaction data for ccipSend
       const routerInterface = new ethers.utils.Interface(this.routerABI);
-
-      // 🚨 FINAL PRE-ENCODING VERIFICATION
-      console.log("🚨==== FINAL CCIP ENCODING VERIFICATION ====");
-      console.log("📋 About to encode ccipSend with parameters:");
-      console.log("  - destinationChainSelector:", destConfig.chainSelector);
-      console.log("  - message (final):", JSON.stringify(message, null, 2));
-      console.log("🚨============================================");
-
       const txData = routerInterface.encodeFunctionData("ccipSend", [
         destConfig.chainSelector,
         message,
@@ -978,120 +796,15 @@ class CCIPConfigService {
       // Set transaction value to the estimated fee (for native fee payments)
       const transactionValue = feeEstimate.estimatedFee; // This is already buffered
 
-      console.log(`🛡️ CCIP Fee Payment (Native ETH with Buffer):`, {
-        transferType: "USDC (ERC-20)",
-        originalFeeETH: "Retrieved from router contract",
-        bufferPercent: "20%",
-        bufferedFeeETH: ethers.utils.formatEther(transactionValue),
-        finalFeeETH: ethers.utils.formatEther(transactionValue),
-        source: "Dynamic router query with 20% buffer",
-        note: "Transaction value = CCIP fee only (USDC transfer uses ERC-20)",
-      });
-
       console.log(`⛽ GAS & FEE TOKEN ANALYSIS:`, {
         feeToken: feeToken,
-        gasLimit: "300000",
-        gasPrice: "wallet-estimated",
+        gasLimit: "300000", // Standardized gas limit
+        gasPrice: "wallet-estimated", // Let wallet estimate gas price
         transactionValueETH: ethers.utils.formatEther(transactionValue),
         transferAmount: `${amount} USDC`,
         feeTokenUsage:
           feeToken === "native" ? "Using ETH for fees" : "Using LINK for fees",
-        gasEstimateUSD: `~$${(300000 * 20 * 0.000000001 * 2500).toFixed(2)}`, // 300k gas * 20 gwei * ETH price
       });
-
-      // CRITICAL: Final verification of message consistency
-      const finalMessage = this.buildCCIPMessage(
-        recipient,
-        amount,
-        sourceConfig,
-        destConfig,
-        feeToken
-      );
-      console.log(
-        "🔐 Final CCIP message for transaction:",
-        JSON.stringify(finalMessage, null, 2)
-      );
-      console.log("🎯 TRANSACTION VALUE VERIFICATION:", {
-        calculatedFeeWei: feeEstimate.estimatedFee,
-        bufferedValueWei: transactionValue,
-        finalValueETH: ethers.utils.formatEther(transactionValue),
-        messageConsistency:
-          JSON.stringify(finalMessage) === JSON.stringify(feeEstimate.message)
-            ? "✅ CONSISTENT"
-            : "❌ MISMATCH",
-      });
-
-      // 🎬 PRE-EXECUTION SIMULATION TO DETECT REVERT REASONS (OPTIONAL)
-      if (!skipSimulation) {
-        console.log(
-          "🎬 Running pre-execution simulation to detect potential issues..."
-        );
-        try {
-          // Get user address for simulation
-          const provider = new ethers.providers.Web3Provider(window.ethereum);
-          const signer = provider.getSigner();
-          const userAddress = await signer.getAddress();
-
-          const simulationResult = await this.simulateCCIPTransaction(
-            sourceConfig.router,
-            destConfig.chainSelector,
-            finalMessage,
-            transactionValue,
-            userAddress
-          );
-
-          if (!simulationResult.success) {
-            console.error("🚨 SIMULATION DETECTED TRANSACTION WILL FAIL:", {
-              revertReason: simulationResult.revertReason,
-              errorMessage: simulationResult.error,
-              errorCode: simulationResult.errorCode,
-            });
-
-            // Return error with detailed simulation results
-            return {
-              success: false,
-              error: `Transaction simulation failed: ${
-                simulationResult.revertReason || simulationResult.error
-              }`,
-              simulationError: simulationResult,
-              to: sourceConfig.router,
-              data: txData,
-              value: transactionValue,
-              valueETH: ethers.utils.formatEther(transactionValue),
-              chainId: sourceConfig.chainId,
-              gasLimit: "300000",
-              gasPrice: null,
-              estimatedFee: feeEstimate.estimatedFee,
-              estimatedFeeETH: ethers.utils.formatEther(
-                feeEstimate.estimatedFee
-              ),
-              feeToken: feeToken,
-              sourceChain: sourceConfig.chainName,
-              destinationChain: destConfig.chainName,
-              amount: amount,
-              recipient: recipient,
-              message: feeEstimate.message,
-            };
-          } else {
-            console.log(
-              "✅ SIMULATION SUCCESS - Transaction should execute properly:",
-              {
-                expectedMessageId: simulationResult.messageId,
-                simulationMessage: simulationResult.message,
-              }
-            );
-          }
-        } catch (simulationSetupError) {
-          console.warn(
-            "⚠️ Could not run simulation (proceeding anyway):",
-            simulationSetupError.message
-          );
-        }
-      } else {
-        console.log(
-          "🚀 Skipping simulation - proceeding directly to transaction build"
-        );
-      }
 
       return {
         success: true,
@@ -1118,87 +831,7 @@ class CCIPConfigService {
     }
   }
 
-  /**
-   * Get REAL fee estimate from CCIP Router contract
-   * @param {string|number} sourceChain - Source chain ID
-   * @param {string|number} destinationChain - Destination chain ID
-   * @param {Object} message - CCIP message object
-   * @param {Object} sourceConfig - Source network configuration
-   * @returns {Promise<string>} Real fee estimate in wei
-   */
-  async getRealCCIPFeeEstimate(
-    sourceChain,
-    destinationChain,
-    message,
-    sourceConfig
-  ) {
-    try {
-      console.log("🔍 Getting REAL CCIP fee estimate from router...");
 
-      // Check if we can call the router
-      if (!window.ethereum) {
-        console.warn(
-          "⚠️ No MetaMask available, falling back to hardcoded estimate"
-        );
-        return this.getEstimatedFeeForRoute(sourceChain, destinationChain);
-      }
-
-      // Create provider and router contract instance
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const routerContract = new ethers.Contract(
-        sourceConfig.router,
-        CCIP_ROUTER_ABI,
-        provider
-      );
-
-      // Get destination chain selector
-      const destConfig = this.getNetworkConfig(destinationChain);
-      const destinationChainSelector = destConfig.chainSelector;
-
-      // CRITICAL: Use the EXACT same message object for fee estimation
-      // to ensure 100% consistency with the actual transaction
-      console.log("🔍 Using EXACT message for getFee (ensuring consistency):", {
-        router: sourceConfig.router,
-        destinationSelector: destinationChainSelector,
-        exactMessage: message,
-      });
-
-      // Call the getFee function with the EXACT same message
-      const feeWei = await routerContract.getFee(
-        destinationChainSelector,
-        message
-      );
-
-      console.log("✅ REAL CCIP Fee Retrieved:", {
-        feeWei: feeWei.toString(),
-        feeETH: ethers.utils.formatEther(feeWei),
-        source: "CCIP Router Contract",
-      });
-
-      // CRITICAL: Log the exact message used for fee estimation
-      console.log(
-        "🔐 Message used for getFee():",
-        JSON.stringify(message, null, 2)
-      );
-
-      return feeWei.toString();
-    } catch (error) {
-      console.error("❌ Failed to get real CCIP fee, using fallback:", error);
-
-      // Fallback to hardcoded estimate if router call fails
-      const fallbackFee = this.getEstimatedFeeForRoute(
-        sourceChain,
-        destinationChain
-      );
-      console.log("🔄 Using fallback fee estimate:", {
-        fallbackFeeWei: fallbackFee,
-        fallbackFeeETH: ethers.utils.formatEther(fallbackFee),
-        reason: error.message,
-      });
-
-      return fallbackFee;
-    }
-  }
 
   /**
    * @deprecated - Replaced by estimateCCIPFees with dynamic router queries
