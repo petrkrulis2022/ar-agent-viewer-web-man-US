@@ -12,12 +12,18 @@ export default defineConfig({
       buffer: "buffer",
       stream: "stream-browserify",
       util: "util",
+      path: "path-browserify",
     },
   },
   define: {
     global: "globalThis",
     "process.env": {},
     Buffer: "Buffer",
+  },
+  build: {
+    rollupOptions: {
+      external: ["http", "https", "zlib", "fs"],
+    }
   },
   optimizeDeps: {
     include: ["@solana/web3.js", "@solana/spl-token", "buffer"],
