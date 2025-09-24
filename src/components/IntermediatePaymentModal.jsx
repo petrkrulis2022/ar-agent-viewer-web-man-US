@@ -116,27 +116,34 @@ const IntermediatePaymentModal = ({
           transactionData.transactionType ||
           (isCCIPTransaction ? "CCIP Cross-Chain" : "Direct Transfer"),
         debugInfo: (() => {
-          // Check if service provided debugInfo 
+          // Check if service provided debugInfo
           if (transactionData.debugInfo) {
-            console.log("🔍 MODAL: Using service debugInfo:", transactionData.debugInfo);
-            
+            console.log(
+              "🔍 MODAL: Using service debugInfo:",
+              transactionData.debugInfo
+            );
+
             // CRITICAL FIX: Force correct OP Sepolia chain selector even if service has wrong value
             if (
               transactionData.destinationChain === 11155420 ||
               transactionData.destinationChain === "11155420"
             ) {
-              console.log("🚨 MODAL: Forcing correct OP Sepolia chain selector in service debugInfo");
+              console.log(
+                "🚨 MODAL: Forcing correct OP Sepolia chain selector in service debugInfo"
+              );
               return {
                 ...transactionData.debugInfo,
-                chainSelector: "5224473277236331295" // Always force correct value
+                                chainSelector: "5218248003909245446" // Always force correct value
               };
             }
-            
+
             return transactionData.debugInfo;
           }
-          
+
           // Fallback if no service debugInfo
-          console.log("🚨 MODAL FALLBACK: No service debugInfo, creating fallback");
+          console.log(
+            "🚨 MODAL FALLBACK: No service debugInfo, creating fallback"
+          );
           return {
             userChainId: transactionData.sourceChain || "N/A",
             agentChainId: transactionData.destinationChain || "N/A",
@@ -147,7 +154,7 @@ const IntermediatePaymentModal = ({
                 transactionData.destinationChain === 11155420 ||
                 transactionData.destinationChain === "11155420"
               ) {
-                return "5224473277236331295";
+                return "5218248003909245446";
               }
               return "N/A";
             })(),

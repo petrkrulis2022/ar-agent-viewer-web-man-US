@@ -71,7 +71,7 @@
   "OPSepolia": {
     "chainName": "OPSepolia",
     "chainId": "11155420",
-    "chainSelector": "5224473277236331295",
+    "chainSelector": "5218248003909245446",
     "router": "0x114A20A10b43D4115e5aeef7345a1A71d2a60C57",
     "usdc": {
       "tokenAddress": "0x5fd84259d66Cd46123540766Be93DFE6D43130D7",
