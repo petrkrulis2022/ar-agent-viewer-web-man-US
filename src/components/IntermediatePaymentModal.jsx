@@ -866,7 +866,23 @@ const IntermediatePaymentModal = ({
           <div className="debug-subsection">
             <h4>📝 Raw Transaction Data</h4>
             <pre className="debug-data">
-              {JSON.stringify(transactionBreakdown?.rawTransaction, null, 2)}
+              {transactionBreakdown?.rawTransaction && (
+                <>
+                  <h4>Raw Transaction Data:</h4>
+                  {JSON.stringify(transactionBreakdown.rawTransaction, null, 2)}
+                  {/* Display CCIP Message Details if available */}
+                  {transactionBreakdown.rawTransaction.ccipDetails?.message && (
+                    <>
+                      <h4>CCIP Message Details:</h4>
+                      <p><strong>Receiver:</strong> {transactionBreakdown.rawTransaction.ccipDetails.message.receiver}</p>
+                      <p><strong>Data:</strong> {transactionBreakdown.rawTransaction.ccipDetails.message.data}</p>
+                      <p><strong>Token Amounts:</strong> {JSON.stringify(transactionBreakdown.rawTransaction.ccipDetails.message.tokenAmounts, null, 2)}</p>
+                      <p><strong>Fee Token:</strong> {transactionBreakdown.rawTransaction.ccipDetails.message.feeToken}</p>
+                      <p><strong>Extra Args:</strong> {transactionBreakdown.rawTransaction.ccipDetails.message.extraArgs}</p>
+                    </>
+                  )}
+                </>
+              )}
             </pre>
           </div>
         </details>

@@ -322,11 +322,11 @@ class DynamicQRService {
       // Create EIP-681 URI for CCIP Router transaction
       const routerAddress = sourceConfig.router;
       const transactionData = ccipTx.data;
-      const feeValue = ccipTx.value || "0"; // Use ccipTx.value for fee amount
+      const feeValue = ccipTx.value || "0"; // Correctly use ccipTx.value (which now contains the buffered fee)
 
       // Enhanced EIP-681 format with MetaMask compatibility
       // Add gas parameter and simplified format for better scanning
-      const gasLimit = "300000"; // 300k gas for CCIP transactions
+      const gasLimit = "500000"; // Increased gas limit to 500k to prevent out-of-gas errors
       const paymentUri = `ethereum:${routerAddress}@${sourceChainId}?value=${feeValue}&gas=${gasLimit}&data=${transactionData}`;
 
       console.log("🎯 CCIP QR Generated:", {

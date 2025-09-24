@@ -302,13 +302,19 @@ class CCIPConfigService {
     return destinations;
   }
 
+  // Helper to get an ethers.js Contract instance for the CCIP Router
+  getRouterContract(routerAddress, provider) {
+    return new ethers.Contract(routerAddress, this.routerABI, provider);
+  }
+
   /**
-   * Estimate CCIP transfer fees
+   * Estimate CCIP transfer fees by calling the router contract
    * @param {string|number} sourceChain - Source chain ID
    * @param {string|number} destinationChain - Destination chain ID
    * @param {string} amount - USDC amount in human readable format
    * @param {string} recipient - Recipient address on destination chain
-   * @param {string} feeToken - Fee token preference ('native', 'LINK')
+   * @param {string} feeToken - Fee token preference ("native", "LINK")
+   * @param {Object} provider - Ethers.js provider for the source chain
    * @returns {Promise<Object>} Fee estimation result
    */
   async estimateCCIPFees(
@@ -316,7 +322,8 @@ class CCIPConfigService {
     destinationChain,
     amount,
     recipient,
-    feeToken = "native"
+    feeToken = "native",
+    provider
   ) {
     try {
       if (!this.isCrossChainTransfer(sourceChain, destinationChain)) {
@@ -325,6 +332,10 @@ class CCIPConfigService {
 
       if (!this.isRouteSupported(sourceChain, destinationChain)) {
         throw new Error("Cross-chain route not supported");
+      }
+
+      if (!provider) {
+        throw new Error("Ethers.js provider is required for fee estimation");
       }
 
       const sourceConfig = this.getNetworkConfig(sourceChain);
@@ -339,24 +350,45 @@ class CCIPConfigService {
         feeToken
       );
 
-      // FIXED: Get REAL fee estimate from CCIP Router instead of hardcoded values
-      const estimatedFee = await this.getRealCCIPFeeEstimate(
-        sourceChain,
-        destinationChain,
-        message,
-        sourceConfig
+      // Get router contract instance
+      const routerContract = this.getRouterContract(
+        sourceConfig.router,
+        provider
       );
+
+      // Call getFee on the router contract
+      console.log("Calling router.getFee() with:", {
+        destinationChainSelector: destConfig.chainSelector,
+        message: message,
+      });
+
+      const estimatedFee = await routerContract.getFee(
+        destConfig.chainSelector,
+        message
+      );
+
+      // Add a 20% buffer to the estimated fee for robustness
+      const bufferedFee = BigInt(estimatedFee) +
+        (BigInt(estimatedFee) * BigInt(20)) / BigInt(100);
+
+      console.log(`💰 Actual CCIP Fee Calculation:`, {
+        rawEstimatedFee: estimatedFee.toString(),
+        bufferedFee: bufferedFee.toString(),
+        rawEstimatedFeeETH: ethers.utils.formatEther(estimatedFee),
+        bufferedFeeETH: ethers.utils.formatEther(bufferedFee),
+        feeToken: feeToken,
+      });
 
       return {
         success: true,
         sourceChain: sourceConfig.chainName,
         destinationChain: destConfig.chainName,
         amount: amount,
-        estimatedFee: estimatedFee,
+        estimatedFee: bufferedFee.toString(), // Return buffered fee
         feeToken: feeToken,
         message: message,
         routerAddress: sourceConfig.router,
-        gasLimit: "300000", // FIXED: Standardized gas limit
+        gasLimit: "300000", // Standardized gas limit
       };
     } catch (error) {
       console.error("❌ CCIP fee estimation failed:", error);
@@ -901,13 +933,12 @@ class CCIPConfigService {
       console.log("🔍==== END CCIP MESSAGE ANALYSIS ====");
 
       // Get provider for fee estimation (using source chain's RPC URL)
-      // Fix RPC URL format - add https:// if missing
       let rpcUrl = sourceConfig.rpcUrl;
+      // Fix RPC URL format - add https:// if missing
       if (!rpcUrl.startsWith("http://") && !rpcUrl.startsWith("https://")) {
         rpcUrl = "https://" + rpcUrl;
       }
       console.log("🔧 RPC URL for provider:", rpcUrl);
-
       const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
 
       // Estimate fees using the updated estimateCCIPFees function
@@ -1065,19 +1096,17 @@ class CCIPConfigService {
         success: true,
         to: sourceConfig.router,
         data: txData,
-        value: transactionValue, // EMERGENCY: Capped transaction value
-        valueETH: ethers.utils.formatEther(transactionValue), // Formatted value for display
+        value: transactionValue, // Use the dynamically estimated and buffered fee
         chainId: sourceConfig.chainId,
-        gasLimit: "300000", // FIXED: Standardized gas limit
-        gasPrice: null, // Let wallet estimate
+        gasLimit: "300000", // Standardized gas limit
+        gasPrice: null, // Let wallet estimate gas price
         estimatedFee: feeEstimate.estimatedFee,
-        estimatedFeeETH: ethers.utils.formatEther(feeEstimate.estimatedFee), // Formatted fee for display
-        feeToken: feeToken, // Keep original fee token preference
+        feeToken: feeToken,
         sourceChain: sourceConfig.chainName,
         destinationChain: destConfig.chainName,
         amount: amount,
         recipient: recipient,
-        message: feeEstimate.message, // Include the CCIP message for debugging
+        ccipDetails: { message: message }, // Add message details for debugging
       };
     } catch (error) {
       console.error("❌ Failed to build CCIP transaction:", error);
@@ -1170,103 +1199,7 @@ class CCIPConfigService {
     }
   }
 
-  // Helper to get an ethers.js Contract instance for the CCIP Router
-  getRouterContract(routerAddress, provider) {
-    return new ethers.Contract(routerAddress, this.routerABI, provider);
-  }
 
-  /**
-   * Estimate CCIP transfer fees by calling the router contract
-   * @param {string|number} sourceChain - Source chain ID
-   * @param {string|number} destinationChain - Destination chain ID
-   * @param {string} amount - USDC amount in human readable format
-   * @param {string} recipient - Recipient address on destination chain
-   * @param {string} feeToken - Fee token preference ("native", "LINK")
-   * @param {Object} provider - Ethers.js provider for the source chain
-   * @returns {Promise<Object>} Fee estimation result
-   */
-  async estimateCCIPFees(
-    sourceChain,
-    destinationChain,
-    amount,
-    recipient,
-    feeToken = "native",
-    provider
-  ) {
-    try {
-      if (!this.isCrossChainTransfer(sourceChain, destinationChain)) {
-        throw new Error("Not a cross-chain transfer");
-      }
-
-      if (!this.isRouteSupported(sourceChain, destinationChain)) {
-        throw new Error("Cross-chain route not supported");
-      }
-
-      if (!provider) {
-        throw new Error("Ethers.js provider is required for fee estimation");
-      }
-
-      const sourceConfig = this.getNetworkConfig(sourceChain);
-      const destConfig = this.getNetworkConfig(destinationChain);
-
-      // Build CCIP message
-      const message = this.buildCCIPMessage(
-        recipient,
-        amount,
-        sourceConfig,
-        destConfig,
-        feeToken
-      );
-
-      // Get router contract instance
-      const routerContract = this.getRouterContract(
-        sourceConfig.router,
-        provider
-      );
-
-      // Call getFee on the router contract
-      console.log("Calling router.getFee() with:", {
-        destinationChainSelector: destConfig.chainSelector,
-        message: message,
-      });
-
-      const estimatedFee = await routerContract.getFee(
-        destConfig.chainSelector,
-        message
-      );
-
-      // Add a 20% buffer to the estimated fee for robustness
-      const bufferedFee =
-        BigInt(estimatedFee) +
-        (BigInt(estimatedFee) * BigInt(20)) / BigInt(100);
-
-      console.log(`💰 Actual CCIP Fee Calculation:`, {
-        rawEstimatedFee: estimatedFee.toString(),
-        bufferedFee: bufferedFee.toString(),
-        rawEstimatedFeeETH: ethers.utils.formatEther(estimatedFee),
-        bufferedFeeETH: ethers.utils.formatEther(bufferedFee),
-        feeToken: feeToken,
-      });
-
-      return {
-        success: true,
-        sourceChain: sourceConfig.chainName,
-        destinationChain: destConfig.chainName,
-        amount: amount,
-        estimatedFee: bufferedFee.toString(), // Return buffered fee
-        feeToken: feeToken,
-        message: message,
-        routerAddress: sourceConfig.router,
-        gasLimit: "300000", // Standardized gas limit
-      };
-    } catch (error) {
-      console.error("❌ CCIP fee estimation failed:", error);
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
-  }
 
   /**
    * @deprecated - Replaced by estimateCCIPFees with dynamic router queries
