@@ -741,7 +741,7 @@ class DynamicQRService {
           ? "0x0"
           : ethers.BigNumber.from(qrData.value).toHexString(),
       data: qrData.data || "0x",
-      gas: "0x15f90", // 90000 gas limit for ERC-20 transfers
+      gas: qrData.isCrossChain ? "0xf4240" : "0x15f90", // 1,000,000 gas for CCIP, 90,000 for regular transfers
     };
 
     console.log("🔧 EVM Transaction params prepared:", {

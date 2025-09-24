@@ -449,7 +449,7 @@ class CCIPConfigService {
         feeToken: feeToken,
         message: message,
         routerAddress: sourceConfig.router,
-        gasLimit: "300000", // Standardized gas limit
+        gasLimit: "1000000", // High gas limit for CCIP transactions
       };
     } catch (error) {
       console.error("❌ CCIP fee estimation failed:", error);
@@ -656,7 +656,7 @@ class CCIPConfigService {
           {
             from: userAddress,
             value: valueWei,
-            gasLimit: 300000, // High gas limit for simulation
+            gasLimit: 1000000, // High gas limit for simulation
           }
         );
 
@@ -1066,7 +1066,7 @@ class CCIPConfigService {
 
       console.log(`⛽ GAS & FEE TOKEN ANALYSIS:`, {
         feeToken: feeToken,
-        gasLimit: "300000", // Standardized gas limit
+        gasLimit: "1000000", // High gas limit for CCIP transactions
         gasPrice: "wallet-estimated", // Let wallet estimate gas price
         transactionValueETH: ethers.utils.formatEther(transactionValue),
         transferAmount: `${amount} USDC`,
@@ -1080,7 +1080,7 @@ class CCIPConfigService {
         data: txData,
         value: transactionValue, // Use the dynamically estimated and buffered fee
         chainId: sourceConfig.chainId,
-        gasLimit: "300000", // Standardized gas limit
+        gasLimit: "1000000", // High gas limit for CCIP transactions
         gasPrice: null, // Let wallet estimate gas price
         estimatedFee: feeEstimate.estimatedFee,
         feeToken: feeToken,
@@ -1155,7 +1155,7 @@ class CCIPConfigService {
               : "N/A",
           extraArgs: message.extraArgs,
           transactionValue: transactionValue,
-          gasLimit: "300000",
+          gasLimit: "1000000", // High gas limit for CCIP transactions
         },
       };
     } catch (error) {
