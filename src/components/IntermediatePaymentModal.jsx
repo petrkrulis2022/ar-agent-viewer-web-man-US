@@ -120,6 +120,19 @@ const IntermediatePaymentModal = ({
           agentChainId: transactionData.destinationChain || "N/A",
           needsCrossChain: transactionData.isCrossChain || isCCIPTransaction,
           ccipRouter: transactionData.to || "N/A",
+          chainSelector: (() => {
+            // EMERGENCY FALLBACK: If debugInfo missing, calculate correct OP Sepolia selector
+            if (
+              transactionData.destinationChain === 11155420 ||
+              transactionData.destinationChain === "11155420"
+            ) {
+              console.log(
+                "🚨 MODAL FALLBACK: Using correct OP Sepolia chain selector"
+              );
+              return "5224473277236331295";
+            }
+            return "N/A";
+          })(),
         },
 
         // Raw Data
@@ -566,9 +579,10 @@ const IntermediatePaymentModal = ({
                 🔍 Chain Selector (Hex):{" "}
                 <span style={{ fontFamily: "monospace", color: "#666" }}>
                   {(() => {
-                    const chainSelector = transactionBreakdown?.debugInfo?.chainSelector;
+                    const chainSelector =
+                      transactionBreakdown?.debugInfo?.chainSelector;
                     if (!chainSelector) return "N/A";
-                    
+
                     // Check if it's a numeric string that can be converted to BigInt
                     if (/^\d+$/.test(String(chainSelector))) {
                       try {
@@ -699,9 +713,10 @@ const IntermediatePaymentModal = ({
                   <small style={{ color: "#636e72" }}>
                     Hex:{" "}
                     {(() => {
-                      const chainSelector = transactionBreakdown?.debugInfo?.chainSelector;
+                      const chainSelector =
+                        transactionBreakdown?.debugInfo?.chainSelector;
                       if (!chainSelector) return "N/A";
-                      
+
                       // Check if it's a numeric string that can be converted to BigInt
                       if (/^\d+$/.test(String(chainSelector))) {
                         try {

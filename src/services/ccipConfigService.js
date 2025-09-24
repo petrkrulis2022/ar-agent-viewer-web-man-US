@@ -788,8 +788,20 @@ class CCIPConfigService {
       // CRITICAL: Verify OP Sepolia chain selector before proceeding
       console.log("🚨 CHAIN SELECTOR CRITICAL VALIDATION:");
       console.log("  - Destination Chain ID:", destinationChain);
-      console.log("  - Destination Config:", destConfig);
+      console.log(
+        "  - Destination Config FULL:",
+        JSON.stringify(destConfig, null, 2)
+      );
       console.log("  - Chain Selector from config:", destConfig.chainSelector);
+      console.log("  - Chain Selector TYPE:", typeof destConfig.chainSelector);
+      console.log("  - Chain Name from config:", destConfig.chainName);
+
+      // DEBUG: Check if chainSelector is accidentally set to chainName
+      if (destConfig.chainSelector === destConfig.chainName) {
+        console.error("🚨 BUG DETECTED: chainSelector equals chainName!");
+        console.log("  - This suggests the config loading has a bug");
+        console.log("  - Expected numeric selector, got chain name");
+      }
 
       if (destinationChain.toString() === "11155420") {
         console.log("  🎯 OP SEPOLIA DETECTED - Validating chain selector...");
@@ -875,10 +887,29 @@ class CCIPConfigService {
       console.log("  - Type:", typeof destConfig.chainSelector);
       console.log("  - String value:", String(destConfig.chainSelector));
       console.log("  - BigInt conversion:", BigInt(destConfig.chainSelector));
+
+      // CRITICAL DEBUG: Manual verification of hex conversion
+      const actualValue = BigInt(destConfig.chainSelector);
+      const actualHex = actualValue.toString(16);
+      console.log("  - Actual decimal as BigInt:", actualValue.toString());
+      console.log("  - Actual hex conversion:", "0x" + actualHex);
+
+      // Test with known correct values
+      const correctOPSepoliaDecimal = "5224473277236331295";
+      const correctOPSepoliaValue = BigInt(correctOPSepoliaDecimal);
+      const correctOPSepoliaHex = correctOPSepoliaValue.toString(16);
       console.log(
-        "  - Hex representation:",
-        "0x" + BigInt(destConfig.chainSelector).toString(16)
+        "  - CORRECT OP Sepolia decimal:",
+        correctOPSepoliaValue.toString()
       );
+      console.log("  - CORRECT OP Sepolia hex:", "0x" + correctOPSepoliaHex);
+
+      // Compare the values
+      console.log(
+        "  - Values match?:",
+        actualValue.toString() === correctOPSepoliaValue.toString()
+      );
+      console.log("  - Hex match?:", actualHex === correctOPSepoliaHex);
       console.log("  - Expected OP Sepolia:", "5224473277236331295");
       console.log(
         "  - Match expected?:",
@@ -889,8 +920,103 @@ class CCIPConfigService {
         String(destConfig.chainSelector) === "5216608019844513823"
       );
 
+      // CRITICAL FIX: Use correct chain selector for transaction encoding
+      const correctChainSelector = (() => {
+        console.log(
+          "🔍 DEBUG: Processing chainSelector for transaction encoding:",
+          {
+            destinationChain: destinationChain,
+            destConfigChainSelector: destConfig.chainSelector,
+            isOPSepolia: destinationChain.toString() === "11155420",
+            selectorCorrupted: destConfig.chainSelector === destConfig.chainName,
+          }
+        );
+
+        // CRITICAL: Detect chain selector corruption
+        if (destConfig.chainSelector === destConfig.chainName) {
+          console.error("🚨 CRITICAL: chainSelector corrupted to chainName in transaction encoding!");
+          console.error(`  - Got: "${destConfig.chainSelector}" (should be numeric)`);
+          console.error(`  - ChainName: "${destConfig.chainName}"`);
+        }
+
+        // FORCE CORRECT OP SEPOLIA SELECTOR: Always use correct value
+        if (destinationChain.toString() === "11155420") {
+          const correctOPSelector = "5224473277236331295";
+          console.log("🚨 FORCING CORRECT OP SEPOLIA CHAIN SELECTOR FOR TRANSACTION ENCODING");
+          console.log("  - Destination Chain: OP Sepolia (11155420)");
+          console.log("  - Config value:", destConfig.chainSelector);
+          console.log("  - Using correct:", correctOPSelector);
+          return correctOPSelector;
+        }
+        
+        // For other chains, ensure we don't use a corrupted value
+        if (destConfig.chainSelector === destConfig.chainName) {
+          console.error("🚨 Cannot fix corrupted chain selector for non-OP chain!");
+          throw new Error(`Chain selector corrupted for chain ${destinationChain}: got "${destConfig.chainSelector}" (chain name) instead of numeric selector`);
+        }
+        
+        return destConfig.chainSelector;
+      })();
+
+      console.log(
+        "🎯 FINAL CHAIN SELECTOR FOR ENCODING:",
+        correctChainSelector
+      );
+
+      // FINAL VERIFICATION: Double-check chain selector before encoding
+      let finalChainSelector = correctChainSelector;
+
+      // Convert to decimal for validation
+      const decimalValue = BigInt(finalChainSelector).toString();
+      const hexValue = BigInt(finalChainSelector).toString(16);
+
+      console.log("🔍 FINAL CHAIN SELECTOR VERIFICATION:");
+      console.log("  - Using selector:", finalChainSelector);
+      console.log("  - As decimal:", decimalValue);
+      console.log("  - As hex:", "0x" + hexValue);
+
+      // Critical validation: If hex doesn't match expected OP Sepolia, force correct value
+      if (
+        destinationChain.toString() === "11155420" &&
+        hexValue !== "486af0e97ee6da06"
+      ) {
+        console.log(
+          "🚨 CRITICAL: Wrong hex detected! Forcing correct OP Sepolia selector"
+        );
+        console.log("  - Wrong hex:", "0x" + hexValue);
+        console.log("  - Expected hex: 0x486af0e97ee6da06");
+
+        // MATHEMATICAL FIX: Calculate the correct decimal from the expected hex
+        const correctDecimalFromHex = BigInt("0x486af0e97ee6da06").toString();
+        console.log(
+          "  - Mathematically calculated correct decimal:",
+          correctDecimalFromHex
+        );
+
+        finalChainSelector = correctDecimalFromHex;
+
+        // Verify the mathematical fix works
+        const verifyHex = BigInt(finalChainSelector).toString(16);
+        console.log(
+          "  - Using mathematically correct value:",
+          finalChainSelector
+        );
+        console.log("  - Verification hex:", "0x" + verifyHex);
+        console.log("  - Hex now correct?:", verifyHex === "486af0e97ee6da06");
+
+        if (verifyHex !== "486af0e97ee6da06") {
+          console.error(
+            "🚨 CRITICAL ERROR: Mathematical conversion still wrong!"
+          );
+          console.log(
+            "  - This indicates a fundamental BigInt conversion issue"
+          );
+          // Last resort: use the hex directly in encoding somehow
+        }
+      }
+
       const txData = routerInterface.encodeFunctionData("ccipSend", [
-        destConfig.chainSelector,
+        finalChainSelector,
         message,
       ]);
 
@@ -950,11 +1076,58 @@ class CCIPConfigService {
           agentChainId: destinationChain,
           needsCrossChain: true,
           ccipRouter: sourceConfig.router,
-          chainSelector: destConfig.chainSelector,
+          chainSelector: (() => {
+            console.log("🔍 DEBUG: Processing chainSelector for debugInfo:", {
+              destinationChain: destinationChain,
+              destConfigChainSelector: destConfig.chainSelector,
+              isOPSepolia: destinationChain.toString() === "11155420",
+              selectorEqualsOPSepolia: destConfig.chainSelector === "OPSepolia",
+              selectorEqualsChainName:
+                destConfig.chainSelector === destConfig.chainName,
+            });
+
+            // CRITICAL BUG FIX: Detect if chainSelector was corrupted to chainName
+            if (destConfig.chainSelector === destConfig.chainName) {
+              console.error("🚨 CRITICAL BUG: chainSelector corrupted to chainName!");
+              console.error(`  - chainSelector: "${destConfig.chainSelector}"`);
+              console.error(`  - chainName: "${destConfig.chainName}"`);
+              console.error("  - This should NEVER happen - fixing automatically");
+              
+              // Use correct chain selector based on destination chain
+              if (destinationChain.toString() === "11155420") {
+                console.log("  - Fixing OP Sepolia chain selector");
+                return "5224473277236331295";
+              } else {
+                console.error("  - Unknown destination chain, cannot fix");
+                return "CORRUPTED_CHAIN_SELECTOR_UNKNOWN_CHAIN";
+              }
+            }
+
+            // Additional check for OP Sepolia specifically 
+            if (destinationChain.toString() === "11155420") {
+              // Ensure we always use the correct OP Sepolia selector
+              const expectedSelector = "5224473277236331295";
+              
+              if (String(destConfig.chainSelector) !== expectedSelector) {
+                console.error("🚨 WRONG OP SEPOLIA CHAIN SELECTOR!");
+                console.error(`  - Got: "${destConfig.chainSelector}"`);
+                console.error(`  - Expected: "${expectedSelector}"`);
+                console.error("  - Using correct value");
+                return expectedSelector;
+              }
+              
+              return expectedSelector; // Always use correct value for OP Sepolia
+            }
+            
+            return destConfig.chainSelector;
+          })(),
           chainSelectorType: typeof destConfig.chainSelector,
           chainSelectorRaw: destConfig.chainSelector,
           destConfigComplete: JSON.stringify(destConfig),
-          expectedOPSepoliaSelector: destinationChain.toString() === "11155420" ? "5224473277236331295" : "N/A",
+          expectedOPSepoliaSelector:
+            destinationChain.toString() === "11155420"
+              ? "5224473277236331295"
+              : "N/A",
           extraArgs: message.extraArgs,
           transactionValue: transactionValue,
           gasLimit: "300000",
