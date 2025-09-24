@@ -165,6 +165,41 @@ class CCIPConfigService {
       evmNetworks.forEach((networkName) => {
         const config = ccipConfig[networkName];
         if (config) {
+          console.log(`🔍 LOADING CONFIG FOR ${networkName}:`, {
+            chainId: config.chainId,
+            chainSelector: config.chainSelector,
+            chainSelectorType: typeof config.chainSelector,
+          });
+
+          // CRITICAL: Validate OP Sepolia configuration during initialization
+          if (networkName === "OPSepolia") {
+            console.log("🚨 OP SEPOLIA CONFIGURATION VALIDATION:");
+            console.log(
+              "  - Raw chainSelector from config:",
+              config.chainSelector
+            );
+            console.log("  - Type:", typeof config.chainSelector);
+            console.log("  - String value:", String(config.chainSelector));
+            console.log("  - Expected:", "5224473277236331295");
+            console.log(
+              "  - Match:",
+              String(config.chainSelector) === "5224473277236331295"
+            );
+
+            if (String(config.chainSelector) !== "5224473277236331295") {
+              console.error(
+                "❌ CRITICAL: Wrong OP Sepolia chain selector in config file!"
+              );
+              throw new Error(
+                `OP Sepolia chain selector is wrong: expected 5224473277236331295, got ${config.chainSelector}`
+              );
+            } else {
+              console.log(
+                "✅ OP Sepolia chain selector is correct in config file"
+              );
+            }
+          }
+
           this.networkConfigs.set(config.chainId, {
             chainId: config.chainId,
             chainName: config.chainName,
@@ -755,19 +790,25 @@ class CCIPConfigService {
       console.log("  - Destination Chain ID:", destinationChain);
       console.log("  - Destination Config:", destConfig);
       console.log("  - Chain Selector from config:", destConfig.chainSelector);
-      
+
       if (destinationChain.toString() === "11155420") {
         console.log("  🎯 OP SEPOLIA DETECTED - Validating chain selector...");
         const expectedOPSepoliaSelector = "5224473277236331295";
         const actualSelector = String(destConfig.chainSelector);
-        
+
         console.log(`  - Expected: ${expectedOPSepoliaSelector}`);
         console.log(`  - Actual: ${actualSelector}`);
-        console.log(`  - Match: ${actualSelector === expectedOPSepoliaSelector}`);
-        
+        console.log(
+          `  - Match: ${actualSelector === expectedOPSepoliaSelector}`
+        );
+
         if (actualSelector !== expectedOPSepoliaSelector) {
-          console.error(`  ❌ WRONG CHAIN SELECTOR! Using ${actualSelector} instead of ${expectedOPSepoliaSelector}`);
-          throw new Error(`Critical error: Wrong OP Sepolia chain selector. Expected ${expectedOPSepoliaSelector}, got ${actualSelector}`);
+          console.error(
+            `  ❌ WRONG CHAIN SELECTOR! Using ${actualSelector} instead of ${expectedOPSepoliaSelector}`
+          );
+          throw new Error(
+            `Critical error: Wrong OP Sepolia chain selector. Expected ${expectedOPSepoliaSelector}, got ${actualSelector}`
+          );
         } else {
           console.log("  ✅ OP Sepolia chain selector is CORRECT");
         }
@@ -827,28 +868,49 @@ class CCIPConfigService {
 
       // Additional validation of chain selector before encoding
       console.log("🚨 CHAIN SELECTOR VALIDATION:");
-      console.log("  - Raw destConfig.chainSelector:", destConfig.chainSelector);
+      console.log(
+        "  - Raw destConfig.chainSelector:",
+        destConfig.chainSelector
+      );
       console.log("  - Type:", typeof destConfig.chainSelector);
       console.log("  - String value:", String(destConfig.chainSelector));
       console.log("  - BigInt conversion:", BigInt(destConfig.chainSelector));
-      console.log("  - Hex representation:", "0x" + BigInt(destConfig.chainSelector).toString(16));
+      console.log(
+        "  - Hex representation:",
+        "0x" + BigInt(destConfig.chainSelector).toString(16)
+      );
       console.log("  - Expected OP Sepolia:", "5224473277236331295");
-      console.log("  - Match expected?:", String(destConfig.chainSelector) === "5224473277236331295");
-      console.log("  - Wrong old selector?:", String(destConfig.chainSelector) === "5216608019844513823");
+      console.log(
+        "  - Match expected?:",
+        String(destConfig.chainSelector) === "5224473277236331295"
+      );
+      console.log(
+        "  - Wrong old selector?:",
+        String(destConfig.chainSelector) === "5216608019844513823"
+      );
 
       const txData = routerInterface.encodeFunctionData("ccipSend", [
         destConfig.chainSelector,
         message,
       ]);
-      
+
       // Log the raw encoded transaction data to verify the chain selector
       console.log("🔍 RAW ENCODED TRANSACTION ANALYSIS:");
       console.log("  - Full txData:", txData);
-      console.log("  - Function selector (first 10 chars):", txData.substring(0, 10));
-      console.log("  - Chain selector bytes (next 64 chars):", txData.substring(10, 74));
+      console.log(
+        "  - Function selector (first 10 chars):",
+        txData.substring(0, 10)
+      );
+      console.log(
+        "  - Chain selector bytes (next 64 chars):",
+        txData.substring(10, 74)
+      );
       const encodedChainSelector = txData.substring(10, 74);
       console.log("  - Chain selector as hex:", "0x" + encodedChainSelector);
-      console.log("  - Chain selector as decimal:", BigInt("0x" + encodedChainSelector).toString());
+      console.log(
+        "  - Chain selector as decimal:",
+        BigInt("0x" + encodedChainSelector).toString()
+      );
 
       console.log("✅ Transaction data encoded");
 

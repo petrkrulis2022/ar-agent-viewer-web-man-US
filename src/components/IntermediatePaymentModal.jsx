@@ -549,6 +549,20 @@ const IntermediatePaymentModal = ({
                 CCIP Router:{" "}
                 {transactionBreakdown?.debugInfo?.ccipRouter || "N/A"}
               </div>
+              <div>
+                🎯 Destination Chain Selector:{" "}
+                <span style={{fontFamily: 'monospace', backgroundColor: '#f0f0f0', padding: '2px 4px', borderRadius: '3px'}}>
+                  {transactionBreakdown?.debugInfo?.chainSelector || "N/A"}
+                </span>
+              </div>
+              <div>
+                🔍 Chain Selector (Hex):{" "}
+                <span style={{fontFamily: 'monospace', color: '#666'}}>
+                  {transactionBreakdown?.debugInfo?.chainSelector 
+                    ? "0x" + BigInt(transactionBreakdown.debugInfo.chainSelector).toString(16)
+                    : "N/A"}
+                </span>
+              </div>
             </div>
           </div>
           {/* Enhanced CCIP Message Details */}
@@ -643,6 +657,18 @@ const IntermediatePaymentModal = ({
                 <div>
                   Destination Chain:{" "}
                   {transactionData?.destinationChain || "Unknown"}
+                </div>
+                <div style={{backgroundColor: '#fff3cd', padding: '8px', borderRadius: '4px', border: '1px solid #ffeaa7'}}>
+                  🎯 <strong>Destination Chain Selector</strong>:{" "}
+                  <span style={{fontFamily: 'monospace', fontWeight: 'bold', color: '#d63031'}}>
+                    {transactionBreakdown?.debugInfo?.chainSelector || "N/A"}
+                  </span>
+                  <br />
+                  <small style={{color: '#636e72'}}>
+                    Hex: {transactionBreakdown?.debugInfo?.chainSelector 
+                      ? "0x" + BigInt(transactionBreakdown.debugInfo.chainSelector).toString(16)
+                      : "N/A"}
+                  </small>
                 </div>
                 <div>
                   Token Amount: {transactionData?.amount || "Unknown"} USDC
