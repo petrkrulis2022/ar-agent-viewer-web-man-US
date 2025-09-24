@@ -750,6 +750,29 @@ class CCIPConfigService {
         throw new Error("Invalid source or destination chain");
       }
 
+      // CRITICAL: Verify OP Sepolia chain selector before proceeding
+      console.log("🚨 CHAIN SELECTOR CRITICAL VALIDATION:");
+      console.log("  - Destination Chain ID:", destinationChain);
+      console.log("  - Destination Config:", destConfig);
+      console.log("  - Chain Selector from config:", destConfig.chainSelector);
+      
+      if (destinationChain.toString() === "11155420") {
+        console.log("  🎯 OP SEPOLIA DETECTED - Validating chain selector...");
+        const expectedOPSepoliaSelector = "5224473277236331295";
+        const actualSelector = String(destConfig.chainSelector);
+        
+        console.log(`  - Expected: ${expectedOPSepoliaSelector}`);
+        console.log(`  - Actual: ${actualSelector}`);
+        console.log(`  - Match: ${actualSelector === expectedOPSepoliaSelector}`);
+        
+        if (actualSelector !== expectedOPSepoliaSelector) {
+          console.error(`  ❌ WRONG CHAIN SELECTOR! Using ${actualSelector} instead of ${expectedOPSepoliaSelector}`);
+          throw new Error(`Critical error: Wrong OP Sepolia chain selector. Expected ${expectedOPSepoliaSelector}, got ${actualSelector}`);
+        } else {
+          console.log("  ✅ OP Sepolia chain selector is CORRECT");
+        }
+      }
+
       // Build CCIP message first to pass to fee estimator
       const message = this.buildCCIPMessage(
         recipient,
@@ -786,19 +809,46 @@ class CCIPConfigService {
 
       // Encode transaction data for ccipSend
       const routerInterface = new ethers.utils.Interface(this.routerABI);
-      
-      console.log("🔍 CCIP Chain Selector Debug:", {
+
+      // CRITICAL DEBUG: Log the complete destination config to identify chain selector issues
+      console.log("🔍 COMPREHENSIVE Chain Selector Debug:", {
         sourceChain: sourceChain,
         destinationChain: destinationChain,
+        destConfigComplete: JSON.stringify(destConfig, null, 2),
         destConfigChainSelector: destConfig.chainSelector,
         destConfigChainSelectorType: typeof destConfig.chainSelector,
-        destConfigChainSelectorHex: destConfig.chainSelector ? "0x" + BigInt(destConfig.chainSelector).toString(16) : "N/A"
+        destConfigChainSelectorValue: destConfig.chainSelector,
+        destConfigChainSelectorHex: destConfig.chainSelector
+          ? "0x" + BigInt(destConfig.chainSelector).toString(16)
+          : "N/A",
+        destConfigChainSelectorDecimal: destConfig.chainSelector,
+        rawConfigCheck: this.getNetworkConfig(destinationChain),
       });
-      
+
+      // Additional validation of chain selector before encoding
+      console.log("🚨 CHAIN SELECTOR VALIDATION:");
+      console.log("  - Raw destConfig.chainSelector:", destConfig.chainSelector);
+      console.log("  - Type:", typeof destConfig.chainSelector);
+      console.log("  - String value:", String(destConfig.chainSelector));
+      console.log("  - BigInt conversion:", BigInt(destConfig.chainSelector));
+      console.log("  - Hex representation:", "0x" + BigInt(destConfig.chainSelector).toString(16));
+      console.log("  - Expected OP Sepolia:", "5224473277236331295");
+      console.log("  - Match expected?:", String(destConfig.chainSelector) === "5224473277236331295");
+      console.log("  - Wrong old selector?:", String(destConfig.chainSelector) === "5216608019844513823");
+
       const txData = routerInterface.encodeFunctionData("ccipSend", [
         destConfig.chainSelector,
         message,
       ]);
+      
+      // Log the raw encoded transaction data to verify the chain selector
+      console.log("🔍 RAW ENCODED TRANSACTION ANALYSIS:");
+      console.log("  - Full txData:", txData);
+      console.log("  - Function selector (first 10 chars):", txData.substring(0, 10));
+      console.log("  - Chain selector bytes (next 64 chars):", txData.substring(10, 74));
+      const encodedChainSelector = txData.substring(10, 74);
+      console.log("  - Chain selector as hex:", "0x" + encodedChainSelector);
+      console.log("  - Chain selector as decimal:", BigInt("0x" + encodedChainSelector).toString());
 
       console.log("✅ Transaction data encoded");
 
@@ -832,7 +882,7 @@ class CCIPConfigService {
         ccipDetails: { message: message }, // Add message details for debugging
         // Add debug information for transaction review
         isCrossChain: true,
-        transactionType: "CCIP Cross-Chain", 
+        transactionType: "CCIP Cross-Chain",
         debugInfo: {
           userChainId: sourceChain,
           agentChainId: destinationChain,
@@ -841,8 +891,8 @@ class CCIPConfigService {
           chainSelector: destConfig.chainSelector,
           extraArgs: message.extraArgs,
           transactionValue: transactionValue,
-          gasLimit: "300000"
-        }
+          gasLimit: "300000",
+        },
       };
     } catch (error) {
       console.error("❌ Failed to build CCIP transaction:", error);
