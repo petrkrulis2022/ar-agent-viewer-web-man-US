@@ -928,33 +928,44 @@ class CCIPConfigService {
             destinationChain: destinationChain,
             destConfigChainSelector: destConfig.chainSelector,
             isOPSepolia: destinationChain.toString() === "11155420",
-            selectorCorrupted: destConfig.chainSelector === destConfig.chainName,
+            selectorCorrupted:
+              destConfig.chainSelector === destConfig.chainName,
           }
         );
 
         // CRITICAL: Detect chain selector corruption
         if (destConfig.chainSelector === destConfig.chainName) {
-          console.error("🚨 CRITICAL: chainSelector corrupted to chainName in transaction encoding!");
-          console.error(`  - Got: "${destConfig.chainSelector}" (should be numeric)`);
+          console.error(
+            "🚨 CRITICAL: chainSelector corrupted to chainName in transaction encoding!"
+          );
+          console.error(
+            `  - Got: "${destConfig.chainSelector}" (should be numeric)`
+          );
           console.error(`  - ChainName: "${destConfig.chainName}"`);
         }
 
         // FORCE CORRECT OP SEPOLIA SELECTOR: Always use correct value
         if (destinationChain.toString() === "11155420") {
           const correctOPSelector = "5224473277236331295";
-          console.log("🚨 FORCING CORRECT OP SEPOLIA CHAIN SELECTOR FOR TRANSACTION ENCODING");
+          console.log(
+            "🚨 FORCING CORRECT OP SEPOLIA CHAIN SELECTOR FOR TRANSACTION ENCODING"
+          );
           console.log("  - Destination Chain: OP Sepolia (11155420)");
           console.log("  - Config value:", destConfig.chainSelector);
           console.log("  - Using correct:", correctOPSelector);
           return correctOPSelector;
         }
-        
+
         // For other chains, ensure we don't use a corrupted value
         if (destConfig.chainSelector === destConfig.chainName) {
-          console.error("🚨 Cannot fix corrupted chain selector for non-OP chain!");
-          throw new Error(`Chain selector corrupted for chain ${destinationChain}: got "${destConfig.chainSelector}" (chain name) instead of numeric selector`);
+          console.error(
+            "🚨 Cannot fix corrupted chain selector for non-OP chain!"
+          );
+          throw new Error(
+            `Chain selector corrupted for chain ${destinationChain}: got "${destConfig.chainSelector}" (chain name) instead of numeric selector`
+          );
         }
-        
+
         return destConfig.chainSelector;
       })();
 
@@ -1015,8 +1026,15 @@ class CCIPConfigService {
         }
       }
 
+      // CRITICAL: Convert string to BigInt for proper ABI encoding
+      const chainSelectorForEncoding = BigInt(finalChainSelector);
+      console.log("🔢 CHAIN SELECTOR ENCODING:");
+      console.log("  - String value:", finalChainSelector);
+      console.log("  - BigInt for encoding:", chainSelectorForEncoding.toString());
+      console.log("  - Hex representation:", "0x" + chainSelectorForEncoding.toString(16));
+
       const txData = routerInterface.encodeFunctionData("ccipSend", [
-        finalChainSelector,
+        chainSelectorForEncoding,
         message,
       ]);
 
@@ -1088,11 +1106,15 @@ class CCIPConfigService {
 
             // CRITICAL BUG FIX: Detect if chainSelector was corrupted to chainName
             if (destConfig.chainSelector === destConfig.chainName) {
-              console.error("🚨 CRITICAL BUG: chainSelector corrupted to chainName!");
+              console.error(
+                "🚨 CRITICAL BUG: chainSelector corrupted to chainName!"
+              );
               console.error(`  - chainSelector: "${destConfig.chainSelector}"`);
               console.error(`  - chainName: "${destConfig.chainName}"`);
-              console.error("  - This should NEVER happen - fixing automatically");
-              
+              console.error(
+                "  - This should NEVER happen - fixing automatically"
+              );
+
               // Use correct chain selector based on destination chain
               if (destinationChain.toString() === "11155420") {
                 console.log("  - Fixing OP Sepolia chain selector");
@@ -1103,11 +1125,11 @@ class CCIPConfigService {
               }
             }
 
-            // Additional check for OP Sepolia specifically 
+            // Additional check for OP Sepolia specifically
             if (destinationChain.toString() === "11155420") {
               // Ensure we always use the correct OP Sepolia selector
               const expectedSelector = "5224473277236331295";
-              
+
               if (String(destConfig.chainSelector) !== expectedSelector) {
                 console.error("🚨 WRONG OP SEPOLIA CHAIN SELECTOR!");
                 console.error(`  - Got: "${destConfig.chainSelector}"`);
@@ -1115,10 +1137,10 @@ class CCIPConfigService {
                 console.error("  - Using correct value");
                 return expectedSelector;
               }
-              
+
               return expectedSelector; // Always use correct value for OP Sepolia
             }
-            
+
             return destConfig.chainSelector;
           })(),
           chainSelectorType: typeof destConfig.chainSelector,
