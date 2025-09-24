@@ -23,7 +23,7 @@ export default defineConfig({
   build: {
     rollupOptions: {
       external: ["http", "https", "zlib", "fs"],
-    }
+    },
   },
   optimizeDeps: {
     include: ["@solana/web3.js", "@solana/spl-token", "buffer"],

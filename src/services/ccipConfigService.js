@@ -786,6 +786,15 @@ class CCIPConfigService {
 
       // Encode transaction data for ccipSend
       const routerInterface = new ethers.utils.Interface(this.routerABI);
+      
+      console.log("🔍 CCIP Chain Selector Debug:", {
+        sourceChain: sourceChain,
+        destinationChain: destinationChain,
+        destConfigChainSelector: destConfig.chainSelector,
+        destConfigChainSelectorType: typeof destConfig.chainSelector,
+        destConfigChainSelectorHex: destConfig.chainSelector ? "0x" + BigInt(destConfig.chainSelector).toString(16) : "N/A"
+      });
+      
       const txData = routerInterface.encodeFunctionData("ccipSend", [
         destConfig.chainSelector,
         message,
@@ -821,6 +830,19 @@ class CCIPConfigService {
         amount: amount,
         recipient: recipient,
         ccipDetails: { message: message }, // Add message details for debugging
+        // Add debug information for transaction review
+        isCrossChain: true,
+        transactionType: "CCIP Cross-Chain", 
+        debugInfo: {
+          userChainId: sourceChain,
+          agentChainId: destinationChain,
+          needsCrossChain: true,
+          ccipRouter: sourceConfig.router,
+          chainSelector: destConfig.chainSelector,
+          extraArgs: message.extraArgs,
+          transactionValue: transactionValue,
+          gasLimit: "300000"
+        }
       };
     } catch (error) {
       console.error("❌ Failed to build CCIP transaction:", error);

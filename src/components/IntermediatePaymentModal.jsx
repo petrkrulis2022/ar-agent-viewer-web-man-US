@@ -110,6 +110,16 @@ const IntermediatePaymentModal = ({
         allValid: allValid,
         errors: errors,
 
+        // Cross-chain info from transaction data
+        isCrossChain: transactionData.isCrossChain || isCCIPTransaction,
+        transactionType: transactionData.transactionType || (isCCIPTransaction ? "CCIP Cross-Chain" : "Direct Transfer"),
+        debugInfo: transactionData.debugInfo || {
+          userChainId: transactionData.sourceChain || "N/A",
+          agentChainId: transactionData.destinationChain || "N/A", 
+          needsCrossChain: transactionData.isCrossChain || isCCIPTransaction,
+          ccipRouter: transactionData.to || "N/A",
+        },
+
         // Raw Data
         rawTransaction: transactionData,
       });
