@@ -874,11 +874,43 @@ const IntermediatePaymentModal = ({
                   {transactionBreakdown.rawTransaction.ccipDetails?.message && (
                     <>
                       <h4>CCIP Message Details:</h4>
-                      <p><strong>Receiver:</strong> {transactionBreakdown.rawTransaction.ccipDetails.message.receiver}</p>
-                      <p><strong>Data:</strong> {transactionBreakdown.rawTransaction.ccipDetails.message.data}</p>
-                      <p><strong>Token Amounts:</strong> {JSON.stringify(transactionBreakdown.rawTransaction.ccipDetails.message.tokenAmounts, null, 2)}</p>
-                      <p><strong>Fee Token:</strong> {transactionBreakdown.rawTransaction.ccipDetails.message.feeToken}</p>
-                      <p><strong>Extra Args:</strong> {transactionBreakdown.rawTransaction.ccipDetails.message.extraArgs}</p>
+                      <p>
+                        <strong>Receiver:</strong>{" "}
+                        {
+                          transactionBreakdown.rawTransaction.ccipDetails
+                            .message.receiver
+                        }
+                      </p>
+                      <p>
+                        <strong>Data:</strong>{" "}
+                        {
+                          transactionBreakdown.rawTransaction.ccipDetails
+                            .message.data
+                        }
+                      </p>
+                      <p>
+                        <strong>Token Amounts:</strong>{" "}
+                        {JSON.stringify(
+                          transactionBreakdown.rawTransaction.ccipDetails
+                            .message.tokenAmounts,
+                          null,
+                          2
+                        )}
+                      </p>
+                      <p>
+                        <strong>Fee Token:</strong>{" "}
+                        {
+                          transactionBreakdown.rawTransaction.ccipDetails
+                            .message.feeToken
+                        }
+                      </p>
+                      <p>
+                        <strong>Extra Args:</strong>{" "}
+                        {
+                          transactionBreakdown.rawTransaction.ccipDetails
+                            .message.extraArgs
+                        }
+                      </p>
                     </>
                   )}
                 </>

@@ -368,7 +368,8 @@ class CCIPConfigService {
       );
 
       // Add a 20% buffer to the estimated fee for robustness
-      const bufferedFee = BigInt(estimatedFee) +
+      const bufferedFee =
+        BigInt(estimatedFee) +
         (BigInt(estimatedFee) * BigInt(20)) / BigInt(100);
 
       console.log(`💰 Actual CCIP Fee Calculation:`, {
@@ -1198,8 +1199,6 @@ class CCIPConfigService {
       return fallbackFee;
     }
   }
-
-
 
   /**
    * @deprecated - Replaced by estimateCCIPFees with dynamic router queries
