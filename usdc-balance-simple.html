@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>USDC Balance Check - Base Sepolia</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background: #1a1a1a;
+        color: #fff;
+      }
+      .container {
+        background: #2a2a2a;
+        padding: 20px;
+        border-radius: 10px;
+        margin: 20px 0;
+      }
+      button {
+        background: #007acc;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 10px 5px;
+      }
+      button:hover {
+        background: #005a9e;
+      }
+      .result {
+        background: #333;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 10px 0;
+        white-space: pre-wrap;
+        font-family: monospace;
+      }
+      .success {
+        border-left: 4px solid #4caf50;
+      }
+      .error {
+        border-left: 4px solid #f44336;
+      }
+      .warning {
+        border-left: 4px solid #ff9800;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🪙 USDC Balance Check - Base Sepolia (Simple)</h1>
+
+    <div class="container">
+      <h3>Check USDC Balance (Direct RPC)</h3>
+      <p>
+        This version uses direct RPC calls to check your USDC balance without
+        external dependencies.
+      </p>
+      <button onclick="checkUSDCBalanceSimple()">Check USDC Balance</button>
+      <button onclick="switchToBaseSepolia()">Switch to Base Sepolia</button>
+      <div id="balanceResult" class="result">
+        Click "Check USDC Balance" to start...
+      </div>
+    </div>
+
+    <div class="container">
+      <h3>📚 Get Test USDC</h3>
+      <p>If you need test USDC tokens:</p>
+      <ul>
+        <li>
+          <a
+            href="https://docs.base.org/docs/tools/network-faucets"
+            target="_blank"
+            >Base Sepolia Faucet</a
+          >
+        </li>
+        <li>
+          <a href="https://faucets.chain.link/base-sepolia" target="_blank"
+            >Chainlink Faucet</a
+          >
+        </li>
+        <li>
+          <a href="https://www.alchemy.com/faucets/base-sepolia" target="_blank"
+            >Alchemy Faucet</a
+          >
+        </li>
+      </ul>
+    </div>
+
+    <script>
+      const USDC_BASE_SEPOLIA = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
+      const BASE_SEPOLIA_CHAIN_ID = "0x14a34"; // 84532 in hex
+
+      async function switchToBaseSepolia() {
+        const resultDiv = document.getElementById("balanceResult");
+
+        if (!window.ethereum) {
+          resultDiv.innerHTML = "❌ MetaMask not detected";
+          resultDiv.className = "result error";
+          return;
+        }
+
+        try {
+          await window.ethereum.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: BASE_SEPOLIA_CHAIN_ID }],
+          });
+
+          resultDiv.innerHTML = "✅ Switched to Base Sepolia network";
+          resultDiv.className = "result success";
+        } catch (error) {
+          console.error("Error switching network:", error);
+          resultDiv.innerHTML = `❌ Error switching to Base Sepolia: ${error.message}`;
+          resultDiv.className = "result error";
+        }
+      }
+
+      async function checkUSDCBalanceSimple() {
+        const resultDiv = document.getElementById("balanceResult");
+
+        try {
+          if (!window.ethereum) {
+            resultDiv.innerHTML = "❌ MetaMask not detected";
+            resultDiv.className = "result error";
+            return;
+          }
+
+          // Request account access
+          const accounts = await window.ethereum.request({
+            method: "eth_requestAccounts",
+          });
+
+          if (accounts.length === 0) {
+            resultDiv.innerHTML =
+              "❌ No accounts found. Please connect MetaMask.";
+            resultDiv.className = "result error";
+            return;
+          }
+
+          const userAddress = accounts[0];
+          resultDiv.innerHTML = `🔍 Checking USDC balance for: ${userAddress}...`;
+          resultDiv.className = "result";
+
+          // Check current network
+          const chainId = await window.ethereum.request({
+            method: "eth_chainId",
+          });
+          console.log(
+            "Current chain ID:",
+            chainId,
+            "Expected:",
+            BASE_SEPOLIA_CHAIN_ID
+          );
+
+          if (chainId !== BASE_SEPOLIA_CHAIN_ID) {
+            resultDiv.innerHTML = `⚠️ Wrong network detected. Please switch to Base Sepolia first.\n\nCurrent: ${chainId}\nExpected: ${BASE_SEPOLIA_CHAIN_ID}`;
+            resultDiv.className = "result warning";
+            return;
+          }
+
+          // ERC-20 balanceOf function signature
+          const balanceOfSignature = "0x70a08231"; // balanceOf(address)
+          const paddedAddress = userAddress.slice(2).padStart(64, "0"); // Remove 0x and pad to 64 chars
+          const data = balanceOfSignature + paddedAddress;
+
+          // Call balanceOf
+          const balanceResult = await window.ethereum.request({
+            method: "eth_call",
+            params: [
+              {
+                to: USDC_BASE_SEPOLIA,
+                data: data,
+              },
+              "latest",
+            ],
+          });
+
+          console.log("Raw balance result:", balanceResult);
+
+          // Convert hex result to decimal
+          const balanceWei = parseInt(balanceResult, 16);
+          const balanceUSDC = balanceWei / 1000000; // USDC has 6 decimals
+
+          console.log("Balance calculation:", {
+            raw: balanceResult,
+            wei: balanceWei,
+            usdc: balanceUSDC,
+          });
+
+          const result = `🪙 USDC Balance Check Results:
+
+👤 Wallet Address: ${userAddress}
+🌐 Network: Base Sepolia (${chainId})
+💰 USDC Balance: ${balanceUSDC.toFixed(6)} USDC
+📊 Raw Balance: ${balanceWei} (wei)
+📍 USDC Contract: ${USDC_BASE_SEPOLIA}
+
+${
+  balanceUSDC < 12
+    ? "⚠️ WARNING: Insufficient USDC for 12 USDC transfer!"
+    : "✅ Sufficient USDC balance for 12 USDC transfer"
+}
+
+📈 Transfer Status:
+- Required: 12.000000 USDC
+- Available: ${balanceUSDC.toFixed(6)} USDC
+- Shortage: ${
+            balanceUSDC < 12 ? (12 - balanceUSDC).toFixed(6) : "0.000000"
+          } USDC`;
+
+          resultDiv.innerHTML = result;
+          resultDiv.className =
+            balanceUSDC >= 12 ? "result success" : "result warning";
+        } catch (error) {
+          console.error("❌ Error checking USDC balance:", error);
+          resultDiv.innerHTML = `❌ Error checking USDC balance: ${error.message}
+
+🔧 Troubleshooting:
+1. Make sure MetaMask is connected
+2. Switch to Base Sepolia network
+3. Ensure you have MetaMask permissions granted`;
+          resultDiv.className = "result error";
+        }
+      }
+
+      // Auto-check balance on load
+      window.addEventListener("load", () => {
+        setTimeout(() => {
+          document.getElementById("balanceResult").innerHTML =
+            "Ready to check USDC balance. Click the button above to start.";
+        }, 1000);
+      });
+    </script>
+  </body>
+</html>

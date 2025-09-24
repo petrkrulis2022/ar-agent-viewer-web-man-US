@@ -182,9 +182,16 @@ class DynamicQRService {
       // Create MetaMask-friendly URI for USDC CCIP transfer
       const routerAddress = sourceConfig.router;
 
-      // CRITICAL FIX: For USDC transfers, value should be 0 (no ETH transfer)
-      // The CCIP fee is paid through the router's logic, not transaction value
-      const transferValue = "0"; // USDC is ERC-20, no ETH value needed
+      // CRITICAL FIX: Use the calculated CCIP fee value from the transaction
+      // WRONG: hardcoding "0" prevents fee payment → InsufficientFeeTokenAmount error
+      // RIGHT: Use ccipTx.value which contains the calculated fee amount
+      const transferValue = ccipTx.value || "0"; // Use actual CCIP fee value
+      console.log("💰 CCIP Transaction Value:", {
+        ccipValue: ccipTx.value,
+        transferValue: transferValue,
+        feeCalculation: "Using real router.getFee() result with buffer",
+        note: "This ETH amount pays for CCIP fees (USDC sent separately via tokenAmounts)",
+      });
       const gasLimit = "300000";
 
       // MetaMask URI for CCIP USDC transfer - value=0 because we're calling a contract
@@ -217,6 +224,7 @@ class DynamicQRService {
         qrData: metaMaskQR,
         uri: metaMaskUriWithFunc,
         optimizedFor: "MetaMask",
+        isCrossChain: true, // CRITICAL: Top-level cross-chain flag
         transactionData: {
           to: routerAddress,
           value: transferValue,
@@ -224,6 +232,7 @@ class DynamicQRService {
           data: ccipTx.data, // Full data for execution
           chainId: parseInt(sourceChainId),
           type: "ccip-metamask-optimized",
+          isCrossChain: true, // CRITICAL: Mark as cross-chain transaction
         },
       };
     } catch (error) {
@@ -265,13 +274,14 @@ class DynamicQRService {
         );
       }
 
-      // Build CCIP transaction
+      // Build CCIP transaction (skip simulation for final QR generation)
       const ccipTx = await ccipConfigService.buildCCIPTransaction(
         sourceChainId,
         destChainId,
         amount,
         agentData.agent_wallet_address || agentData.payment_recipient_address,
-        feeToken
+        feeToken,
+        true // Skip simulation - already validated in modal
       );
 
       if (!ccipTx || !ccipTx.success) {
@@ -312,7 +322,7 @@ class DynamicQRService {
       // Create EIP-681 URI for CCIP Router transaction
       const routerAddress = sourceConfig.router;
       const transactionData = ccipTx.data;
-      const feeValue = ccipTx.fee || "0";
+      const feeValue = ccipTx.value || "0"; // Use ccipTx.value for fee amount
 
       // Enhanced EIP-681 format with MetaMask compatibility
       // Add gas parameter and simplified format for better scanning
@@ -353,6 +363,7 @@ class DynamicQRService {
         paymentUri: paymentUri,
         simplifiedQR: simplifiedQR,
         simplifiedUri: simplifiedUri,
+        isCrossChain: true, // CRITICAL: Mark as cross-chain transaction
         debug: {
           routerAddress: routerAddress,
           sourceChain: sourceChainId,
@@ -465,7 +476,7 @@ class DynamicQRService {
               token: feeToken,
               recipient: agentData.agent_wallet_address,
               optimizedFor: "MetaMask",
-              isCrossChain: true,
+              isCrossChain: true, // CRITICAL: Mark as cross-chain transaction
             };
           }
         } catch (metaMaskError) {
@@ -721,11 +732,14 @@ class DynamicQRService {
     const fromAddress = accounts[0];
     console.log("👤 Connected EVM account:", fromAddress);
 
-    // Prepare transaction parameters
+    // Prepare transaction parameters with proper hex conversion
     const transactionParams = {
       from: fromAddress,
       to: qrData.to,
-      value: qrData.value === "0" ? "0x0" : "0x" + qrData.value,
+      value:
+        qrData.value === "0"
+          ? "0x0"
+          : ethers.BigNumber.from(qrData.value).toHexString(),
       data: qrData.data || "0x",
       gas: "0x15f90", // 90000 gas limit for ERC-20 transfers
     };
@@ -736,6 +750,14 @@ class DynamicQRService {
       dataLength: transactionParams.data.length,
       gas: transactionParams.gas,
       isCrossChain: qrData.isCrossChain || false,
+    });
+
+    // CRITICAL DEBUG: Log the QR data to understand cross-chain flag issue
+    console.log("🔍 QR Data Debug:", {
+      qrDataIsCrossChain: qrData.isCrossChain,
+      qrDataType: qrData.type,
+      hasTransactionData: !!qrData.transactionData,
+      transactionDataIsCrossChain: qrData.transactionData?.isCrossChain,
     });
 
     // Check if we need to switch networks
@@ -758,6 +780,18 @@ class DynamicQRService {
           "⚠️ Network switch failed, proceeding with current network"
         );
       }
+    }
+
+    // Cross-chain transactions should have allowance already approved via modal
+    if (qrData.isCrossChain && qrData.transactionData) {
+      console.log(
+        "� Cross-chain transaction detected - assuming allowance approved via modal"
+      );
+      console.log("� CCIP Transaction details:", {
+        sourceChain: qrData.transactionData.sourceChain,
+        amount: qrData.transactionData.amount,
+        userAddress: fromAddress,
+      });
     }
 
     // Send transaction
@@ -843,6 +877,18 @@ class DynamicQRService {
       throw new Error(`USDC not supported on chain ${chainId}`);
     }
 
+    console.log(`🌐 Network Info for chain ${chainId}:`, {
+      name: networkInfo.name,
+      usdcAddress: networkInfo.usdcAddress,
+      rpcUrl: networkInfo.rpcUrl || "Using MetaMask provider",
+      purpose:
+        chainId === 84532
+          ? "SOURCE (Base Sepolia) - Should have USDC"
+          : chainId === 11155111
+          ? "DESTINATION (Ethereum Sepolia) - May have 0 USDC"
+          : "OTHER",
+    });
+
     try {
       // ERC-20 balanceOf ABI
       const balanceOfABI = [
@@ -886,8 +932,26 @@ class DynamicQRService {
       console.log(`🔍 USDC contract address:`, networkInfo.usdcAddress);
       console.log(`🔍 Call data:`, data);
 
-      // Parse balance (USDC has 6 decimals)
-      const balanceInWei = parseInt(balance, 16);
+      // Parse balance (USDC has 6 decimals) with proper error handling
+      let balanceInWei = 0;
+      try {
+        if (balance && typeof balance === "string" && balance !== "0x") {
+          balanceInWei = parseInt(balance, 16);
+          if (isNaN(balanceInWei)) {
+            console.warn(`⚠️ Invalid balance format, using 0:`, balance);
+            balanceInWei = 0;
+          }
+        } else {
+          console.warn(
+            `⚠️ Empty or invalid balance response, using 0:`,
+            balance
+          );
+          balanceInWei = 0;
+        }
+      } catch (error) {
+        console.error(`❌ Error parsing balance, using 0:`, error, balance);
+        balanceInWei = 0;
+      }
       console.log(`🔍 Balance in wei:`, balanceInWei);
 
       const balanceInUSDC = balanceInWei / Math.pow(10, 6);

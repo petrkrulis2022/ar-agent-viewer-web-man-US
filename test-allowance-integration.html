@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test: USDC Allowance Integration</title>
+    <script src="https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background: #1a1a1a;
+        color: #fff;
+      }
+      .test-section {
+        background: #2d2d2d;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+        border: 1px solid #444;
+      }
+      .test-button {
+        background: #00d4ff;
+        color: #000;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        margin: 5px;
+        font-weight: bold;
+      }
+      .test-button:hover {
+        background: #0099cc;
+      }
+      .test-result {
+        background: rgba(0, 212, 255, 0.1);
+        border: 1px solid rgba(0, 212, 255, 0.3);
+        padding: 15px;
+        border-radius: 6px;
+        margin: 10px 0;
+        white-space: pre-wrap;
+        font-family: monospace;
+        font-size: 12px;
+      }
+      .success {
+        border-color: #22c55e;
+        background: rgba(34, 197, 94, 0.1);
+      }
+      .error {
+        border-color: #ef4444;
+        background: rgba(239, 68, 68, 0.1);
+      }
+      .warning {
+        border-color: #fbbf24;
+        background: rgba(251, 191, 36, 0.1);
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🔓 USDC Allowance Integration Test</h1>
+    <p>
+      This test verifies the new USDC allowance checking and approval
+      functionality for CCIP cross-chain transactions.
+    </p>
+
+    <div class="test-section">
+      <h2>📋 Test Configuration</h2>
+      <div>
+        <strong>Source Chain:</strong> Base Sepolia (84532)<br />
+        <strong>Destination Chain:</strong> Ethereum Sepolia (11155111)<br />
+        <strong>Test Amount:</strong> 4 USDC<br />
+        <strong>USDC Contract:</strong>
+        0x036CbD53842c5426634e7929541eC2318f3dCF7e<br />
+        <strong>CCIP Router:</strong> 0xD3b06cEbF099CE7DA4AcCf578aaebFDBd6e88a93
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h2>🔧 Manual Tests</h2>
+      <button class="test-button" onclick="testAllowanceCheck()">
+        1. Check Current USDC Allowance
+      </button>
+      <button class="test-button" onclick="testApprovalFlow()">
+        2. Test USDC Approval Flow
+      </button>
+      <button class="test-button" onclick="testCCIPMessageStructure()">
+        3. Test CCIP Message Structure
+      </button>
+      <button class="test-button" onclick="testIntegratedFlow()">
+        4. Test Complete Allowance → CCIP Flow
+      </button>
+      <button class="test-button" onclick="clearResults()">
+        Clear Results
+      </button>
+      <div id="testResults"></div>
+    </div>
+
+    <div class="test-section">
+      <h2>📊 Expected Behavior</h2>
+      <ul>
+        <li>
+          <strong>New Users:</strong> Should show "Approval Required" and prompt
+          for USDC approval before CCIP transaction
+        </li>
+        <li>
+          <strong>Previously Approved:</strong> Should show "Sufficient
+          allowance" and proceed directly to CCIP
+        </li>
+        <li>
+          <strong>Modal Updates:</strong> Button should change to "🔓 Approve
+          USDC → Send to MetaMask" when approval needed
+        </li>
+        <li>
+          <strong>Error Handling:</strong> Should gracefully handle approval
+          rejections and contract errors
+        </li>
+      </ul>
+    </div>
+
+    <script type="module">
+      // Configuration
+      const testConfig = {
+        sourceChain: 84532, // Base Sepolia
+        destinationChain: 11155111, // Ethereum Sepolia
+        amount: 4, // 4 USDC
+        usdcContract: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        ccipRouter: "0xD3b06cEbF099CE7DA4AcCf578aaebFDBd6e88a93",
+      };
+
+      function addResult(title, content, type = "info") {
+        const results = document.getElementById("testResults");
+        const div = document.createElement("div");
+        div.className = `test-result ${type}`;
+        div.innerHTML = `<strong>${title}</strong>\n${content}`;
+        results.appendChild(div);
+      }
+
+      window.clearResults = function () {
+        document.getElementById("testResults").innerHTML = "";
+      };
+
+      window.testAllowanceCheck = async function () {
+        try {
+          addResult(
+            "🔍 Starting Allowance Check",
+            "Checking current USDC allowance for CCIP Router..."
+          );
+
+          if (!window.ethereum) {
+            throw new Error("MetaMask not detected");
+          }
+
+          // Request account access
+          const accounts = await window.ethereum.request({
+            method: "eth_requestAccounts",
+          });
+
+          if (!accounts || accounts.length === 0) {
+            throw new Error("No accounts connected");
+          }
+
+          const userAddress = accounts[0];
+          const provider = new ethers.providers.Web3Provider(window.ethereum);
+          const signer = provider.getSigner();
+
+          // ERC-20 ABI for allowance checking
+          const ERC20_ABI = [
+            "function allowance(address owner, address spender) external view returns (uint256)",
+          ];
+
+          // Create USDC contract instance
+          const usdcContract = new ethers.Contract(
+            testConfig.usdcContract,
+            ERC20_ABI,
+            signer
+          );
+
+          // Check current allowance
+          const currentAllowance = await usdcContract.allowance(
+            userAddress,
+            testConfig.ccipRouter
+          );
+
+          const amountInWei = ethers.utils.parseUnits(
+            testConfig.amount.toString(),
+            6
+          );
+          const isAllowanceSufficient = currentAllowance.gte(amountInWei);
+
+          const result = {
+            userAddress,
+            currentAllowanceWei: currentAllowance.toString(),
+            currentAllowanceUSDC: ethers.utils.formatUnits(currentAllowance, 6),
+            requiredAmountWei: amountInWei.toString(),
+            requiredAmountUSDC: testConfig.amount.toString(),
+            isAllowanceSufficient,
+            needsApproval: !isAllowanceSufficient,
+          };
+
+          addResult(
+            "✅ Allowance Check Complete",
+            JSON.stringify(result, null, 2),
+            isAllowanceSufficient ? "success" : "warning"
+          );
+        } catch (error) {
+          addResult("❌ Allowance Check Failed", error.message, "error");
+          console.error("Allowance check error:", error);
+        }
+      };
+
+      window.testApprovalFlow = async function () {
+        try {
+          addResult(
+            "🔓 Starting Approval Flow",
+            "Requesting USDC approval for CCIP Router..."
+          );
+
+          if (!window.ethereum) {
+            throw new Error("MetaMask not detected");
+          }
+
+          const accounts = await window.ethereum.request({
+            method: "eth_requestAccounts",
+          });
+
+          const provider = new ethers.providers.Web3Provider(window.ethereum);
+          const signer = provider.getSigner();
+
+          // ERC-20 ABI for approval
+          const ERC20_ABI = [
+            "function approve(address spender, uint256 amount) external returns (bool)",
+          ];
+
+          const usdcContract = new ethers.Contract(
+            testConfig.usdcContract,
+            ERC20_ABI,
+            signer
+          );
+
+          const amountInWei = ethers.utils.parseUnits(
+            testConfig.amount.toString(),
+            6
+          );
+
+          addResult(
+            "⏳ Approval Transaction",
+            "Sending approval transaction to MetaMask...",
+            "warning"
+          );
+
+          // Request approval
+          const approveTx = await usdcContract.approve(
+            testConfig.ccipRouter,
+            amountInWei
+          );
+
+          addResult(
+            "📤 Approval Sent",
+            `Transaction Hash: ${approveTx.hash}\nWaiting for confirmation...`,
+            "warning"
+          );
+
+          // Wait for confirmation
+          const receipt = await approveTx.wait();
+
+          const result = {
+            transactionHash: receipt.transactionHash,
+            blockNumber: receipt.blockNumber,
+            gasUsed: receipt.gasUsed.toString(),
+            status: receipt.status === 1 ? "Success" : "Failed",
+          };
+
+          addResult(
+            "✅ Approval Transaction Confirmed",
+            JSON.stringify(result, null, 2),
+            "success"
+          );
+        } catch (error) {
+          if (error.code === 4001) {
+            addResult(
+              "🚫 Approval Rejected",
+              "User rejected the approval transaction",
+              "warning"
+            );
+          } else {
+            addResult("❌ Approval Failed", error.message, "error");
+          }
+          console.error("Approval error:", error);
+        }
+      };
+
+      window.testCCIPMessageStructure = async function () {
+        try {
+          addResult(
+            "🔍 Testing CCIP Message Structure",
+            "Building and validating CCIP message components..."
+          );
+
+          // Import the ccipConfigService
+          const ccipConfigService = (
+            await import("./src/services/ccipConfigService.js")
+          ).default;
+
+          // Test parameters
+          const sourceChain = testConfig.sourceChain;
+          const destinationChain = testConfig.destinationChain;
+          const amount = testConfig.amount;
+          const recipient = "0xd7ca8219c8afa07b455ab7e004fc5381b3727b1e"; // Test address
+
+          addResult(
+            "📋 Test Parameters",
+            JSON.stringify(
+              {
+                sourceChain,
+                destinationChain,
+                amount,
+                recipient,
+              },
+              null,
+              2
+            )
+          );
+
+          // Build CCIP transaction and examine the message
+          addResult(
+            "🔧 Building CCIP Transaction",
+            "Calling buildCCIPTransaction..."
+          );
+
+          const ccipTransaction = await ccipConfigService.buildCCIPTransaction(
+            sourceChain,
+            destinationChain,
+            amount,
+            recipient,
+            "native"
+          );
+
+          addResult(
+            "✅ CCIP Transaction Built",
+            JSON.stringify(ccipTransaction, null, 2),
+            "success"
+          );
+
+          // Verify critical components match Chainlink expectations
+          const validationResults = {
+            hasCorrectTo: ccipTransaction.to === testConfig.ccipRouter,
+            hasReasonableFee:
+              parseFloat(ethers.utils.formatEther(ccipTransaction.value)) > 0 &&
+              parseFloat(ethers.utils.formatEther(ccipTransaction.value)) <
+                0.01,
+            hasTransactionData:
+              ccipTransaction.data && ccipTransaction.data.length > 100,
+            dataStartsWithCCIPSend:
+              ccipTransaction.data.startsWith("0x96f4e9f9"), // ccipSend function selector
+          };
+
+          addResult(
+            "🔍 CCIP Transaction Validation",
+            JSON.stringify(validationResults, null, 2),
+            Object.values(validationResults).every((v) => v)
+              ? "success"
+              : "warning"
+          );
+
+          // Additional checks for common issues
+          const additionalChecks = {
+            ethValueReasonable:
+              parseFloat(ethers.utils.formatEther(ccipTransaction.value)) <
+              0.002,
+            dataLengthReasonable:
+              ccipTransaction.data.length > 500 &&
+              ccipTransaction.data.length < 2000,
+            hasChainId: !!ccipTransaction.chainId,
+          };
+
+          addResult(
+            "⚙️ Additional Validation Checks",
+            JSON.stringify(additionalChecks, null, 2),
+            Object.values(additionalChecks).every((v) => v)
+              ? "success"
+              : "warning"
+          );
+        } catch (error) {
+          addResult(
+            "❌ CCIP Message Structure Test Failed",
+            error.message,
+            "error"
+          );
+          console.error("CCIP message test error:", error);
+        }
+      };
+
+      window.testIntegratedFlow = async function () {
+        try {
+          addResult(
+            "🔄 Starting Integrated Flow",
+            "Testing complete allowance check → approval → CCIP flow..."
+          );
+
+          // Import the ccipConfigService
+          const ccipConfigService = (
+            await import("./src/services/ccipConfigService.js")
+          ).default;
+
+          if (!window.ethereum) {
+            throw new Error("MetaMask not detected");
+          }
+
+          const accounts = await window.ethereum.request({
+            method: "eth_requestAccounts",
+          });
+
+          const userAddress = accounts[0];
+          const amountInWei = ethers.utils
+            .parseUnits(testConfig.amount.toString(), 6)
+            .toString();
+
+          // Step 1: Check allowance
+          addResult(
+            "1️⃣ Checking Allowance",
+            "Using ccipConfigService.checkAndHandleAllowance()..."
+          );
+
+          const allowanceResult =
+            await ccipConfigService.checkAndHandleAllowance(
+              testConfig.sourceChain,
+              amountInWei,
+              userAddress
+            );
+
+          addResult(
+            "📋 Allowance Result",
+            JSON.stringify(allowanceResult, null, 2),
+            allowanceResult.success ? "success" : "error"
+          );
+
+          // Step 2: Request approval if needed
+          if (allowanceResult.needsApproval) {
+            addResult(
+              "2️⃣ Requesting Approval",
+              "Allowance insufficient, requesting approval...",
+              "warning"
+            );
+
+            const approvalResult = await ccipConfigService.requestUSDCApproval(
+              testConfig.sourceChain,
+              amountInWei,
+              userAddress
+            );
+
+            addResult(
+              "📝 Approval Result",
+              JSON.stringify(approvalResult, null, 2),
+              approvalResult.success ? "success" : "error"
+            );
+
+            if (!approvalResult.success) {
+              throw new Error(`Approval failed: ${approvalResult.error}`);
+            }
+          } else {
+            addResult(
+              "2️⃣ Approval Skipped",
+              "Sufficient allowance already exists",
+              "success"
+            );
+          }
+
+          // Step 3: Ready for CCIP
+          addResult(
+            "3️⃣ Ready for CCIP",
+            "✅ All prerequisites complete! CCIP transaction can now proceed.\n\nNext steps:\n- Generate QR code with cross-chain data\n- Execute CCIP transaction via MetaMask\n- Monitor cross-chain transfer status",
+            "success"
+          );
+        } catch (error) {
+          addResult("❌ Integrated Flow Failed", error.message, "error");
+          console.error("Integrated flow error:", error);
+        }
+      };
+
+      // Auto-load on page ready
+      document.addEventListener("DOMContentLoaded", function () {
+        addResult(
+          "🎯 Test Environment Ready",
+          "USDC Allowance Integration Test Loaded\n\nEnsure you're connected to Base Sepolia network before testing.",
+          "success"
+        );
+      });
+    </script>
+  </body>
+</html>

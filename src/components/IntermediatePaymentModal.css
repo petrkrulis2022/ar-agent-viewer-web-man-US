@@ -376,3 +376,129 @@
 .debug-data::-webkit-scrollbar-thumb:hover {
   background: #38bdf8;
 }
+
+/* Enhanced Debug Sections */
+.debug-subsection {
+  margin-bottom: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.debug-subsection h4 {
+  margin: 0 0 8px 0;
+  color: #00d4ff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.debug-fees {
+  display: grid;
+  gap: 6px;
+  font-family: "Courier New", monospace;
+  font-size: 12px;
+}
+
+.debug-fees > div {
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+  color: #e5e7eb;
+}
+
+.debug-fees > div:nth-child(odd) {
+  background: rgba(0, 212, 255, 0.1);
+}
+
+/* Allowance Status Section */
+.allowance-section {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+  border: 1px solid #444;
+}
+
+.allowance-section h3 {
+  margin: 0 0 12px 0;
+  color: #00d4ff;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.allowance-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fbbf24;
+  font-size: 14px;
+  padding: 8px;
+}
+
+.allowance-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.allowance-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.allowance-status.sufficient {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #22c55e;
+}
+
+.allowance-status.insufficient {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+
+.status-icon {
+  font-size: 16px;
+}
+
+.status-text {
+  font-size: 14px;
+}
+
+.allowance-amounts {
+  display: grid;
+  gap: 6px;
+  font-family: "Courier New", monospace;
+  font-size: 12px;
+}
+
+.allowance-amounts > div {
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+  color: #e5e7eb;
+}
+
+.allowance-warning {
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  color: #fbbf24;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.allowance-error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+}

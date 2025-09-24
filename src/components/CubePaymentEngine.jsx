@@ -1866,13 +1866,58 @@ const CubePaymentEngine = ({
       );
 
       if (!ccipTransactionData.success) {
-        throw new Error(
-          `CCIP transaction build failed: ${ccipTransactionData.error}`
-        );
+        // Check if it's an allowance issue that can be fixed in the modal
+        const isAllowanceIssue =
+          ccipTransactionData.simulationError &&
+          (ccipTransactionData.simulationError.revertReason
+            ?.toLowerCase()
+            .includes("allowance") ||
+            ccipTransactionData.simulationError.error
+              ?.toLowerCase()
+              .includes("allowance"));
+
+        const isBalanceIssue =
+          ccipTransactionData.simulationError &&
+          (ccipTransactionData.simulationError.revertReason
+            ?.toLowerCase()
+            .includes("balance") ||
+            ccipTransactionData.simulationError.error
+              ?.toLowerCase()
+              .includes("balance"));
+
+        const isGenericSimulationFailure =
+          ccipTransactionData.simulationError &&
+          ccipTransactionData.simulationError.errorCode === "CALL_EXCEPTION";
+
+        if (isAllowanceIssue) {
+          console.log(
+            "🔧 Allowance issue detected - showing modal for user to approve:",
+            ccipTransactionData.simulationError
+          );
+          // Continue to show modal for allowance approval
+        } else if (isBalanceIssue) {
+          console.log(
+            "💰 Insufficient balance detected - showing modal with balance error:",
+            ccipTransactionData.simulationError
+          );
+          // Continue to show modal with balance information
+        } else if (isGenericSimulationFailure) {
+          console.log(
+            "🚨 Generic simulation failure detected - showing modal with detailed error info:",
+            ccipTransactionData.simulationError
+          );
+          // Continue to show modal with generic simulation error details
+        } else {
+          throw new Error(
+            `CCIP transaction build failed: ${ccipTransactionData.error}`
+          );
+        }
       }
 
       console.log(
-        "✅ CCIP transaction built successfully:",
+        ccipTransactionData.success
+          ? "✅ CCIP transaction built successfully:"
+          : "⚠️ CCIP transaction has simulation issues (showing modal for review):",
         ccipTransactionData
       );
 
@@ -1887,6 +1932,13 @@ const CubePaymentEngine = ({
           agent?.agent_wallet_address || agent?.payment_recipient_address,
         isCrossChain: true,
         transactionType: "CCIP Cross-Chain",
+        // Enhanced debugging information
+        ccipMessage: ccipTransactionData.message,
+        rawFee: ccipTransactionData.estimatedFee,
+        rawFeeETH: ccipTransactionData.estimatedFeeETH,
+        feeBuffer: "20%",
+        finalFeeETH: ccipTransactionData.valueETH,
+        feeSource: "CCIP Router Contract",
         debugInfo: {
           userChainId: userNetwork,
           agentChainId: agentNetwork,

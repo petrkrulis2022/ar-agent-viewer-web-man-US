@@ -22,6 +22,9 @@ const IntermediatePaymentModal = ({
 }) => {
   const [validationStatus, setValidationStatus] = useState(null);
   const [transactionBreakdown, setTransactionBreakdown] = useState(null);
+  const [allowanceStatus, setAllowanceStatus] = useState(null);
+  const [isCheckingAllowance, setIsCheckingAllowance] = useState(false);
+  const [isRequestingApproval, setIsRequestingApproval] = useState(false);
 
   useEffect(() => {
     if (isOpen && transactionData) {
@@ -29,7 +32,7 @@ const IntermediatePaymentModal = ({
     }
   }, [isOpen, transactionData]);
 
-  const analyzeTransaction = () => {
+  const analyzeTransaction = async () => {
     try {
       console.log("🔍 Analyzing transaction structure:", transactionData);
 
@@ -112,6 +115,11 @@ const IntermediatePaymentModal = ({
       });
 
       setValidationStatus(allValid ? "valid" : "invalid");
+
+      // Check allowance for cross-chain transactions
+      if (isCCIPTransaction && transactionData.sourceChain && tokenAmount) {
+        await checkAllowanceStatus();
+      }
     } catch (error) {
       console.error("❌ Transaction analysis failed:", error);
       setValidationStatus("error");
@@ -122,14 +130,156 @@ const IntermediatePaymentModal = ({
     }
   };
 
-  const handleConfirm = () => {
-    if (validationStatus === "valid") {
-      console.log("✅ Transaction validated, proceeding to MetaMask");
-      onConfirm(transactionData);
-    } else {
-      console.warn("⚠️ User confirmed invalid transaction");
-      // Still allow confirmation but with warning
-      onConfirm(transactionData);
+  const checkAllowanceStatus = async () => {
+    try {
+      setIsCheckingAllowance(true);
+      console.log("🔍 Checking USDC allowance status...");
+
+      // Import ccipConfigService
+      const ccipConfigService = (
+        await import("../services/ccipConfigService.js")
+      ).default;
+
+      // Get user address
+      if (!window.ethereum) {
+        throw new Error("MetaMask not detected");
+      }
+
+      const accounts = await window.ethereum.request({
+        method: "eth_requestAccounts",
+      });
+
+      if (!accounts || accounts.length === 0) {
+        throw new Error("No accounts connected");
+      }
+
+      const userAddress = accounts[0];
+      const { sourceChain, amount } = transactionData;
+
+      // Convert amount to wei (USDC uses 6 decimals)
+      const amountInWei = ethers.utils
+        .parseUnits(amount.toString(), 6)
+        .toString();
+
+      // Check allowance
+      const allowanceResult = await ccipConfigService.checkAndHandleAllowance(
+        sourceChain,
+        amountInWei,
+        userAddress
+      );
+
+      console.log("💰 Allowance check result:", allowanceResult);
+
+      setAllowanceStatus(allowanceResult);
+    } catch (error) {
+      console.error("❌ Allowance check failed:", error);
+      setAllowanceStatus({
+        success: false,
+        error: error.message,
+        needsApproval: true,
+      });
+    } finally {
+      setIsCheckingAllowance(false);
+    }
+  };
+
+  const handleConfirm = async () => {
+    try {
+      // Check if this is a cross-chain transaction that needs approval
+      if (
+        transactionBreakdown?.isCCIPTransaction &&
+        allowanceStatus?.needsApproval
+      ) {
+        console.log("🔓 Approval needed - requesting USDC approval first...");
+
+        setIsRequestingApproval(true);
+
+        // Import ccipConfigService
+        const ccipConfigService = (
+          await import("../services/ccipConfigService.js")
+        ).default;
+
+        // Get user address
+        if (!window.ethereum) {
+          throw new Error("MetaMask not detected");
+        }
+
+        // Verify signer and provider connection
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const signer = provider.getSigner();
+
+        console.log("🔍 Verifying signer connection:", {
+          provider: !!provider,
+          signer: !!signer,
+          network: await provider.getNetwork(),
+          signerAddress: await signer.getAddress(),
+        });
+
+        const accounts = await window.ethereum.request({
+          method: "eth_requestAccounts",
+        });
+
+        if (!accounts || accounts.length === 0) {
+          throw new Error("No accounts connected");
+        }
+
+        const userAddress = accounts[0];
+        const { sourceChain, amount } = transactionData;
+
+        // Convert amount to wei (USDC uses 6 decimals)
+        const amountInWei = ethers.utils
+          .parseUnits(amount.toString(), 6)
+          .toString();
+
+        console.log("📝 Requesting USDC approval with verified signer:", {
+          sourceChain,
+          amountInWei,
+          amountUSDC: amount.toString(),
+          userAddress,
+          signerConnected: await signer.getAddress(),
+        });
+
+        // Request approval
+        const approvalResult = await ccipConfigService.requestUSDCApproval(
+          sourceChain,
+          amountInWei,
+          userAddress
+        );
+
+        console.log("📋 Approval result:", approvalResult);
+
+        if (!approvalResult.success) {
+          if (approvalResult.userRejected) {
+            console.warn("🚫 User rejected USDC approval");
+            return; // Don't proceed with transaction
+          } else {
+            throw new Error(`USDC approval failed: ${approvalResult.error}`);
+          }
+        }
+
+        console.log(
+          "✅ USDC approval successful! Now proceeding with CCIP transaction..."
+        );
+
+        // Update allowance status to reflect successful approval
+        await checkAllowanceStatus();
+      }
+
+      // Proceed with transaction
+      if (validationStatus === "valid") {
+        console.log("✅ Transaction validated, proceeding to MetaMask");
+        onConfirm(transactionData);
+      } else {
+        console.warn("⚠️ User confirmed invalid transaction");
+        // Still allow confirmation but with warning
+        onConfirm(transactionData);
+      }
+    } catch (error) {
+      console.error("❌ Transaction confirmation failed:", error);
+      // Show error to user but don't crash the modal
+      alert(`Transaction failed: ${error.message}`);
+    } finally {
+      setIsRequestingApproval(false);
     }
   };
 
@@ -264,6 +414,60 @@ const IntermediatePaymentModal = ({
           </div>
         )}
 
+        {/* Allowance Status Section */}
+        {transactionBreakdown?.isCCIPTransaction && (
+          <div className="allowance-section">
+            <h3>🔓 USDC Allowance Status</h3>
+            {isCheckingAllowance ? (
+              <div className="allowance-loading">
+                ⏳ Checking USDC spending allowance...
+              </div>
+            ) : allowanceStatus ? (
+              <div className="allowance-details">
+                {allowanceStatus.success ? (
+                  <>
+                    <div
+                      className={`allowance-status ${
+                        allowanceStatus.isAllowanceSufficient
+                          ? "sufficient"
+                          : "insufficient"
+                      }`}
+                    >
+                      <span className="status-icon">
+                        {allowanceStatus.isAllowanceSufficient ? "✅" : "❌"}
+                      </span>
+                      <span className="status-text">
+                        {allowanceStatus.isAllowanceSufficient
+                          ? "Sufficient allowance for transaction"
+                          : "Approval required before transaction"}
+                      </span>
+                    </div>
+                    <div className="allowance-amounts">
+                      <div>
+                        Required: {allowanceStatus.requiredAmountUSDC} USDC
+                      </div>
+                      <div>
+                        Current Allowance:{" "}
+                        {allowanceStatus.currentAllowanceUSDC} USDC
+                      </div>
+                    </div>
+                    {!allowanceStatus.isAllowanceSufficient && (
+                      <div className="allowance-warning">
+                        ⚠️ You will be prompted to approve USDC spending before
+                        the CCIP transaction
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="allowance-error">
+                    ❌ Allowance check failed: {allowanceStatus.error}
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </div>
+        )}
+
         {/* Actions */}
         <div className="modal-actions">
           <button className="btn-secondary" onClick={onClose}>
@@ -275,19 +479,396 @@ const IntermediatePaymentModal = ({
               validationStatus === "invalid" ? "warning" : ""
             }`}
             onClick={handleConfirm}
+            disabled={isCheckingAllowance || isRequestingApproval}
           >
-            {validationStatus === "valid"
-              ? "✅ Send to MetaMask"
-              : "⚠️ Send Anyway"}
+            {(() => {
+              if (isRequestingApproval) {
+                return "⏳ Requesting USDC Approval...";
+              }
+
+              if (isCheckingAllowance) {
+                return "⏳ Checking Allowance...";
+              }
+
+              if (
+                transactionBreakdown?.isCCIPTransaction &&
+                allowanceStatus?.success
+              ) {
+                if (allowanceStatus.needsApproval) {
+                  return "🔓 Approve USDC → Send to MetaMask";
+                } else {
+                  return "✅ Send CCIP Transaction";
+                }
+              }
+
+              if (validationStatus === "valid") {
+                return "✅ Send to MetaMask";
+              }
+
+              return "⚠️ Send Anyway";
+            })()}
           </button>
         </div>
 
         {/* Debug Section (Collapsible) */}
         <details className="debug-section">
           <summary>🔧 Debug Information</summary>
-          <pre className="debug-data">
-            {JSON.stringify(transactionBreakdown?.rawTransaction, null, 2)}
-          </pre>
+          {/* Network Detection Details */}
+          <div className="debug-subsection">
+            <h4>🌐 Network Detection & Cross-Chain Logic</h4>
+            <div className="debug-fees">
+              <div>
+                User Network ID:{" "}
+                {transactionBreakdown?.debugInfo?.userChainId || "N/A"}
+              </div>
+              <div>
+                Agent Network ID:{" "}
+                {transactionBreakdown?.debugInfo?.agentChainId || "N/A"}
+              </div>
+              <div>
+                Is Cross-Chain:{" "}
+                {transactionBreakdown?.isCrossChain ? "✅ TRUE" : "❌ FALSE"}
+              </div>
+              <div>
+                Transaction Type:{" "}
+                {transactionBreakdown?.transactionType || "N/A"}
+              </div>
+              <div>
+                CCIP Router:{" "}
+                {transactionBreakdown?.debugInfo?.ccipRouter || "N/A"}
+              </div>
+            </div>
+          </div>
+          {/* Enhanced CCIP Message Details */}
+          {transactionData?.ccipDetails?.message && (
+            <div className="debug-subsection">
+              <h4>🔗 CCIP Message Breakdown</h4>
+              <div className="debug-fees">
+                <div>
+                  <strong>📍 Receiver:</strong>{" "}
+                  {transactionData.ccipDetails.message.receiver || "N/A"}
+                </div>
+                <div>
+                  <strong>💰 Token Amounts:</strong>
+                  {transactionData.ccipDetails.message.tokenAmounts?.map(
+                    (tokenAmount, index) => (
+                      <div key={index} style={{ marginLeft: "20px" }}>
+                        Token: {tokenAmount.token || "Unknown"}
+                        <br />
+                        Amount: {tokenAmount.amount || "0"} (
+                        {tokenAmount.amount
+                          ? ethers.utils.formatUnits(tokenAmount.amount, 6)
+                          : "0"}{" "}
+                        USDC)
+                      </div>
+                    )
+                  ) || "No token amounts"}
+                </div>
+                <div>
+                  <strong>💸 Fee Token:</strong>{" "}
+                  {transactionData.ccipDetails.message.feeToken || "N/A"}
+                </div>
+                <div>
+                  <strong>📋 Data:</strong>{" "}
+                  {transactionData.ccipDetails.message.data || "0x"}
+                </div>
+                <div>
+                  <strong>🔢 Gas Limit:</strong>{" "}
+                  {transactionData.ccipDetails.message.gasLimit || "0"}
+                </div>
+              </div>
+
+              {/* Fee Calculation Details */}
+              {transactionData.ccipDetails.estimatedFee && (
+                <div className="debug-subsection">
+                  <h5>� Fee Calculation Details</h5>
+                  <div className="debug-fees">
+                    <div>
+                      <strong>Router Fee (Raw):</strong>{" "}
+                      {ethers.utils.formatEther(
+                        transactionData.ccipDetails.estimatedFee
+                      )}{" "}
+                      ETH
+                    </div>
+                    <div>
+                      <strong>Buffer Applied:</strong> 20% (prevents
+                      InsufficientFeeTokenAmount)
+                    </div>
+                    <div>
+                      <strong>Final Transaction Value:</strong>{" "}
+                      {transactionData.value
+                        ? ethers.utils.formatEther(transactionData.value)
+                        : "0"}{" "}
+                      ETH
+                    </div>
+                    <div>
+                      <strong>Fee Source:</strong> Dynamic router query (
+                      {transactionData.ccipDetails.feeCalculationMethod ||
+                        "router.getFee()"}
+                      )
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Raw Message Object */}
+              <details style={{ marginTop: "10px" }}>
+                <summary>📄 Raw CCIP Message Object</summary>
+                <pre className="debug-data" style={{ fontSize: "10px" }}>
+                  {JSON.stringify(transactionData.ccipDetails.message, null, 2)}
+                </pre>
+              </details>
+            </div>
+          )}
+          {/* Enhanced CCIP Transaction Analysis */}
+          {transactionBreakdown?.isCCIPTransaction && (
+            <div className="debug-subsection">
+              <h4>🚨 CCIP Transaction Analysis</h4>
+              <div className="debug-fees">
+                <div>
+                  Source Chain: {transactionData?.sourceChain || "Unknown"}
+                </div>
+                <div>
+                  Destination Chain:{" "}
+                  {transactionData?.destinationChain || "Unknown"}
+                </div>
+                <div>
+                  Token Amount: {transactionData?.amount || "Unknown"} USDC
+                </div>
+                <div>Recipient: {transactionData?.recipient || "Unknown"}</div>
+                <div>Transaction To: {transactionData?.to || "Unknown"}</div>
+                <div>
+                  Transaction Value:{" "}
+                  {transactionData?.value
+                    ? ethers.utils.formatEther(transactionData.value)
+                    : "0"}{" "}
+                  ETH
+                </div>
+                <div>
+                  Transaction Data Length: {transactionData?.data?.length || 0}{" "}
+                  characters
+                </div>
+                <div>
+                  Gas Limit:{" "}
+                  {transactionData?.gas ||
+                    transactionData?.gasLimit ||
+                    "Unknown"}
+                </div>
+              </div>
+
+              {transactionData?.data && (
+                <div className="debug-subsection">
+                  <h5>📋 Raw Transaction Data</h5>
+                  <pre
+                    className="debug-data"
+                    style={{
+                      fontSize: "10px",
+                      maxHeight: "200px",
+                      overflow: "auto",
+                    }}
+                  >
+                    {transactionData.data}
+                  </pre>
+                </div>
+              )}
+
+              {/* 🎬 Enhanced Simulation Error Display */}
+              {transactionData?.simulationError && (
+                <div className="debug-subsection">
+                  <h5 style={{ color: "#ff4444" }}>
+                    🚨 TRANSACTION SIMULATION FAILED
+                  </h5>
+                  <div
+                    style={{
+                      backgroundColor: "#ffebee",
+                      border: "1px solid #ff4444",
+                      padding: "10px",
+                      borderRadius: "4px",
+                      marginBottom: "10px",
+                    }}
+                  >
+                    <strong style={{ color: "#d32f2f" }}>
+                      ⚠️ This transaction will fail when executed!
+                    </strong>
+                    <div style={{ marginTop: "8px" }}>
+                      <strong>Revert Reason:</strong>{" "}
+                      {transactionData.simulationError.revertReason ||
+                        "Unknown"}
+                    </div>
+                    <div>
+                      <strong>Error:</strong>{" "}
+                      {transactionData.simulationError.error || "Unknown error"}
+                    </div>
+                    {transactionData.simulationError.errorCode && (
+                      <div>
+                        <strong>Error Code:</strong>{" "}
+                        {transactionData.simulationError.errorCode}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 💡 Specific Guidance Based on Error Type */}
+                  {(transactionData.simulationError.revertReason
+                    ?.toLowerCase()
+                    .includes("allowance") ||
+                    transactionData.simulationError.error
+                      ?.toLowerCase()
+                      .includes("allowance")) && (
+                    <div
+                      style={{
+                        backgroundColor: "#fff3e0",
+                        border: "1px solid #ff9800",
+                        padding: "10px",
+                        borderRadius: "4px",
+                        marginBottom: "10px",
+                      }}
+                    >
+                      <strong style={{ color: "#f57c00" }}>
+                        🔧 ALLOWANCE ISSUE DETECTED
+                      </strong>
+                      <div style={{ marginTop: "5px", fontSize: "14px" }}>
+                        The contract doesn't have permission to spend your USDC
+                        tokens. You need to approve the spending allowance
+                        first.
+                      </div>
+                    </div>
+                  )}
+
+                  {(transactionData.simulationError.revertReason
+                    ?.toLowerCase()
+                    .includes("balance") ||
+                    transactionData.simulationError.error
+                      ?.toLowerCase()
+                      .includes("balance")) && (
+                    <div
+                      style={{
+                        backgroundColor: "#fff3e0",
+                        border: "1px solid #ff9800",
+                        padding: "10px",
+                        borderRadius: "4px",
+                        marginBottom: "10px",
+                      }}
+                    >
+                      <strong style={{ color: "#f57c00" }}>
+                        💰 INSUFFICIENT BALANCE
+                      </strong>
+                      <div style={{ marginTop: "5px", fontSize: "14px" }}>
+                        You don't have enough USDC tokens in your wallet. Check
+                        your balance and get more test USDC from a faucet if
+                        needed.
+                      </div>
+                      <div
+                        style={{
+                          marginTop: "5px",
+                          fontSize: "12px",
+                          color: "#666",
+                        }}
+                      >
+                        💡 Base Sepolia Faucet:{" "}
+                        <a
+                          href="https://docs.base.org/docs/tools/network-faucets"
+                          target="_blank"
+                        >
+                          https://docs.base.org/docs/tools/network-faucets
+                        </a>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 🚨 Generic Simulation Failure */}
+                  {transactionData.simulationError.errorCode ===
+                    "CALL_EXCEPTION" &&
+                    !transactionData.simulationError.revertReason
+                      ?.toLowerCase()
+                      .includes("allowance") &&
+                    !transactionData.simulationError.revertReason
+                      ?.toLowerCase()
+                      .includes("balance") &&
+                    !transactionData.simulationError.error
+                      ?.toLowerCase()
+                      .includes("allowance") &&
+                    !transactionData.simulationError.error
+                      ?.toLowerCase()
+                      .includes("balance") && (
+                      <div
+                        style={{
+                          backgroundColor: "#fff3e0",
+                          border: "1px solid #ff9800",
+                          padding: "10px",
+                          borderRadius: "4px",
+                          marginBottom: "10px",
+                        }}
+                      >
+                        <strong style={{ color: "#f57c00" }}>
+                          🚨 TRANSACTION SIMULATION FAILED
+                        </strong>
+                        <div style={{ marginTop: "5px", fontSize: "14px" }}>
+                          The transaction simulation failed with a generic
+                          error. This could be due to:
+                        </div>
+                        <ul
+                          style={{
+                            marginTop: "5px",
+                            fontSize: "13px",
+                            paddingLeft: "20px",
+                          }}
+                        >
+                          <li>Network connectivity issues</li>
+                          <li>CCIP router configuration problems</li>
+                          <li>Temporary blockchain RPC issues</li>
+                          <li>Gas estimation failures</li>
+                        </ul>
+                        <div
+                          style={{
+                            marginTop: "5px",
+                            fontSize: "12px",
+                            color: "#666",
+                          }}
+                        >
+                          💡 You can try proceeding anyway - the simulation
+                          might be overly cautious, or wait a moment and try
+                          again if this persists.
+                        </div>
+                      </div>
+                    )}
+
+                  <div style={{ fontSize: "12px", color: "#666" }}>
+                    💡 This simulation detected the transaction will revert
+                    before sending it to the blockchain. Resolve the issue above
+                    and try again.
+                  </div>
+                </div>
+              )}
+            </div>
+          )}{" "}
+          {/* Fee Calculation Details */}
+          <div className="debug-subsection">
+            <h4>💰 Fee Calculation Details</h4>
+            <div className="debug-fees">
+              <div>
+                Router Fee (Raw): {transactionBreakdown?.rawFee || "N/A"}
+              </div>
+              <div>
+                Buffer Applied: {transactionBreakdown?.feeBuffer || "20%"}
+              </div>
+              <div>
+                Final Fee (ETH): {transactionBreakdown?.finalFeeETH || "N/A"}
+              </div>
+              <div>
+                Transaction Value: {transactionBreakdown?.value || "N/A"}
+              </div>
+              <div>
+                Fee Source: {transactionBreakdown?.feeSource || "Unknown"}
+              </div>
+            </div>
+          </div>
+          {/* Raw Transaction */}
+          <div className="debug-subsection">
+            <h4>📝 Raw Transaction Data</h4>
+            <pre className="debug-data">
+              {JSON.stringify(transactionBreakdown?.rawTransaction, null, 2)}
+            </pre>
+          </div>
         </details>
       </div>
     </div>

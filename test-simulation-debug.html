@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CCIP Transaction Simulation Debug</title>
+    <style>
+      body {
+        font-family: "Courier New", monospace;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #1a1a1a;
+        color: #e0e0e0;
+      }
+
+      .section {
+        background: #2d2d2d;
+        border: 1px solid #555;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+      }
+
+      .section h2 {
+        color: #4caf50;
+        margin-top: 0;
+      }
+
+      button {
+        background: #4caf50;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 6px;
+        cursor: pointer;
+        margin: 5px;
+        font-size: 14px;
+      }
+
+      button:hover {
+        background: #45a049;
+      }
+
+      .error {
+        background: #ff4444;
+      }
+
+      .error:hover {
+        background: #cc3333;
+      }
+
+      pre {
+        background: #1e1e1e;
+        padding: 15px;
+        border-radius: 4px;
+        border-left: 4px solid #4caf50;
+        overflow-x: auto;
+        max-height: 400px;
+        overflow-y: auto;
+      }
+
+      .log {
+        background: #1e1e1e;
+        padding: 10px;
+        border-radius: 4px;
+        margin: 10px 0;
+        max-height: 300px;
+        overflow-y: auto;
+        font-size: 12px;
+      }
+
+      .success {
+        color: #4caf50;
+      }
+      .warning {
+        color: #ff9800;
+      }
+      .error-text {
+        color: #ff4444;
+      }
+      .info {
+        color: #2196f3;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🎬 CCIP Transaction Simulation & Error Detection</h1>
+    <p>
+      Advanced debugging tool to test CCIP transaction simulation and error
+      detection
+    </p>
+
+    <div class="section">
+      <h2>🔧 Transaction Simulation Test</h2>
+      <p>
+        Test the new simulation functionality that detects revert reasons before
+        execution
+      </p>
+
+      <button onclick="testCCIPSimulation()">
+        🎬 Test CCIP Transaction Simulation
+      </button>
+      <button onclick="testCCIPBuild()">
+        🔧 Build CCIP Transaction with Simulation
+      </button>
+      <button onclick="clearLogs()" class="error">🗑️ Clear Logs</button>
+
+      <div class="log" id="simulationLog">
+        <div class="info">Ready to test CCIP simulation...</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>📊 Network Status</h2>
+      <div id="networkStatus">
+        <div>Network: <span id="currentNetwork">Unknown</span></div>
+        <div>Account: <span id="currentAccount">Not connected</span></div>
+        <div>Chain ID: <span id="currentChainId">Unknown</span></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>🔍 Simulation Results</h2>
+      <div id="simulationResults">
+        <pre>No simulation results yet</pre>
+      </div>
+    </div>
+
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+    <script type="module">
+      // Import our services
+      import { default as ccipConfigService } from "./src/services/ccipConfigService.js";
+
+      // Make services available globally for testing
+      window.ccipConfigService = ccipConfigService;
+
+      // Test configuration
+      const TEST_CONFIG = {
+        sourceChain: 84532, // Base Sepolia
+        destinationChain: 11155111, // Ethereum Sepolia
+        amount: 4,
+        recipient: "0x6ef27E391c7eac228c26300aA92187382cc7fF8a",
+        feeToken: "native",
+      };
+
+      function log(message, type = "info") {
+        const logElement = document.getElementById("simulationLog");
+        const timestamp = new Date().toLocaleTimeString();
+        const className = type;
+        logElement.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+        logElement.scrollTop = logElement.scrollHeight;
+      }
+
+      function displayResults(results) {
+        document.getElementById(
+          "simulationResults"
+        ).innerHTML = `<pre>${JSON.stringify(results, null, 2)}</pre>`;
+      }
+
+      async function updateNetworkStatus() {
+        try {
+          if (window.ethereum) {
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
+            const network = await provider.getNetwork();
+            const accounts = await window.ethereum.request({
+              method: "eth_accounts",
+            });
+
+            document.getElementById("currentNetwork").textContent =
+              network.name || "Unknown";
+            document.getElementById("currentChainId").textContent =
+              network.chainId;
+            document.getElementById("currentAccount").textContent = accounts[0]
+              ? `${accounts[0].slice(0, 6)}...${accounts[0].slice(-4)}`
+              : "Not connected";
+          } else {
+            document.getElementById("currentNetwork").textContent =
+              "MetaMask not available";
+          }
+        } catch (error) {
+          log(`Network status error: ${error.message}`, "error-text");
+        }
+      }
+
+      window.testCCIPSimulation = async function () {
+        try {
+          log("🎬 Starting CCIP transaction simulation test...", "info");
+
+          if (!window.ethereum) {
+            log("❌ MetaMask not available", "error-text");
+            return;
+          }
+
+          // Connect wallet if needed
+          const accounts = await window.ethereum.request({
+            method: "eth_requestAccounts",
+          });
+          log(`✅ Connected to wallet: ${accounts[0]}`, "success");
+
+          // Test simulation directly
+          const provider = new ethers.providers.Web3Provider(window.ethereum);
+          const userAddress = accounts[0];
+
+          // Build a test CCIP message first
+          log("🔧 Building test CCIP message...", "info");
+          const sourceConfig = ccipConfigService.getNetworkConfig(
+            TEST_CONFIG.sourceChain
+          );
+          const destConfig = ccipConfigService.getNetworkConfig(
+            TEST_CONFIG.destinationChain
+          );
+
+          const testMessage = ccipConfigService.buildCCIPMessage(
+            TEST_CONFIG.recipient,
+            TEST_CONFIG.amount,
+            sourceConfig,
+            destConfig,
+            TEST_CONFIG.feeToken
+          );
+
+          log("✅ Test message built:", "success");
+          log(JSON.stringify(testMessage, null, 2), "info");
+
+          // Test simulation
+          log("🎬 Running simulation...", "info");
+          const simulationResult =
+            await ccipConfigService.simulateCCIPTransaction(
+              sourceConfig.router,
+              destConfig.chainSelector,
+              testMessage,
+              ethers.utils.parseEther("0.0001").toString(), // Small test value
+              userAddress
+            );
+
+          log("📊 Simulation completed:", "success");
+          displayResults(simulationResult);
+
+          if (simulationResult.success) {
+            log(
+              `✅ Simulation SUCCESS: ${simulationResult.message}`,
+              "success"
+            );
+            log(`Expected Message ID: ${simulationResult.messageId}`, "info");
+          } else {
+            log(
+              `❌ Simulation FAILED: ${simulationResult.revertReason}`,
+              "error-text"
+            );
+            log(`Error: ${simulationResult.error}`, "error-text");
+          }
+        } catch (error) {
+          log(`🚨 Simulation test failed: ${error.message}`, "error-text");
+          console.error("Simulation test error:", error);
+        }
+      };
+
+      window.testCCIPBuild = async function () {
+        try {
+          log(
+            "🔧 Testing full CCIP transaction build with simulation...",
+            "info"
+          );
+
+          const transactionResult =
+            await ccipConfigService.buildCCIPTransaction(
+              TEST_CONFIG.sourceChain,
+              TEST_CONFIG.destinationChain,
+              TEST_CONFIG.amount,
+              TEST_CONFIG.recipient,
+              TEST_CONFIG.feeToken
+            );
+
+          log("📊 Transaction build completed:", "success");
+          displayResults(transactionResult);
+
+          if (transactionResult.success) {
+            if (transactionResult.simulationError) {
+              log(
+                `⚠️ Transaction built but simulation detected failure!`,
+                "warning"
+              );
+              log(
+                `Revert Reason: ${transactionResult.simulationError.revertReason}`,
+                "error-text"
+              );
+            } else {
+              log(
+                `✅ Transaction built successfully and simulation passed`,
+                "success"
+              );
+            }
+          } else {
+            log(
+              `❌ Transaction build failed: ${transactionResult.error}`,
+              "error-text"
+            );
+          }
+        } catch (error) {
+          log(
+            `🚨 Transaction build test failed: ${error.message}`,
+            "error-text"
+          );
+          console.error("Transaction build error:", error);
+        }
+      };
+
+      window.clearLogs = function () {
+        document.getElementById("simulationLog").innerHTML =
+          '<div class="info">Logs cleared - Ready for new tests...</div>';
+      };
+
+      // Initialize
+      updateNetworkStatus();
+
+      // Update network status when account or network changes
+      if (window.ethereum) {
+        window.ethereum.on("accountsChanged", updateNetworkStatus);
+        window.ethereum.on("chainChanged", updateNetworkStatus);
+      }
+
+      log("🚀 CCIP Simulation Debug Tool Ready", "success");
+      log('Click "Test CCIP Transaction Simulation" to start testing', "info");
+    </script>
+  </body>
+</html>
