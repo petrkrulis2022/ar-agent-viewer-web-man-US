@@ -133,7 +133,7 @@ const IntermediatePaymentModal = ({
               );
               return {
                 ...transactionData.debugInfo,
-                chainSelector: "5218248003909245446", // Always force correct value
+                chainSelector: "5224473277236331295", // Always force correct value
               };
             }
 
@@ -154,7 +154,7 @@ const IntermediatePaymentModal = ({
                 transactionData.destinationChain === 11155420 ||
                 transactionData.destinationChain === "11155420"
               ) {
-                return "5218248003909245446";
+                return "5224473277236331295";
               }
               return "N/A";
             })(),

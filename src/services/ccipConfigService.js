@@ -180,18 +180,18 @@ class CCIPConfigService {
             );
             console.log("  - Type:", typeof config.chainSelector);
             console.log("  - String value:", String(config.chainSelector));
-            console.log("  - Expected:", "5218248003909245446");
+            console.log("  - Expected:", "5224473277236331295");
             console.log(
               "  - Match:",
-              String(config.chainSelector) === "5218248003909245446"
+              String(config.chainSelector) === "5224473277236331295"
             );
 
-            if (String(config.chainSelector) !== "5218248003909245446") {
+            if (String(config.chainSelector) !== "5224473277236331295") {
               console.error(
                 "❌ CRITICAL: Wrong OP Sepolia chain selector in config file!"
               );
               throw new Error(
-                `OP Sepolia chain selector is wrong: expected 5218248003909245446, got ${config.chainSelector}`
+                `OP Sepolia chain selector is wrong: expected 5224473277236331295, got ${config.chainSelector}`
               );
             } else {
               console.log(
@@ -397,18 +397,35 @@ class CCIPConfigService {
         message: message,
       });
 
-      // Convert chain selector to BigInt for getFee call
-      const chainSelectorBigInt = BigInt(destConfig.chainSelector);
-      console.log("🔢 Chain selector conversion for getFee:", {
-        original: destConfig.chainSelector,
-        bigint: chainSelectorBigInt.toString(),
-        hex: "0x" + chainSelectorBigInt.toString(16)
-      });
+      // Try to get fee from contract, fall back to emergency calculation
+      let estimatedFee;
+      try {
+        estimatedFee = await routerContract.getFee(
+          destConfig.chainSelector,
+          message
+        );
+        console.log(
+          "✅ Contract fee estimation successful:",
+          estimatedFee.toString()
+        );
+      } catch (contractError) {
+        console.warn(
+          "⚠️ Contract fee estimation failed, using emergency calculation:",
+          contractError.message
+        );
 
-      const estimatedFee = await routerContract.getFee(
-        chainSelectorBigInt,
-        message
-      );
+        // Fall back to emergency fee calculation
+        const emergencyFeeWei = this.getEstimatedFeeForRoute_OLD(
+          sourceChain,
+          destinationChain
+        );
+        estimatedFee = ethers.BigNumber.from(emergencyFeeWei);
+
+        console.log("🚨 Using emergency fee:", {
+          emergencyFeeWei: emergencyFeeWei,
+          emergencyFeeETH: ethers.utils.formatEther(emergencyFeeWei),
+        });
+      }
 
       // Add a 20% buffer to the estimated fee for robustness
       const bufferedFee =
@@ -813,7 +830,7 @@ class CCIPConfigService {
 
       if (destinationChain.toString() === "11155420") {
         console.log("  🎯 OP SEPOLIA DETECTED - Validating chain selector...");
-        const expectedOPSepoliaSelector = "5218248003909245446";
+        const expectedOPSepoliaSelector = "5224473277236331295";
         const actualSelector = String(destConfig.chainSelector);
 
         console.log(`  - Expected: ${expectedOPSepoliaSelector}`);
@@ -903,7 +920,7 @@ class CCIPConfigService {
       console.log("  - Actual hex conversion:", "0x" + actualHex);
 
       // Test with known correct values
-      const correctOPSepoliaDecimal = "5218248003909245446";
+      const correctOPSepoliaDecimal = "5224473277236331295";
       const correctOPSepoliaValue = BigInt(correctOPSepoliaDecimal);
       const correctOPSepoliaHex = correctOPSepoliaValue.toString(16);
       console.log(
@@ -918,10 +935,10 @@ class CCIPConfigService {
         actualValue.toString() === correctOPSepoliaValue.toString()
       );
       console.log("  - Hex match?:", actualHex === correctOPSepoliaHex);
-      console.log("  - Expected OP Sepolia:", "5218248003909245446");
+      console.log("  - Expected OP Sepolia:", "5224473277236331295");
       console.log(
         "  - Match expected?:",
-        String(destConfig.chainSelector) === "5218248003909245446"
+        String(destConfig.chainSelector) === "5224473277236331295"
       );
       console.log(
         "  - Wrong old selector?:",
@@ -954,7 +971,7 @@ class CCIPConfigService {
 
         // FORCE CORRECT OP SEPOLIA SELECTOR: Always use correct value
         if (destinationChain.toString() === "11155420") {
-          const correctOPSelector = "5218248003909245446";
+          const correctOPSelector = "5224473277236331295";
           console.log(
             "🚨 FORCING CORRECT OP SEPOLIA CHAIN SELECTOR FOR TRANSACTION ENCODING"
           );
@@ -996,7 +1013,7 @@ class CCIPConfigService {
 
       // Validation for OP Sepolia (now should be correct from config)
       if (destinationChain.toString() === "11155420") {
-        const expectedHex = "486af0e97ee6da06";
+        const expectedHex = "48810ec3e431431f";
         if (hexValue === expectedHex) {
           console.log("✅ OP Sepolia chain selector is correct!");
         } else {
@@ -1104,7 +1121,7 @@ class CCIPConfigService {
               // Use correct chain selector based on destination chain
               if (destinationChain.toString() === "11155420") {
                 console.log("  - Fixing OP Sepolia chain selector");
-                return "5218248003909245446";
+                return "5224473277236331295";
               } else {
                 console.error("  - Unknown destination chain, cannot fix");
                 return "CORRUPTED_CHAIN_SELECTOR_UNKNOWN_CHAIN";
@@ -1114,7 +1131,7 @@ class CCIPConfigService {
             // Additional check for OP Sepolia specifically
             if (destinationChain.toString() === "11155420") {
               // Ensure we always use the correct OP Sepolia selector
-              const expectedSelector = "5218248003909245446";
+              const expectedSelector = "5224473277236331295";
 
               if (String(destConfig.chainSelector) !== expectedSelector) {
                 console.error("🚨 WRONG OP SEPOLIA CHAIN SELECTOR!");
@@ -1134,7 +1151,7 @@ class CCIPConfigService {
           destConfigComplete: JSON.stringify(destConfig),
           expectedOPSepoliaSelector:
             destinationChain.toString() === "11155420"
-              ? "5218248003909245446"
+              ? "5224473277236331295"
               : "N/A",
           extraArgs: message.extraArgs,
           transactionValue: transactionValue,
