@@ -397,8 +397,16 @@ class CCIPConfigService {
         message: message,
       });
 
+      // Convert chain selector to BigInt for getFee call
+      const chainSelectorBigInt = BigInt(destConfig.chainSelector);
+      console.log("🔢 Chain selector conversion for getFee:", {
+        original: destConfig.chainSelector,
+        bigint: chainSelectorBigInt.toString(),
+        hex: "0x" + chainSelectorBigInt.toString(16)
+      });
+
       const estimatedFee = await routerContract.getFee(
-        destConfig.chainSelector,
+        chainSelectorBigInt,
         message
       );
 
@@ -985,7 +993,7 @@ class CCIPConfigService {
       console.log("  - Using selector:", finalChainSelector);
       console.log("  - As decimal:", decimalValue);
       console.log("  - As hex:", "0x" + hexValue);
-      
+
       // Validation for OP Sepolia (now should be correct from config)
       if (destinationChain.toString() === "11155420") {
         const expectedHex = "486af0e97ee6da06";

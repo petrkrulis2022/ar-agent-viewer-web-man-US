@@ -133,7 +133,7 @@ const IntermediatePaymentModal = ({
               );
               return {
                 ...transactionData.debugInfo,
-                                chainSelector: "5218248003909245446" // Always force correct value
+                chainSelector: "5218248003909245446", // Always force correct value
               };
             }
 
