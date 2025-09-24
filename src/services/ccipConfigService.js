@@ -831,8 +831,6 @@ class CCIPConfigService {
     }
   }
 
-
-
   /**
    * @deprecated - Replaced by estimateCCIPFees with dynamic router queries
    * Get estimated fee for a specific route (placeholder implementation)

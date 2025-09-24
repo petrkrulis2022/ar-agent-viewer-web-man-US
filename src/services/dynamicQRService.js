@@ -192,7 +192,7 @@ class DynamicQRService {
         feeCalculation: "Using real router.getFee() result with buffer",
         note: "This ETH amount pays for CCIP fees (USDC sent separately via tokenAmounts)",
       });
-      const gasLimit = "300000";
+      const gasLimit = "500000"; // Increased gas limit to 500k to prevent out-of-gas errors
 
       // MetaMask URI for CCIP USDC transfer - value=0 because we're calling a contract
       const metaMaskUri = `ethereum:${routerAddress}@${sourceChainId}?value=${transferValue}&gas=${gasLimit}`;
