@@ -461,7 +461,7 @@ class CCIPConfigService {
         },
       ],
       feeToken: feeTokenAddress,
-      extraArgs: this.encodeExtraArgs({ gasLimit: 200000 }), // FIXED: Reduced gas limit for destination execution
+      extraArgs: this.encodeExtraArgs({ gasLimit: 500000 }), // Increased gas limit for destination execution to prevent out-of-gas
     };
   }
 
