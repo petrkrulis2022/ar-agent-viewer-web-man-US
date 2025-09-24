@@ -5,79 +5,57 @@
 import QRCode from "qrcode";
 import { ethers } from "ethers";
 import ccipConfigService from "./ccipConfigService.js";
+import ccipConfigConsolidated from "../config/ccip-config-consolidated.json";
 
 class DynamicQRService {
   constructor() {
     this.currentNetwork = null;
-    // USDC token addresses for supported testnets (EVM + Solana)
-    this.usdcTokenAddresses = {
-      // EVM Networks
-      11155111: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", // Ethereum Sepolia
-      421614: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d", // Arbitrum Sepolia
-      84532: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", // Base Sepolia
-      11155420: "0x5fd84259d66Cd46123540766Be93DFE6D43130D7", // OP Sepolia
-      43113: "0x5425890298aed601595a70AB815c96711a31Bc65", // Avalanche Fuji
-      80002: "0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582", // Polygon Amoy ✅ NEW
+    
+    // Initialize USDC token addresses and network configurations from consolidated config
+    this.usdcTokenAddresses = {};
+    this.supportedNetworks = {};
+    
+    this.initializeFromConsolidatedConfig();
+  }
 
-      // Solana Networks
-      "solana-devnet": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU", // Solana Devnet ✅ NEW
-    };
-
-    // Network configurations for all supported chains
-    this.supportedNetworks = {
-      // EVM Networks
-      11155111: {
-        name: "Ethereum Sepolia",
-        symbol: "ETH",
-        type: "EVM",
-        rpc: "https://sepolia.infura.io/v3/",
-        explorer: "https://sepolia.etherscan.io/",
-      },
-      421614: {
-        name: "Arbitrum Sepolia",
-        symbol: "ETH",
-        type: "EVM",
-        rpc: "https://sepolia-rollup.arbitrum.io/rpc",
-        explorer: "https://sepolia.arbiscan.io/",
-      },
-      84532: {
-        name: "Base Sepolia",
-        symbol: "ETH",
-        type: "EVM",
-        rpc: "https://sepolia.base.org",
-        explorer: "https://sepolia.basescan.org/",
-      },
-      11155420: {
-        name: "OP Sepolia",
-        symbol: "ETH",
-        type: "EVM",
-        rpc: "https://sepolia.optimism.io",
-        explorer: "https://sepolia-optimism.etherscan.io/",
-      },
-      43113: {
-        name: "Avalanche Fuji",
-        symbol: "AVAX",
-        type: "EVM",
-        rpc: "https://api.avax-test.network/ext/bc/C/rpc",
-        explorer: "https://testnet.snowtrace.io/",
-      },
-      80002: {
-        name: "Polygon Amoy",
-        symbol: "MATIC",
-        type: "EVM",
-        rpc: "https://rpc-amoy.polygon.technology/",
-        explorer: "https://amoy.polygonscan.com/",
-      },
-
-      // Solana Networks
-      "solana-devnet": {
-        name: "Solana Devnet",
-        symbol: "SOL",
-        type: "SVM",
-        rpc: "https://api.devnet.solana.com",
-        explorer: "https://explorer.solana.com/?cluster=devnet",
-      },
-    };
+  /**
+   * Initialize configurations from consolidated CCIP config
+   * Dynamically loads USDC addresses and network configurations
+   */
+  initializeFromConsolidatedConfig() {
+    console.log("🔄 Initializing DynamicQRService from consolidated config...");
+    
+    Object.entries(ccipConfigConsolidated.chains).forEach(([chainName, config]) => {
+      const chainId = config.chainId;
+      
+      // Build USDC token addresses map
+      if (chainId === "devnet") {
+        this.usdcTokenAddresses["solana-devnet"] = config.usdc.tokenAddress;
+      } else {
+        this.usdcTokenAddresses[chainId] = config.usdc.tokenAddress;
+      }
+      
+      // Build supported networks configuration
+      const networkConfig = {
+        name: config.chainName,
+        symbol: config.currencySymbol,
+        type: chainId === "devnet" ? "SVM" : "EVM",
+        rpc: config.rpcUrl.startsWith("http") ? config.rpcUrl : `https://${config.rpcUrl}`,
+        chainSelector: config.chainSelector,
+        router: config.router
+      };
+      
+      if (chainId === "devnet") {
+        this.supportedNetworks["solana-devnet"] = networkConfig;
+      } else {
+        this.supportedNetworks[chainId] = networkConfig;
+      }
+    });
+    
+    console.log("✅ DynamicQRService initialized with consolidated config:", {
+      usdcAddresses: Object.keys(this.usdcTokenAddresses).length,
+      networks: Object.keys(this.supportedNetworks).length
+    });
   }
 
   // Network utility methods

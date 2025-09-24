@@ -4,7 +4,8 @@
 
 import { ethers } from "ethers";
 import BigNumber from "bignumber.js";
-import ccipConfig from "../config/ccip-config.json";
+import ccipConfigConsolidated from "../config/ccip-config-consolidated.json";
+import ccipConfig from "../config/ccip-config.json"; // Keep for backward compatibility
 
 // CCIP Router ABI for encoding transactions
 const CCIP_ROUTER_ABI = [
@@ -148,89 +149,69 @@ class CCIPConfigService {
   }
 
   /**
-   * Initialize network configurations from ccip-config.json
+   * Initialize network configurations from consolidated ccip-config
+   * Uses new structure: ccipConfigConsolidated.chains
    */
   initializeConfigurations() {
     try {
-      // Load EVM networks
-      const evmNetworks = [
-        "EthereumSepolia",
-        "ArbitrumSepolia",
-        "OPSepolia",
-        "BaseSepolia",
-        "AvalancheFuji",
-        "PolygonAmoy",
-      ];
-
-      evmNetworks.forEach((networkName) => {
-        const config = ccipConfig[networkName];
-        if (config) {
-          console.log(`🔍 LOADING CONFIG FOR ${networkName}:`, {
-            chainId: config.chainId,
-            chainSelector: config.chainSelector,
-            chainSelectorType: typeof config.chainSelector,
-          });
-
-          // CRITICAL: Validate OP Sepolia configuration during initialization
-          if (networkName === "OPSepolia") {
-            console.log("🚨 OP SEPOLIA CONFIGURATION VALIDATION:");
-            console.log(
-              "  - Raw chainSelector from config:",
-              config.chainSelector
-            );
-            console.log("  - Type:", typeof config.chainSelector);
-            console.log("  - String value:", String(config.chainSelector));
-            console.log("  - Expected:", "5224473277236331295");
-            console.log(
-              "  - Match:",
-              String(config.chainSelector) === "5224473277236331295"
-            );
-
-            if (String(config.chainSelector) !== "5224473277236331295") {
-              console.error(
-                "❌ CRITICAL: Wrong OP Sepolia chain selector in config file!"
-              );
-              throw new Error(
-                `OP Sepolia chain selector is wrong: expected 5224473277236331295, got ${config.chainSelector}`
-              );
-            } else {
-              console.log(
-                "✅ OP Sepolia chain selector is correct in config file"
-              );
-            }
-          }
-
-          this.networkConfigs.set(config.chainId, {
-            chainId: config.chainId,
-            chainName: config.chainName,
-            chainSelector: config.chainSelector,
-            router: config.router,
-            usdc: config.usdc,
-            lanes: config.lanes,
-            rpcUrl: config.rpcUrl,
-            currencySymbol: config.currencySymbol,
-            feeTokens: config.feeTokens,
-            type: "EVM",
-          });
-        }
-      });
-
-      // Load Solana network
-      const solanaConfig = ccipConfig.SolanaDevnet;
-      if (solanaConfig) {
-        this.networkConfigs.set("devnet", {
-          chainId: "devnet",
-          chainName: solanaConfig.chainName,
-          chainSelector: solanaConfig.chainSelector,
-          router: solanaConfig.router,
-          usdc: solanaConfig.usdc,
-          lanes: solanaConfig.lanes,
-          rpcUrl: solanaConfig.rpcUrl,
-          currencySymbol: solanaConfig.currencySymbol,
-          feeTokens: solanaConfig.feeTokens,
-          type: "Solana",
+      console.log("🚀 Initializing CCIP configurations with consolidated structure...");
+      
+      // Load all chains from the consolidated configuration
+      const chains = ccipConfigConsolidated.chains;
+      
+      Object.entries(chains).forEach(([networkName, config]) => {
+        console.log(`🔍 LOADING CONFIG FOR ${networkName}:`, {
+          chainId: config.chainId,
+          chainSelector: config.chainSelector,
+          chainSelectorType: typeof config.chainSelector,
         });
-      }
+
+        // CRITICAL: Validate OP Sepolia configuration during initialization
+        if (networkName === "OPSepolia") {
+          console.log("🚨 OP SEPOLIA CONFIGURATION VALIDATION:");
+          console.log(
+            "  - Raw chainSelector from config:",
+            config.chainSelector
+          );
+          console.log("  - Type:", typeof config.chainSelector);
+          console.log("  - String value:", String(config.chainSelector));
+          console.log("  - Expected:", "5224473277236331295");
+          console.log(
+            "  - Match:",
+            String(config.chainSelector) === "5224473277236331295"
+          );
+
+          if (String(config.chainSelector) !== "5224473277236331295") {
+            console.error(
+              "❌ CRITICAL: Wrong OP Sepolia chain selector in config file!"
+            );
+            throw new Error(
+              `OP Sepolia chain selector is wrong: expected 5224473277236331295, got ${config.chainSelector}`
+            );
+          } else {
+            console.log(
+              "✅ OP Sepolia chain selector is correct in config file"
+            );
+          }
+        }
+
+        // Determine chain type based on chainId
+        const chainType = config.chainId === "devnet" ? "SVM" : "EVM";
+        const chainIdKey = config.chainId === "devnet" ? "devnet" : config.chainId.toString();
+
+        this.networkConfigs.set(chainIdKey, {
+          chainId: config.chainId,
+          chainName: config.chainName,
+          chainSelector: config.chainSelector,
+          router: config.router,
+          usdc: config.usdc,
+          lanes: config.lanes,
+          rpcUrl: config.rpcUrl,
+          currencySymbol: config.currencySymbol,
+          feeTokens: config.feeTokens || {},
+          type: chainType,
+        });
+      });
 
       // Initialize supported routes
       this.initializeSupportedRoutes();
@@ -278,6 +259,59 @@ class CCIPConfigService {
    */
   getNetworkConfig(chainId) {
     return this.networkConfigs.get(chainId.toString()) || null;
+  }
+
+  /**
+   * Get chain configuration by name from consolidated config
+   * @param {string} chainName - The chain name (e.g., "BaseSepolia", "OPSepolia")
+   * @returns {Object} Chain configuration object
+   */
+  getChainConfig(chainName) {
+    const config = ccipConfigConsolidated.chains[chainName];
+    if (!config) {
+      throw new Error(`Configuration not found for chain: ${chainName}`);
+    }
+    return config;
+  }
+
+  /**
+   * Get chain selector by chain name
+   * @param {string} chainName - The chain name
+   * @returns {string} Chain selector
+   */
+  getChainSelector(chainName) {
+    const config = this.getChainConfig(chainName);
+    return config.chainSelector;
+  }
+
+  /**
+   * Get router address by chain name
+   * @param {string} chainName - The chain name
+   * @returns {string} Router contract address
+   */
+  getRouterAddress(chainName) {
+    const config = this.getChainConfig(chainName);
+    return config.router;
+  }
+
+  /**
+   * Get USDC token address by chain name
+   * @param {string} chainName - The chain name
+   * @returns {string} USDC token address
+   */
+  getUSDCAddress(chainName) {
+    const config = this.getChainConfig(chainName);
+    return config.usdc.tokenAddress;
+  }
+
+  /**
+   * Get RPC URL by chain name
+   * @param {string} chainName - The chain name
+   * @returns {string} RPC URL
+   */
+  getRpcUrl(chainName) {
+    const config = this.getChainConfig(chainName);
+    return config.rpcUrl;
   }
 
   /**
@@ -401,7 +435,7 @@ class CCIPConfigService {
       let estimatedFee;
       try {
         estimatedFee = await routerContract.getFee(
-          destConfig.chainSelector,
+          BigInt(destConfig.chainSelector), // Convert to BigInt for uint64
           message
         );
         console.log(
@@ -609,7 +643,7 @@ class CCIPConfigService {
         // Check if destination chain selector is supported
         try {
           const isSupported = await routerContract.isChainSupported(
-            destinationChainSelector
+            BigInt(destinationChainSelector) // Convert to BigInt for uint64
           );
           console.log(`  - Destination chain supported: ${isSupported}`);
           if (!isSupported) {
@@ -651,7 +685,7 @@ class CCIPConfigService {
         }
 
         const simulationResult = await routerContract.callStatic.ccipSend(
-          destinationChainSelector,
+          BigInt(destinationChainSelector), // Convert to BigInt for uint64
           message,
           {
             from: userAddress,

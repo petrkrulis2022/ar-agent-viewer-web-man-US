@@ -1,30 +1,30 @@
 {
-  "EthereumSepolia": {
-    "chainName": "EthereumSepolia",
-    "chainId": "11155111",
-    "chainSelector": "16015286601757825753",
-    "router": "0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59",
-    "usdc": {
-      "tokenAddress": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
-      "tokenPoolAddress": "0x02eef4b366225362180d704C917c50f6c46af9e0",
-      "decimals": 6
+  "chains": {
+    "EthereumSepolia": {
+      "chainName": "EthereumSepolia",
+      "chainId": 11155111,
+      "rpcUrl": "https://sepolia.infura.io/v3/",
+      "currencySymbol": "ETH",
+      "chainSelector": "16015286601757825753",
+      "router": "0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59",
+      "usdc": {
+        "tokenAddress": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+        "tokenPoolAddress": "0x02eef4b366225362180d704C917c50f6c46af9e0",
+        "decimals": 6
+      },
+      "feeTokens": {
+        "LINK": "0x7798EE047f0355b0fA9765EDd68D1FC64d409bE7",
+        "WETH": "0x097D90c881289c80362C00000000000000000000"
+      },
+      "lanes": {
+        "toAvalancheFuji": "0x12492154714fBD28F28219f6fc4315d19de1025B",
+        "toArbitrumSepolia": "0xBc09627e58989Ba8F1eDA775e486467d2A00944F",
+        "toBaseSepolia": "0x8F35B097022135E0F46831f798a240Cc8c4b0B01",
+        "toOPSepolia": "0x54b32C2aCb4451c6cF66bcbd856d8A7Cc2263531",
+        "toPolygonAmoy": "0x719Aef2C63376AdeCD62D2b59D54682aFBde914a",
+        "toSolanaDevnet": "Ccip842gzYHhvdDkSyi2YVCoAWPbYJoApMFzSxQroE9C"
+      }
     },
-    "lanes": {
-      "toAvalancheFuji": "0x12492154714fBD28F28219f6fc4315d19de1025B",
-      "toArbitrumSepolia": "0xBc09627e58989Ba8F1eDA775e486467d2A00944F",
-      "toBaseSepolia": "0x8F35B097022135E0F46831f798a240Cc8c4b0B01",
-      "toOPSepolia": "0x54b32C2aCb4451c6cF66bcbd856d8A7Cc2263531",
-      "toPolygonAmoy": "0x719Aef2C63376AdeCD62D2b59D54682aFBde914a",
-      "toSolanaDevnet": "Ccip842gzYHhvdDkSyi2YVCoAWPbYJoApMFzSxQroE9C"
-    },
-    "rpcUrl": "sepolia.infura.io",
-    "currencySymbol": "SepoliaETH",
-    "feeTokens": {
-      "LINK": "0x7798EE047f0355b0fA9765EDd68D1FC64d409bE7",
-      "WETH": "0x097D90c881289c80362C00000000000000000000"
-    },
-    "inboundLanes": {}
-  },
   "ArbitrumSepolia": {
     "chainName": "ArbitrumSepolia",
     "chainId": "421614",
