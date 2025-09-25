@@ -150,7 +150,7 @@ const PaymentCube = ({
       description: "",
     },
     btc_payments: {
-      icon: "₿",
+      icon: "🪙", // Changed from ₿ to 🪙 for better visibility
       text: "BTC Payments",
       color: "#f7931a",
       description: "",
@@ -161,6 +161,14 @@ const PaymentCube = ({
   const enabledFaces = Object.keys(paymentMethods).filter((method) =>
     actualEnabledMethods.includes(method)
   );
+
+  // Debug logging for BTC payments visibility
+  React.useEffect(() => {
+    console.log("🔍 Cube Debug - actualEnabledMethods:", actualEnabledMethods);
+    console.log("🔍 Cube Debug - enabledFaces:", enabledFaces);
+    console.log("🔍 Cube Debug - paymentMethods keys:", Object.keys(paymentMethods));
+    console.log("🔍 Cube Debug - BTC payments included:", enabledFaces.includes("btc_payments"));
+  }, [actualEnabledMethods, enabledFaces]);
 
   // Calculate which face is most visible to camera
   const getFrontFace = () => {
@@ -529,11 +537,11 @@ const PaymentCube = ({
               >
                 <boxGeometry args={[1.9, 1.0, 0.18]} />
                 <meshStandardMaterial
-                  color={config.color}
+                  color={method === "btc_payments" ? "#f7931a" : config.color}
                   transparent
                   opacity={isActiveFace ? 1.0 : 0.9}
-                  emissive={isActiveFace ? "#003300" : "#001100"}
-                  emissiveIntensity={0.3}
+                  emissive={method === "btc_payments" ? "#803d00" : (isActiveFace ? "#003300" : "#001100")}
+                  emissiveIntensity={method === "btc_payments" ? 0.5 : 0.3}
                   roughness={0.3}
                   metalness={0.1}
                 />
@@ -550,7 +558,7 @@ const PaymentCube = ({
               >
                 <planeGeometry args={[1.8, 0.9]} />
                 <meshBasicMaterial
-                  color={isActiveFace ? "#ffffff" : "#f8f8f8"}
+                  color={method === "btc_payments" ? "#fff5e6" : (isActiveFace ? "#ffffff" : "#f8f8f8")}
                   transparent
                   opacity={0.95}
                 />
@@ -566,11 +574,13 @@ const PaymentCube = ({
                   facePositions[faceIndex][2] + textOffsets[faceIndex][2] * 2.2,
                 ]}
                 rotation={faceRotations[faceIndex]}
-                fontSize={0.3}
-                color={isActiveFace ? "#000000" : "#333333"}
+                fontSize={0.35}
+                color={method === "btc_payments" ? "#f7931a" : (isActiveFace ? "#000000" : "#333333")}
                 anchorX="center"
                 anchorY="middle"
                 fontWeight="bold"
+                outlineWidth={method === "btc_payments" ? 0.05 : 0.02}
+                outlineColor={method === "btc_payments" ? "#000000" : "#ffffff"}
               >
                 {config.icon}
               </Text>
@@ -623,12 +633,12 @@ const PaymentCube = ({
                     textPosition[2],
                   ]}
                   rotation={faceRotations[faceIndex]}
-                  fontSize={0.22}
-                  color="#ffffff"
+                  fontSize={method === "btc_payments" ? 0.18 : 0.22}
+                  color={method === "btc_payments" ? "#f7931a" : "#ffffff"}
                   anchorX="center"
                   anchorY="middle"
-                  outlineWidth={0.03}
-                  outlineColor="#000000"
+                  outlineWidth={method === "btc_payments" ? 0.04 : 0.03}
+                  outlineColor={method === "btc_payments" ? "#000000" : "#000000"}
                   fontWeight="bold"
                 >
                   {config.text}
