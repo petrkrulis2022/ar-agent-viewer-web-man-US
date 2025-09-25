@@ -78,8 +78,8 @@ const getAgentPaymentConfig = async (agentId) => {
       enabledMethods.push("sound_pay");
     }
 
-    // Always show onboarding for new users
-    enabledMethods.push("onboard_crypto");
+    // Always show BTC payments for users
+    enabledMethods.push("btc_payments");
 
     return {
       enabledMethods,
@@ -149,10 +149,10 @@ const PaymentCube = ({
       color: "#ff6600",
       description: "",
     },
-    onboard_crypto: {
-      icon: "🚀",
-      text: "On / Off Ramp - Onboard User / Merchant",
-      color: "#ffdd00",
+    btc_payments: {
+      icon: "₿",
+      text: "BTC Payments",
+      color: "#f7931a",
       description: "",
     },
   };
@@ -301,12 +301,12 @@ const PaymentCube = ({
           );
           break;
 
-        case "onboard_crypto":
-          console.log("🚀 Dispatching onboard-crypto-selected event");
+        case "btc_payments":
+          console.log("₿ Dispatching btc-payments-selected event");
           document.dispatchEvent(
-            new CustomEvent("onboard-crypto-selected", {
+            new CustomEvent("btc-payments-selected", {
               detail: {
-                method: "onboard_crypto",
+                method: "btc_payments",
                 agent: agent,
                 face: activeFace,
                 config: paymentMethods[activeFace],
@@ -1637,10 +1637,10 @@ const CubePaymentEngine = ({
   enabledMethods = [
     "crypto_qr", // Front face
     "virtual_card", // Right face
-    "onboard_crypto", // Top face (switched with bank_qr)
+    "btc_payments", // Top face (switched with bank_qr)
     "sound_pay", // Bottom face (switched with voice_pay)
     "voice_pay", // Back face (switched with sound_pay)
-    "bank_qr", // Left face (switched with onboard_crypto)
+    "bank_qr", // Left face (switched with btc_payments)
   ],
 }) => {
   const [currentView, setCurrentView] = useState("cube"); // 'cube' or 'qr'
@@ -1698,8 +1698,8 @@ const CubePaymentEngine = ({
 
     if (methodKey === "crypto_qr") {
       await handleCryptoQRSelection();
-    } else if (methodKey === "onboard_crypto") {
-      handleCryptoOnboarding();
+    } else if (methodKey === "btc_payments") {
+      handleBTCPayments();
     } else {
       // Show "Coming Soon" for other methods
       alert(
@@ -1762,34 +1762,32 @@ const CubePaymentEngine = ({
     }
   };
 
-  // Handle Crypto Onboarding
-  const handleCryptoOnboarding = () => {
-    console.log("🚀 Launching crypto onboarding...");
+  // Handle BTC Payments
+  const handleBTCPayments = () => {
+    console.log("₿ Launching BTC payments...");
 
-    // Create onboarding message
-    const onboardingInfo = {
-      title: "Get Started with Crypto Payments",
-      steps: [
-        "1. Install a crypto wallet (MetaMask, Trust Wallet, or Coinbase Wallet)",
-        "2. Buy some USDT or ETH on Morph Network",
-        "3. Return to scan QR codes for instant payments",
-        "4. Enjoy seamless AR agent interactions!",
+    // Create BTC payment information
+    const btcPaymentInfo = {
+      title: "Bitcoin Payments Coming Soon",
+      features: [
+        "1. Direct Bitcoin network transactions",
+        "2. Lightning Network support for instant payments",
+        "3. Cross-chain Bitcoin bridge integration",
+        "4. Native SegWit and Taproot compatibility",
       ],
       networks: [
-        "Morph Network (Primary)",
-        "Ethereum",
-        "Polygon",
-        "Solana",
-        "Hedera",
+        "Bitcoin Mainnet",
+        "Lightning Network",
+        "Bitcoin Testnet (for development)",
+        "Cross-chain bridges (BTC → EVM)",
       ],
     };
 
     alert(
-      `🚀 ${onboardingInfo.title}\n\n` +
-        onboardingInfo.steps.join("\n") +
-        "\n\n" +
-        `Supported Networks:\n${onboardingInfo.networks.join("\n")}\n\n` +
-        `Once you have a wallet, use the "Crypto QR" payment method to pay instantly!`
+      `₿ ${btcPaymentInfo.title}\n\n` +
+        `Upcoming Features:\n${btcPaymentInfo.features.join("\n")}\n\n` +
+        `Supported Networks:\n${btcPaymentInfo.networks.join("\n")}\n\n` +
+        `For now, please use "Crypto QR" for USDC payments. Bitcoin integration is in active development!`
     );
   };
 
