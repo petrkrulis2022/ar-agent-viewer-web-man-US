@@ -874,7 +874,7 @@ const CameraView = ({
           "bank_qr",
           "voice_pay",
           "sound_pay",
-          "onboard_crypto",
+          "btc_payments",
         ]}
       />
 

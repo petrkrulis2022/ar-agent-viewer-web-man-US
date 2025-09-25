@@ -166,9 +166,23 @@ const PaymentCube = ({
   React.useEffect(() => {
     console.log("🔍 Cube Debug - actualEnabledMethods:", actualEnabledMethods);
     console.log("🔍 Cube Debug - enabledFaces:", enabledFaces);
-    console.log("🔍 Cube Debug - paymentMethods keys:", Object.keys(paymentMethods));
-    console.log("🔍 Cube Debug - BTC payments included:", enabledFaces.includes("btc_payments"));
+    console.log(
+      "🔍 Cube Debug - paymentMethods keys:",
+      Object.keys(paymentMethods)
+    );
+    console.log(
+      "🔍 Cube Debug - BTC payments included:",
+      enabledFaces.includes("btc_payments")
+    );
+    console.log(
+      "🔍 Cube Debug - Number of faces to render:",
+      enabledFaces.length
+    );
   }, [actualEnabledMethods, enabledFaces]);
+
+  // Add immediate logging on every render
+  console.log("🖼️ Rendering cube with methods:", actualEnabledMethods);
+  console.log("🖼️ Enabled faces for rendering:", enabledFaces);
 
   // Calculate which face is most visible to camera
   const getFrontFace = () => {
@@ -535,12 +549,18 @@ const PaymentCube = ({
                   gl.domElement.style.cursor = "grab";
                 }}
               >
-                <boxGeometry args={[1.9, 1.0, 0.18]} />
+                <boxGeometry args={[2.4, 2.4, 0.15]} />
                 <meshStandardMaterial
                   color={method === "btc_payments" ? "#f7931a" : config.color}
                   transparent
                   opacity={isActiveFace ? 1.0 : 0.9}
-                  emissive={method === "btc_payments" ? "#803d00" : (isActiveFace ? "#003300" : "#001100")}
+                  emissive={
+                    method === "btc_payments"
+                      ? "#803d00"
+                      : isActiveFace
+                      ? "#003300"
+                      : "#001100"
+                  }
                   emissiveIntensity={method === "btc_payments" ? 0.5 : 0.3}
                   roughness={0.3}
                   metalness={0.1}
@@ -556,9 +576,15 @@ const PaymentCube = ({
                 ]}
                 rotation={faceRotations[faceIndex]}
               >
-                <planeGeometry args={[1.8, 0.9]} />
+                <planeGeometry args={[2.3, 2.3]} />
                 <meshBasicMaterial
-                  color={method === "btc_payments" ? "#fff5e6" : (isActiveFace ? "#ffffff" : "#f8f8f8")}
+                  color={
+                    method === "btc_payments"
+                      ? "#fff5e6"
+                      : isActiveFace
+                      ? "#ffffff"
+                      : "#f8f8f8"
+                  }
                   transparent
                   opacity={0.95}
                 />
@@ -570,17 +596,17 @@ const PaymentCube = ({
                   facePositions[faceIndex][0] + textOffsets[faceIndex][0] * 2.2,
                   facePositions[faceIndex][1] +
                     textOffsets[faceIndex][1] * 2.2 +
-                    0.15,
+                    0.4,
                   facePositions[faceIndex][2] + textOffsets[faceIndex][2] * 2.2,
                 ]}
                 rotation={faceRotations[faceIndex]}
-                fontSize={0.35}
-                color={method === "btc_payments" ? "#f7931a" : (isActiveFace ? "#000000" : "#333333")}
+                fontSize={0.6}
+                color="#000000"
                 anchorX="center"
                 anchorY="middle"
                 fontWeight="bold"
-                outlineWidth={method === "btc_payments" ? 0.05 : 0.02}
-                outlineColor={method === "btc_payments" ? "#000000" : "#ffffff"}
+                outlineWidth={0.1}
+                outlineColor="#ffffff"
               >
                 {config.icon}
               </Text>
@@ -592,16 +618,16 @@ const PaymentCube = ({
                   <Text
                     position={[
                       textPosition[0],
-                      textPosition[1] + 0.05,
+                      textPosition[1] + 0.1,
                       textPosition[2],
                     ]}
                     rotation={faceRotations[faceIndex]}
-                    fontSize={0.22}
-                    color="#ffffff"
+                    fontSize={0.28}
+                    color="#000000"
                     anchorX="center"
                     anchorY="middle"
-                    outlineWidth={0.03}
-                    outlineColor="#000000"
+                    outlineWidth={0.1}
+                    outlineColor="#ffffff"
                     fontWeight="bold"
                   >
                     {config.text.split(" - ")[0]}
@@ -609,16 +635,16 @@ const PaymentCube = ({
                   <Text
                     position={[
                       textPosition[0],
-                      textPosition[1] - 0.15,
+                      textPosition[1] - 0.2,
                       textPosition[2],
                     ]}
                     rotation={faceRotations[faceIndex]}
-                    fontSize={0.22}
-                    color="#ffffff"
+                    fontSize={0.28}
+                    color="#000000"
                     anchorX="center"
                     anchorY="middle"
-                    outlineWidth={0.03}
-                    outlineColor="#000000"
+                    outlineWidth={0.1}
+                    outlineColor="#ffffff"
                     fontWeight="bold"
                   >
                     {config.text.split(" - ")[1] || ""}
@@ -629,16 +655,16 @@ const PaymentCube = ({
                 <Text
                   position={[
                     textPosition[0],
-                    textPosition[1] + 0.05,
+                    textPosition[1] + 0.1,
                     textPosition[2],
                   ]}
                   rotation={faceRotations[faceIndex]}
-                  fontSize={method === "btc_payments" ? 0.18 : 0.22}
-                  color={method === "btc_payments" ? "#f7931a" : "#ffffff"}
+                  fontSize={0.26}
+                  color="#000000"
                   anchorX="center"
                   anchorY="middle"
-                  outlineWidth={method === "btc_payments" ? 0.04 : 0.03}
-                  outlineColor={method === "btc_payments" ? "#000000" : "#000000"}
+                  outlineWidth={0.1}
+                  outlineColor="#ffffff"
                   fontWeight="bold"
                 >
                   {config.text}
@@ -649,16 +675,16 @@ const PaymentCube = ({
               <Text
                 position={[
                   textPosition[0],
-                  textPosition[1] - 0.4,
+                  textPosition[1] - 0.7,
                   textPosition[2],
                 ]}
                 rotation={faceRotations[faceIndex]}
-                fontSize={0.16}
-                color="#ffffff"
+                fontSize={0.18}
+                color="#000000"
                 anchorX="center"
                 anchorY="middle"
-                outlineWidth={0.03}
-                outlineColor="#000000"
+                outlineWidth={0.08}
+                outlineColor="#ffffff"
                 fontWeight="bold"
               >
                 {method === "virtual_card"
@@ -669,6 +695,8 @@ const PaymentCube = ({
                   ? "Tap To Pay"
                   : method.includes("qr")
                   ? "Tap To Scan"
+                  : method === "btc_payments"
+                  ? "Tap To Select"
                   : "Tap To Select"}
               </Text>
             </group>
