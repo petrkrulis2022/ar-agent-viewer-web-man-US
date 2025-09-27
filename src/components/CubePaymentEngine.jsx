@@ -6,9 +6,13 @@ import solanaPaymentService from "../services/solanaPaymentService";
 import { dynamicQRService } from "../services/dynamicQRService"; // Add dynamic QR service
 import ccipConfigService from "../services/ccipConfigService"; // CCIP transaction building (default export)
 import { hederaWalletService } from "../services/hederaWalletService";
+import * as revolutBankService from "../services/revolutBankService"; // Revolut Bank QR service
+import * as revolutVirtualCardService from "../services/revolutVirtualCardService"; // Revolut Virtual Card service
 import { supabase } from "../lib/supabase";
 import QRCode from "react-qr-code";
 import IntermediatePaymentModal from "./IntermediatePaymentModal"; // Transaction validation modal
+import RevolutBankQRModal from "./RevolutBankQRModal"; // Revolut Bank QR modal
+import { usePaymentStatus } from "../hooks/usePaymentStatus"; // Real-time payment status hook
 
 // AgentSphere Payment Configuration Reader
 const getAgentPaymentConfig = async (agentId) => {
@@ -1696,6 +1700,11 @@ const CubePaymentEngine = ({
   const [intermediateTransactionData, setIntermediateTransactionData] =
     useState(null);
 
+  // Revolut Payment State
+  const [showRevolutBankModal, setShowRevolutBankModal] = useState(false);
+  const [revolutOrderData, setRevolutOrderData] = useState(null);
+  const [revolutPaymentStatus, setRevolutPaymentStatus] = useState("idle"); // 'idle', 'processing', 'completed', 'failed', 'cancelled'
+
   // Load payment configuration from AgentSphere when component opens
   useEffect(() => {
     const loadPaymentConfig = async () => {
@@ -1738,10 +1747,14 @@ const CubePaymentEngine = ({
       await handleCryptoQRSelection();
     } else if (methodKey === "btc_payments") {
       handleBTCPayments();
+    } else if (methodKey === "bank_qr") {
+      await handleBankQRSelection();
+    } else if (methodKey === "virtual_card") {
+      await handleVirtualCardSelection();
     } else {
-      // Show "Coming Soon" for other methods
+      // Show "Coming Soon" for other methods (voice_pay, sound_pay)
       alert(
-        `${methodConfig.text} - Coming Soon!\n\nThis payment method will be available in the next update.\n\nFor now, please use Crypto QR payment.`
+        `${methodConfig.text} - Coming Soon!\n\nThis payment method will be available in the next update.\n\nFor now, please use Crypto QR, Bank QR, or Virtual Card payments.`
       );
     }
   };
@@ -1829,6 +1842,111 @@ const CubePaymentEngine = ({
     );
   };
 
+  // Handle Revolut Bank QR Selection
+  const handleBankQRSelection = async () => {
+    console.log("🔲 Handling Revolut Bank QR payment...");
+    setIsGenerating(true);
+
+    try {
+      // Calculate payment amount
+      const amount =
+        paymentAmount ||
+        agent?.interaction_fee_amount ||
+        agent?.interaction_fee ||
+        10.0;
+
+      console.log("💰 Creating Revolut Bank QR order for amount:", amount);
+
+      // Create Revolut Bank QR order
+      const orderResult = await revolutBankService.createRevolutBankOrder({
+        agentId: agent?.id,
+        agentName: agent?.name,
+        amount: amount,
+        currency: "EUR", // Revolut Bank QR typically uses EUR
+        description: `Payment to ${agent?.name || "AgentSphere Agent"}`,
+      });
+
+      if (orderResult.success) {
+        console.log("✅ Revolut Bank QR order created:", orderResult.order);
+        setRevolutOrderData(orderResult.order);
+        setShowRevolutBankModal(true);
+        setRevolutPaymentStatus("processing");
+      } else {
+        throw new Error(orderResult.error);
+      }
+    } catch (error) {
+      console.error("❌ Error creating Revolut Bank QR order:", error);
+      alert(`Error creating Bank QR payment: ${error.message}`);
+      setRevolutPaymentStatus("failed");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // Handle Revolut Virtual Card Selection
+  const handleVirtualCardSelection = async () => {
+    console.log("💳 Handling Revolut Virtual Card payment...");
+    setIsGenerating(true);
+
+    try {
+      // Calculate payment amount
+      const amount =
+        paymentAmount ||
+        agent?.interaction_fee_amount ||
+        agent?.interaction_fee ||
+        10.0;
+
+      console.log(
+        "💰 Processing Revolut Virtual Card payment for amount:",
+        amount
+      );
+
+      // Process Virtual Card payment using Revolut SDK
+      const paymentResult =
+        await revolutVirtualCardService.processVirtualCardPayment({
+          agentId: agent?.id,
+          agentName: agent?.name,
+          amount: amount,
+          currency: "EUR", // Revolut Virtual Card typically uses EUR
+          description: `Payment to ${agent?.name || "AgentSphere Agent"}`,
+        });
+
+      if (paymentResult.success) {
+        console.log(
+          "✅ Revolut Virtual Card payment successful:",
+          paymentResult
+        );
+        alert(
+          `✅ Virtual Card Payment Successful!\n\n` +
+            `💳 Payment ID: ${paymentResult.paymentId}\n` +
+            `💰 Amount: ${amount} EUR\n` +
+            `🏪 Merchant: ${agent?.name}\n\n` +
+            `Payment has been processed successfully via Revolut Virtual Card.`
+        );
+        setRevolutPaymentStatus("completed");
+
+        // Call onPaymentComplete callback if provided
+        if (onPaymentComplete) {
+          onPaymentComplete({
+            method: "virtual_card",
+            amount: amount,
+            currency: "EUR",
+            paymentId: paymentResult.paymentId,
+            status: "completed",
+          });
+        }
+      } else {
+        throw new Error(paymentResult.error);
+      }
+    } catch (error) {
+      console.error("❌ Error processing Revolut Virtual Card payment:", error);
+      alert(`Error processing Virtual Card payment: ${error.message}`);
+      setRevolutPaymentStatus("failed");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   // Intermediate Payment Modal Handlers
   const handleModalConfirm = async (validatedTransactionData) => {
     try {
@@ -1870,6 +1988,65 @@ const CubePaymentEngine = ({
     console.log("❌ User cancelled transaction in intermediate modal");
     setShowIntermediateModal(false);
     setIntermediateTransactionData(null);
+  };
+
+  // Revolut Bank QR Modal Handlers
+  const handleRevolutBankQRClose = () => {
+    console.log("🔲 Closing Revolut Bank QR modal");
+    setShowRevolutBankModal(false);
+    setRevolutOrderData(null);
+    setRevolutPaymentStatus("idle");
+  };
+
+  const handleRevolutBankQRCancel = async () => {
+    console.log("❌ User cancelled Revolut Bank QR payment");
+
+    if (revolutOrderData?.orderId) {
+      try {
+        const cancelResult = await revolutBankService.cancelRevolutOrder(
+          revolutOrderData.orderId
+        );
+        if (cancelResult.success) {
+          console.log("✅ Revolut order cancelled successfully");
+        } else {
+          console.warn(
+            "⚠️ Failed to cancel Revolut order:",
+            cancelResult.error
+          );
+        }
+      } catch (error) {
+        console.error("❌ Error cancelling Revolut order:", error);
+      }
+    }
+
+    setRevolutPaymentStatus("cancelled");
+    handleRevolutBankQRClose();
+  };
+
+  const handleRevolutBankQRSuccess = (paymentData) => {
+    console.log("✅ Revolut Bank QR payment successful:", paymentData);
+    setRevolutPaymentStatus("completed");
+
+    alert(
+      `✅ Bank QR Payment Successful!\n\n` +
+        `💳 Payment ID: ${paymentData.paymentId}\n` +
+        `💰 Amount: ${paymentData.amount} ${paymentData.currency}\n` +
+        `🏪 Merchant: ${agent?.name}\n\n` +
+        `Payment has been processed successfully via Revolut Bank QR.`
+    );
+
+    // Call onPaymentComplete callback if provided
+    if (onPaymentComplete) {
+      onPaymentComplete({
+        method: "bank_qr",
+        amount: paymentData.amount,
+        currency: paymentData.currency,
+        paymentId: paymentData.paymentId,
+        status: "completed",
+      });
+    }
+
+    handleRevolutBankQRClose();
   };
 
   // Handle Cross-Chain Mode - Shows intermediate modal for transaction review
@@ -2031,6 +2208,12 @@ const CubePaymentEngine = ({
     setAgentPaymentConfig(null);
     setActualEnabledMethods(enabledMethods);
     setIsLoadingConfig(false);
+
+    // Reset Revolut state
+    setShowRevolutBankModal(false);
+    setRevolutOrderData(null);
+    setRevolutPaymentStatus("idle");
+
     if (onClose) onClose();
   };
 
@@ -2188,6 +2371,16 @@ const CubePaymentEngine = ({
           onClose={handleModalCancel}
           onConfirm={handleModalConfirm}
           transactionData={intermediateTransactionData}
+          agentData={agent}
+        />
+
+        {/* Revolut Bank QR Modal - For Bank QR Payments */}
+        <RevolutBankQRModal
+          isOpen={showRevolutBankModal}
+          onClose={handleRevolutBankQRClose}
+          onCancel={handleRevolutBankQRCancel}
+          onSuccess={handleRevolutBankQRSuccess}
+          orderData={revolutOrderData}
           agentData={agent}
         />
       </div>
