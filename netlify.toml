@@ -1,11 +1,13 @@
 [build]
   publish = "dist"
-  command = "npm install --force --legacy-peer-deps && npm run build"
+  command = "rm -rf node_modules && npm install --force --legacy-peer-deps && npx vite build"
 
 [build.environment]
   NODE_VERSION = "20"
   NPM_FLAGS = "--legacy-peer-deps"
   NODE_ENV = "production"
+  CI = "true"
+  npm_config_audit = "false"
   VITE_SUPABASE_URL = "https://ncjbwzibnqrbrvicdmec.supabase.co"
   VITE_REVOLUT_CLIENT_ID_SANDBOX = "96ca6a20-254d-46e7-aad1-46132e087901"
   VITE_APP_TITLE = "AgentSphere AR Viewer"
