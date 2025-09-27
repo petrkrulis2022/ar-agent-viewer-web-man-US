@@ -80,6 +80,16 @@
     "vaul": "^1.1.2",
     "zod": "^3.24.4"
   },
+  "overrides": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-qr-reader": "^3.0.0-beta-1",
+    "@keystonehq/sdk": {
+      "react": "^18.3.1",
+      "react-dom": "^18.3.1",
+      "react-qr-reader": "^3.0.0-beta-1"
+    }
+  },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
     "@types/react": "^18.3.12",

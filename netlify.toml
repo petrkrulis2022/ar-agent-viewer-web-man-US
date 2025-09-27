@@ -1,9 +1,10 @@
 [build]
   publish = "dist"
-  command = "npm install --force && npm run build"
+  command = "npm install --force --legacy-peer-deps && npm run build"
 
 [build.environment]
   NODE_VERSION = "20"
+  NPM_FLAGS = "--legacy-peer-deps"
   NODE_ENV = "production"
   VITE_SUPABASE_URL = "https://ncjbwzibnqrbrvicdmec.supabase.co"
   VITE_REVOLUT_CLIENT_ID_SANDBOX = "96ca6a20-254d-46e7-aad1-46132e087901"
