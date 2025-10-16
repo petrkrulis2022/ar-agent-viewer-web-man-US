@@ -295,7 +295,7 @@ const Agent3DModel = ({
   const getAgentColor = (agentType) => {
     const colors = {
       // AgentSphere New Types (from deployments)
-      intelligent_assistant: "#3b82f6", // Blue
+      intelligent_assistant: "#1e90ff", // Modern shining blue (DodgerBlue)
       local_services: "#10b981", // Green
       payment_terminal: "#f59e0b", // Orange
       trailing_payment_terminal: "#f59e0b", // Orange
@@ -314,7 +314,7 @@ const Agent3DModel = ({
       study_buddy: "#fbbf24", // Yellow
 
       // Legacy object_type compatibility
-      "Intelligent Assistant": "#3b82f6", // Blue
+      "Intelligent Assistant": "#1e90ff", // Modern shining blue (DodgerBlue)
       "Content Creator": "#ec4899", // Pink
       "Local Services": "#10b981", // Green
       "Tutor/Teacher": "#f59e0b", // Orange

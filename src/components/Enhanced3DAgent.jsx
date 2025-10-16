@@ -48,7 +48,7 @@ const Enhanced3DAgent = ({
   const getAgentColor = (agentType) => {
     const colors = {
       // AgentSphere New Types (from deployments)
-      intelligent_assistant: "#00bfff", // Bright cyan
+      intelligent_assistant: "#1e90ff", // Modern shining blue (DodgerBlue)
       local_services: "#32cd32", // Lime green
       payment_terminal: "#ffa500", // Orange
       trailing_payment_terminal: "#ffa500", // Orange
@@ -67,7 +67,7 @@ const Enhanced3DAgent = ({
       marketplace_vendor: "#dc143c", // Crimson
 
       // Legacy object_type compatibility
-      "Intelligent Assistant": "#00bfff", // Bright cyan
+      "Intelligent Assistant": "#1e90ff", // Modern shining blue (DodgerBlue)
       "Content Creator": "#ff1493", // Deep pink
       "Local Services": "#32cd32", // Lime green
       "Tutor/Teacher": "#ffa500", // Orange
@@ -111,14 +111,14 @@ const Enhanced3DAgent = ({
   // Enhanced 3D models with complex animations
   const getEnhanced3DModel = useCallback(() => {
     const baseColor = getAgentColor(agent.agent_type);
-    const emissiveColor = new THREE.Color(baseColor).multiplyScalar(0.25);
+    const emissiveColor = new THREE.Color(baseColor).multiplyScalar(0.35);
 
     const commonMaterial = {
       color: baseColor,
       emissive: emissiveColor,
-      emissiveIntensity: hovered ? 0.5 : 0.2,
-      metalness: 0.8,
-      roughness: 0.15,
+      emissiveIntensity: hovered ? 0.6 : 0.3,
+      metalness: 0.9,
+      roughness: 0.1,
       transparent: true,
       opacity: hovered ? 1.0 : 0.95,
     };
