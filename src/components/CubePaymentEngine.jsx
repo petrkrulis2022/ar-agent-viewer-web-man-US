@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Text, Html } from "@react-three/drei";
 import morphPaymentService from "../services/morphPaymentService";
@@ -111,6 +111,7 @@ const PaymentCube = ({
   actualEnabledMethods = ["crypto_qr"],
   cubeRef,
   isVisible = true,
+  isInitializing = false,
 }) => {
   const meshRef = useRef();
   const [hoveredFace, setHoveredFace] = useState(null);
@@ -239,6 +240,12 @@ const PaymentCube = ({
   const handleCubeClick = (event) => {
     event.stopPropagation();
 
+    // Prevent clicks during initialization or dragging
+    if (isInitializing) {
+      console.log("⏳ Cube initializing, ignoring cube click");
+      return;
+    }
+
     if (isDragging) return; // Don't select if we're dragging
 
     const frontFaceIndex = getFrontFace();
@@ -352,88 +359,97 @@ const PaymentCube = ({
     }
   };
 
-  // Enhanced mouse controls
-  const handlePointerDown = (event) => {
-    setIsDragging(true);
-    setIsRotating(false);
-    setLastMousePos({ x: event.clientX, y: event.clientY });
-    gl.domElement.style.cursor = "grabbing";
-  };
+  // Enhanced mouse controls with useCallback to prevent re-creation
+  const handlePointerDown = useCallback(
+    (event) => {
+      setIsDragging(true);
+      setIsRotating(false);
+      setLastMousePos({ x: event.clientX, y: event.clientY });
+      gl.domElement.style.cursor = "grabbing";
+    },
+    [gl]
+  );
 
-  const handlePointerMove = (event) => {
-    if (!isDragging) return;
+  const handlePointerMove = useCallback(
+    (event) => {
+      if (!isDragging) return;
 
-    const deltaX = event.clientX - lastMousePos.x;
-    const deltaY = event.clientY - lastMousePos.y;
+      const deltaX = event.clientX - lastMousePos.x;
+      const deltaY = event.clientY - lastMousePos.y;
 
-    // Apply rotation
-    if (meshRef.current) {
-      meshRef.current.rotation.y += deltaX * 0.01;
-      meshRef.current.rotation.x += deltaY * 0.01;
+      // Apply rotation
+      if (meshRef.current) {
+        meshRef.current.rotation.y += deltaX * 0.01;
+        meshRef.current.rotation.x += deltaY * 0.01;
 
-      // Allow full 360-degree rotation on both axes to access all 6 faces
-      // No rotation limits - full freedom to view top and bottom faces
-    }
+        // Allow full 360-degree rotation on both axes to access all 6 faces
+        // No rotation limits - full freedom to view top and bottom faces
+      }
 
-    // Store velocity for momentum
-    setRotationVelocity({
-      x: deltaY * 0.01,
-      y: deltaX * 0.01,
-    });
+      // Store velocity for momentum
+      setRotationVelocity({
+        x: deltaY * 0.01,
+        y: deltaX * 0.01,
+      });
 
-    setLastMousePos({ x: event.clientX, y: event.clientY });
-  };
+      setLastMousePos({ x: event.clientX, y: event.clientY });
+    },
+    [isDragging, lastMousePos]
+  );
 
-  const handlePointerUp = () => {
+  const handlePointerUp = useCallback(() => {
     setIsDragging(false);
     gl.domElement.style.cursor = "grab";
 
     // Resume auto-rotation after a delay
     setTimeout(() => {
-      if (!isDragging) setIsRotating(true);
+      setIsRotating(true);
     }, 3000);
-  };
+  }, [gl]);
 
-  // Touch controls for mobile
-  const handleTouchStart = (event) => {
+  // Touch controls for mobile with useCallback
+  const handleTouchStart = useCallback((event) => {
     if (event.touches.length === 1) {
       const touch = event.touches[0];
       setIsDragging(true);
       setIsRotating(false);
       setLastMousePos({ x: touch.clientX, y: touch.clientY });
     }
-  };
+  }, []);
 
-  const handleTouchMove = (event) => {
-    if (!isDragging || event.touches.length !== 1) return;
+  const handleTouchMove = useCallback(
+    (event) => {
+      if (!isDragging || event.touches.length !== 1) return;
 
-    event.preventDefault();
-    const touch = event.touches[0];
-    const deltaX = touch.clientX - lastMousePos.x;
-    const deltaY = touch.clientY - lastMousePos.y;
+      event.preventDefault();
+      const touch = event.touches[0];
+      const deltaX = touch.clientX - lastMousePos.x;
+      const deltaY = touch.clientY - lastMousePos.y;
 
-    if (meshRef.current) {
-      meshRef.current.rotation.y += deltaX * 0.008;
-      meshRef.current.rotation.x += deltaY * 0.008;
+      if (meshRef.current) {
+        meshRef.current.rotation.y += deltaX * 0.008;
+        meshRef.current.rotation.x += deltaY * 0.008;
 
-      // Allow full 360-degree rotation on both axes to access all 6 faces
-      // No rotation limits - full freedom to view top and bottom faces
-    }
+        // Allow full 360-degree rotation on both axes to access all 6 faces
+        // No rotation limits - full freedom to view top and bottom faces
+      }
 
-    setRotationVelocity({
-      x: deltaY * 0.008,
-      y: deltaX * 0.008,
-    });
+      setRotationVelocity({
+        x: deltaY * 0.008,
+        y: deltaX * 0.008,
+      });
 
-    setLastMousePos({ x: touch.clientX, y: touch.clientY });
-  };
+      setLastMousePos({ x: touch.clientX, y: touch.clientY });
+    },
+    [isDragging, lastMousePos]
+  );
 
-  const handleTouchEnd = () => {
+  const handleTouchEnd = useCallback(() => {
     setIsDragging(false);
     setTimeout(() => {
-      if (!isDragging) setIsRotating(true);
+      setIsRotating(true);
     }, 3000);
-  };
+  }, []);
 
   // Add global event listeners for drag
   useEffect(() => {
@@ -453,7 +469,7 @@ const PaymentCube = ({
       canvas.removeEventListener("touchend", handleTouchEnd);
       canvas.style.cursor = "default";
     };
-  }, [isDragging, lastMousePos]);
+  }, [gl, handlePointerMove, handlePointerUp, handleTouchMove, handleTouchEnd]);
 
   if (!isVisible) return null;
 
@@ -1158,7 +1174,7 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
 
   // Determine QR display value
   const qrDisplayValue = (() => {
-    if (!currentQRData) return "";
+    if (!currentQRData) return "https://example.com"; // Fallback to valid URL instead of empty string
 
     // Handle cross-chain CCIP QR data
     if (
@@ -1525,20 +1541,38 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
                 />
               ) : (
                 <div style={{ position: "relative" }}>
-                  <QRCode
-                    value={qrDisplayValue}
-                    size={200}
-                    style={{
-                      background: "white",
-                      padding: "10px",
-                      borderRadius: "10px",
-                      cursor: "pointer",
-                      border:
-                        paymentMode === "cross-chain"
-                          ? "2px solid #ff9500"
-                          : "2px solid #00ff00",
-                    }}
-                  />
+                  {qrDisplayValue && qrDisplayValue.length > 0 ? (
+                    <QRCode
+                      value={qrDisplayValue}
+                      size={200}
+                      style={{
+                        background: "white",
+                        padding: "10px",
+                        borderRadius: "10px",
+                        cursor: "pointer",
+                        border:
+                          paymentMode === "cross-chain"
+                            ? "2px solid #ff9500"
+                            : "2px solid #00ff00",
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: "200px",
+                        height: "200px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        backgroundColor: "#f0f0f0",
+                        borderRadius: "10px",
+                        fontSize: "14px",
+                        color: "#666",
+                      }}
+                    >
+                      No QR Data Available
+                    </div>
+                  )}
                   {paymentMode === "cross-chain" && (
                     <div
                       style={{
@@ -1704,6 +1738,23 @@ const CubePaymentEngine = ({
   const [showRevolutBankModal, setShowRevolutBankModal] = useState(false);
   const [revolutOrderData, setRevolutOrderData] = useState(null);
   const [revolutPaymentStatus, setRevolutPaymentStatus] = useState("idle"); // 'idle', 'processing', 'completed', 'failed', 'cancelled'
+  const [isInitializing, setIsInitializing] = useState(true); // Prevent auto-clicks on load
+
+  // Prevent immediate face selection when cube loads
+  useEffect(() => {
+    if (isOpen) {
+      setIsInitializing(true);
+      console.log(
+        "🔒 Cube initializing - blocking all interactions for 1500ms"
+      );
+      const timer = setTimeout(() => {
+        setIsInitializing(false);
+        console.log("✅ Cube ready - interactions enabled");
+      }, 1500); // Increased to 1500ms delay before allowing face selection
+
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   // Load payment configuration from AgentSphere when component opens
   useEffect(() => {
@@ -1740,6 +1791,12 @@ const CubePaymentEngine = ({
 
   // Handle face selection
   const handleFaceSelected = async (methodKey, methodConfig) => {
+    // Prevent auto-selection during initialization
+    if (isInitializing) {
+      console.log("⏳ Cube initializing, ignoring face selection");
+      return;
+    }
+
     console.log("🎯 Payment method selected:", methodKey, methodConfig);
     setSelectedMethod({ key: methodKey, config: methodConfig });
 
@@ -1761,6 +1818,12 @@ const CubePaymentEngine = ({
 
   // Handle Crypto QR selection - integrate with existing system
   const handleCryptoQRSelection = async () => {
+    // Prevent execution during initialization
+    if (isInitializing) {
+      console.log("⏳ Cube initializing, ignoring crypto QR selection");
+      return;
+    }
+
     setIsGenerating(true);
 
     try {
@@ -1844,6 +1907,16 @@ const CubePaymentEngine = ({
 
   // Handle Revolut Bank QR Selection
   const handleBankQRSelection = async () => {
+    console.log("🚨 handleBankQRSelection called!");
+    console.log("🚨 isInitializing value:", isInitializing);
+    console.log("🚨 Call stack:", new Error().stack);
+
+    // Prevent execution during initialization
+    if (isInitializing) {
+      console.log("⏳ Cube initializing, ignoring bank QR selection");
+      return;
+    }
+
     console.log("🔲 Handling Revolut Bank QR payment...");
     setIsGenerating(true);
 
@@ -1885,6 +1958,12 @@ const CubePaymentEngine = ({
 
   // Handle Revolut Virtual Card Selection
   const handleVirtualCardSelection = async () => {
+    // Prevent execution during initialization
+    if (isInitializing) {
+      console.log("⏳ Cube initializing, ignoring virtual card selection");
+      return;
+    }
+
     console.log("💳 Handling Revolut Virtual Card payment...");
     setIsGenerating(true);
 
@@ -2185,6 +2264,12 @@ const CubePaymentEngine = ({
 
   // Handle individual face clicks - for button-style interactions
   const handleFaceClick = async (method, faceIndex) => {
+    // Prevent auto-selection during initialization
+    if (isInitializing) {
+      console.log(`⏳ Cube initializing, ignoring face click: ${method}`);
+      return;
+    }
+
     console.log(`🎯 Face clicked directly: ${method} (face ${faceIndex})`);
 
     // Handle QR generation for crypto_qr method with cross-chain detection
@@ -2294,6 +2379,7 @@ const CubePaymentEngine = ({
               actualEnabledMethods={actualEnabledMethods}
               cubeRef={cubeRef}
               isVisible={true}
+              isInitializing={isInitializing}
             />
           )}
 
@@ -2331,7 +2417,7 @@ const CubePaymentEngine = ({
         </Canvas>
 
         {/* CSS for animations */}
-        <style jsx>{`
+        <style>{`
           @keyframes float {
             0%,
             100% {

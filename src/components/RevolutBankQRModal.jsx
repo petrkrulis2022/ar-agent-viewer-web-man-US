@@ -1,24 +1,73 @@
 // src/components/RevolutBankQRModal.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import QRCode from "react-qr-code";
 import { usePaymentStatus } from "../hooks/usePaymentStatus";
 import { cancelRevolutOrder } from "../services/revolutBankService";
 
 const RevolutBankQRModal = ({
+  isOpen = false, // Add isOpen prop
   paymentUrl,
   orderId,
   orderDetails,
   onClose,
   onPaymentComplete,
   onPaymentFailed,
+  orderData, // Alternative prop name
+  agentData, // Alternative prop name
 }) => {
   const [isClosing, setIsClosing] = useState(false);
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes countdown
   const [showFullUrl, setShowFullUrl] = useState(false);
 
+  // Support both prop patterns
+  const actualOrderId = orderId || orderData?.id || orderData?.order_id;
+  const actualPaymentUrl =
+    paymentUrl || orderData?.payment_url || orderData?.qr_code_url;
+  const actualOrderDetails = orderDetails || orderData;
+
+  // ✅ Define handler functions using useCallback BEFORE they're used in hooks
+  const handlePaymentSuccess = useCallback(() => {
+    setIsClosing(true);
+    setTimeout(() => {
+      onPaymentComplete &&
+        onPaymentComplete({
+          status: "completed",
+          orderId: actualOrderId,
+          orderDetails: actualOrderDetails,
+        });
+    }, 500);
+  }, [actualOrderId, actualOrderDetails, onPaymentComplete]);
+
+  const handlePaymentFailure = useCallback(
+    (status) => {
+      setIsClosing(true);
+      setTimeout(() => {
+        onPaymentFailed &&
+          onPaymentFailed({
+            status,
+            orderId: actualOrderId,
+            orderDetails: actualOrderDetails,
+            error: `Payment ${status}`,
+          });
+      }, 500);
+    },
+    [actualOrderId, actualOrderDetails, onPaymentFailed]
+  );
+
+  const handleTimeout = useCallback(async () => {
+    try {
+      await cancelRevolutOrder(actualOrderId);
+      handlePaymentFailure("timeout");
+    } catch (error) {
+      console.error("Error canceling expired order:", error);
+      handlePaymentFailure("timeout");
+    }
+  }, [actualOrderId, handlePaymentFailure]);
+
+  // ✅ CRITICAL: Call ALL hooks BEFORE any conditional returns (Rules of Hooks)
   // Use payment status hook for real-time updates
   const { paymentStatus, isLoading, error } = usePaymentStatus(
-    orderId,
+    actualOrderId,
     (status) => {
       if (status === "completed") {
         handlePaymentSuccess();
@@ -28,10 +77,12 @@ const RevolutBankQRModal = ({
     }
   );
 
-  // Countdown timer
+  // Countdown timer - must be called before conditional return
   useEffect(() => {
-    if (timeLeft <= 0) {
-      handleTimeout();
+    if (!isOpen || timeLeft <= 0) {
+      if (timeLeft <= 0) {
+        handleTimeout();
+      }
       return;
     }
 
@@ -40,49 +91,42 @@ const RevolutBankQRModal = ({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft]);
+  }, [timeLeft, isOpen, handleTimeout]);
 
-  const handlePaymentSuccess = () => {
-    setIsClosing(true);
-    setTimeout(() => {
-      onPaymentComplete &&
-        onPaymentComplete({
-          status: "completed",
-          orderId,
-          orderDetails,
-        });
-    }, 500);
-  };
+  // Don't render if not open (AFTER all hooks are called)
+  if (!isOpen) return null;
 
-  const handlePaymentFailure = (status) => {
-    setIsClosing(true);
-    setTimeout(() => {
-      onPaymentFailed &&
-        onPaymentFailed({
-          status,
-          orderId,
-          orderDetails,
-          error: error || `Payment ${status}`,
-        });
-    }, 500);
-  };
+  // QR Code click handler - opens payment in-app (like crypto QR)
+  const handleQRClick = () => {
+    console.log("🔥 Revolut QR Code clicked! Opening payment URL...");
 
-  const handleTimeout = async () => {
-    try {
-      await cancelRevolutOrder(orderId);
-      handlePaymentFailure("timeout");
-    } catch (error) {
-      console.error("Error canceling expired order:", error);
-      handlePaymentFailure("timeout");
+    if (actualPaymentUrl) {
+      try {
+        // Open payment URL in new window/tab for in-app payment
+        window.open(actualPaymentUrl, "_blank", "noopener,noreferrer");
+        console.log("✅ Payment URL opened:", actualPaymentUrl);
+
+        // Optional: Show user feedback
+        // You could add a toast notification here
+      } catch (error) {
+        console.error("❌ Error opening payment URL:", error);
+        alert(
+          "Failed to open payment link. Please try scanning the QR code instead."
+        );
+      }
+    } else {
+      console.warn("⚠️ No payment URL available");
+      alert("Payment URL not available yet. Please wait...");
     }
   };
 
+  // Additional handler functions
   const handleClose = async () => {
     setIsClosing(true);
 
     if (paymentStatus === "pending" || paymentStatus === "processing") {
       try {
-        await cancelRevolutOrder(orderId);
+        await cancelRevolutOrder(actualOrderId);
       } catch (error) {
         console.error("Error canceling order on close:", error);
       }
@@ -148,7 +192,8 @@ const RevolutBankQRModal = ({
               Revolut Bank Payment
             </h2>
             <p className="text-sm text-gray-500">
-              {orderDetails?.currency} {orderDetails?.amount?.toFixed(2)}
+              {actualOrderDetails?.currency}{" "}
+              {actualOrderDetails?.amount?.toFixed(2)}
             </p>
           </div>
           <button
@@ -163,23 +208,44 @@ const RevolutBankQRModal = ({
 
         {/* QR Code */}
         <div className="flex justify-center mb-6">
-          <div className="bg-white p-4 rounded-lg shadow-sm border-2 border-gray-100">
-            <QRCode
-              value={paymentUrl}
-              size={200}
-              style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-            />
+          <div
+            onClick={handleQRClick}
+            className="bg-white p-4 rounded-lg shadow-sm border-2 border-gray-100 cursor-pointer hover:border-blue-400 hover:shadow-md transition-all duration-200"
+            title="Click to open payment in browser"
+          >
+            {actualPaymentUrl && actualPaymentUrl.length > 0 ? (
+              <QRCode
+                value={actualPaymentUrl}
+                size={200}
+                style={{
+                  height: "auto",
+                  maxWidth: "100%",
+                  width: "100%",
+                  display: "block",
+                }}
+              />
+            ) : (
+              <div
+                className="flex items-center justify-center text-gray-500"
+                style={{ width: "200px", height: "200px" }}
+              >
+                <div className="text-center">
+                  <div className="text-4xl mb-2">⏳</div>
+                  <div className="text-sm">Generating QR Code...</div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Instructions */}
         <div className="text-center mb-6">
           <p className="text-gray-700 mb-2 font-medium">
-            Scan with your banking app
+            Click QR code to pay or scan with your phone
           </p>
           <p className="text-sm text-gray-500">
-            Use your phone's camera or Revolut app to scan this QR code and
-            complete the payment.
+            Click the QR code above to open payment in your browser, or scan it
+            with your phone's camera or Revolut app.
           </p>
         </div>
 
@@ -193,7 +259,7 @@ const RevolutBankQRModal = ({
           </button>
           {showFullUrl && (
             <div className="mt-2 p-3 bg-gray-50 rounded text-xs font-mono break-all">
-              {paymentUrl}
+              {actualPaymentUrl}
             </div>
           )}
         </div>

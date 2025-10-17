@@ -1,7 +1,9 @@
 // src/services/revolutBankService.js
 
 const API_URL =
-  import.meta.env.VITE_AGENTSPHERE_API_URL || "http://localhost:5174";
+  import.meta.env.VITE_AGENTSPHERE_API_URL || "http://localhost:3001";
+
+const USE_MOCK = false; // ✅ PRODUCTION MODE: Connect to backend for real Revolut API integration
 
 /**
  * Creates a Revolut payment order on the backend.
@@ -10,6 +12,40 @@ const API_URL =
  */
 export const createRevolutBankOrder = async (orderDetails) => {
   try {
+    // MOCK MODE: Return simulated Revolut order for testing
+    if (USE_MOCK) {
+      console.log("🧪 MOCK MODE: Generating simulated Revolut Bank QR order");
+
+      // Simulate API delay
+      await new Promise((resolve) => setTimeout(resolve, 800));
+
+      const mockOrderId = `revolut_${Date.now()}_${Math.random()
+        .toString(36)
+        .substr(2, 9)}`;
+      const mockPaymentUrl = `https://revolut.me/pay/${mockOrderId}?amount=${
+        orderDetails.amount
+      }&currency=${orderDetails.currency || "EUR"}`;
+
+      return {
+        success: true,
+        order: {
+          id: mockOrderId,
+          order_id: mockOrderId,
+          payment_url: mockPaymentUrl,
+          qr_code_url: mockPaymentUrl,
+          amount: orderDetails.amount,
+          currency: orderDetails.currency || "EUR",
+          status: "pending",
+          created_at: new Date().toISOString(),
+          expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 minutes
+          description: orderDetails.description,
+          agentId: orderDetails.agentId,
+          agentName: orderDetails.agentName,
+        },
+      };
+    }
+
+    // PRODUCTION MODE: Call real API
     const response = await fetch(`${API_URL}/api/revolut/create-bank-order`, {
       method: "POST",
       headers: {

@@ -106,7 +106,7 @@ const NetworkDisplay = ({ className = "" }) => {
         )}
       </div>
 
-      <style jsx>{`
+      <style>{`
         .network-display {
           margin-top: 4px;
           font-size: 12px;
