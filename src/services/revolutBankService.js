@@ -3,7 +3,9 @@
 const API_URL =
   import.meta.env.VITE_AGENTSPHERE_API_URL || "http://localhost:3001";
 
-const USE_MOCK = false; // ✅ PRODUCTION MODE: Connect to backend for real Revolut API integration
+// Toggle between mock and real API
+// Read from environment variable, default to false (real mode)
+const USE_MOCK = import.meta.env.VITE_USE_MOCK_BANK === "true";
 
 /**
  * Creates a Revolut payment order on the backend.

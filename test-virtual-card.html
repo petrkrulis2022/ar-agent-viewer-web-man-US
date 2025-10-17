@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Virtual Card Testing - Revolut Integration</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 20px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .header {
+        text-align: center;
+        color: white;
+        margin-bottom: 30px;
+      }
+
+      .header h1 {
+        font-size: 36px;
+        margin: 0 0 10px 0;
+      }
+
+      .header p {
+        font-size: 18px;
+        opacity: 0.9;
+      }
+
+      .status-panel {
+        background: white;
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      }
+
+      .status-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px;
+        border-bottom: 1px solid #e5e7eb;
+      }
+
+      .status-item:last-child {
+        border-bottom: none;
+      }
+
+      .status-label {
+        font-weight: 600;
+        color: #374151;
+      }
+
+      .status-value {
+        font-family: monospace;
+        color: #6b7280;
+      }
+
+      .status-value.success {
+        color: #10b981;
+        font-weight: bold;
+      }
+
+      .status-value.error {
+        color: #ef4444;
+        font-weight: bold;
+      }
+
+      .test-section {
+        background: white;
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      }
+
+      .test-section h2 {
+        margin: 0 0 15px 0;
+        color: #1f2937;
+      }
+
+      .checklist {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .checklist li {
+        padding: 8px 0;
+        border-bottom: 1px solid #f3f4f6;
+      }
+
+      .checklist li:last-child {
+        border-bottom: none;
+      }
+
+      .checklist li::before {
+        content: "☐ ";
+        color: #9ca3af;
+        font-size: 18px;
+        margin-right: 10px;
+      }
+
+      .checklist li.completed::before {
+        content: "✓ ";
+        color: #10b981;
+      }
+
+      .app-container {
+        background: white;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      }
+
+      .instructions {
+        background: #f9fafb;
+        border-left: 4px solid #0075eb;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 8px;
+      }
+
+      .instructions h3 {
+        margin: 0 0 10px 0;
+        color: #0075eb;
+      }
+
+      .instructions ol {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .instructions li {
+        margin: 5px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>💳 Virtual Card Testing</h1>
+        <p>Revolut Integration - Mock Mode</p>
+      </div>
+
+      <div class="status-panel">
+        <h2 style="margin: 0 0 15px 0; color: #1f2937">Configuration Status</h2>
+        <div class="status-item">
+          <span class="status-label">Environment:</span>
+          <span class="status-value" id="env-mode">Loading...</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">Mock Mode:</span>
+          <span class="status-value" id="mock-mode">Loading...</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">API URL:</span>
+          <span class="status-value" id="api-url">Loading...</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">Component Status:</span>
+          <span class="status-value" id="component-status">Loading...</span>
+        </div>
+      </div>
+
+      <div class="test-section">
+        <h2>📋 Testing Checklist</h2>
+        <div class="instructions">
+          <h3>How to Test:</h3>
+          <ol>
+            <li>Click "Create Virtual Card" button below</li>
+            <li>Verify card displays with Revolut gradient and animations</li>
+            <li>Test each feature in the checklist</li>
+            <li>Check browser console for any errors</li>
+            <li>Mark items as completed manually</li>
+          </ol>
+        </div>
+        <ul class="checklist">
+          <li id="test-create">Create virtual card (initial balance $50.00)</li>
+          <li id="test-display">Card displays with 3D gradient styling</li>
+          <li id="test-chip">Golden chip visible on card</li>
+          <li id="test-masked">Card number is masked (•••• •••• •••• 1111)</li>
+          <li id="test-show">
+            Click "Show Details" reveals full card number, CVV, expiry
+          </li>
+          <li id="test-hide">
+            Click "Hide Details" masks the information again
+          </li>
+          <li id="test-copy">Click "Copy Number" copies to clipboard</li>
+          <li id="test-refresh">Click "Refresh" updates card data</li>
+          <li id="test-topup">
+            Enter amount and click "Add Funds" increases balance
+          </li>
+          <li id="test-freeze">
+            Click "Freeze Card" changes state to FROZEN with gray overlay
+          </li>
+          <li id="test-unfreeze">
+            Click "Unfreeze Card" restores ACTIVE state
+          </li>
+          <li id="test-payment-amount">Enter payment amount (e.g., 10.00)</li>
+          <li id="test-payment-merchant">Enter merchant name (e.g., Amazon)</li>
+          <li id="test-payment-submit">
+            Click "Make Test Payment" deducts from balance
+          </li>
+          <li id="test-transactions">
+            Click "Load Transactions" shows transaction history
+          </li>
+          <li id="test-animations">
+            All hover effects and transitions work smoothly
+          </li>
+          <li id="test-responsive">
+            Component is responsive on different screen sizes
+          </li>
+          <li id="test-errors">
+            Error messages display properly (try invalid inputs)
+          </li>
+        </ul>
+      </div>
+
+      <div class="app-container">
+        <div id="root"></div>
+      </div>
+    </div>
+
+    <script type="module">
+      import { createRoot } from "https://esm.sh/react@19.1.0/client";
+      import React, { useState, useEffect } from "https://esm.sh/react@19.1.0";
+
+      // Display configuration status
+      document.getElementById("env-mode").textContent =
+        import.meta.env.MODE || "development";
+      document.getElementById("mock-mode").textContent =
+        import.meta.env.VITE_USE_MOCK_CARD !== "false"
+          ? "ENABLED ✓"
+          : "DISABLED";
+      document.getElementById("mock-mode").className =
+        "status-value " +
+        (import.meta.env.VITE_USE_MOCK_CARD !== "false" ? "success" : "error");
+      document.getElementById("api-url").textContent =
+        import.meta.env.VITE_AGENTSPHERE_API_URL || "http://localhost:3001";
+
+      // Try to import and render the Virtual Card component
+      try {
+        import("./src/components/RevolutVirtualCard.jsx")
+          .then((module) => {
+            const RevolutVirtualCard = module.default;
+
+            document.getElementById("component-status").textContent =
+              "Loaded ✓";
+            document.getElementById("component-status").className =
+              "status-value success";
+
+            function TestApp() {
+              const [logs, setLogs] = useState([]);
+
+              const addLog = (message, type = "info") => {
+                const timestamp = new Date().toLocaleTimeString();
+                setLogs((prev) => [...prev, { timestamp, message, type }]);
+                console.log(`[${type.toUpperCase()}] ${message}`);
+              };
+
+              return React.createElement(
+                "div",
+                null,
+                React.createElement(
+                  "h2",
+                  { style: { marginTop: 0, color: "#1f2937" } },
+                  "Virtual Card Component"
+                ),
+                React.createElement(RevolutVirtualCard, {
+                  agentId: "test_agent_123",
+                  initialAmount: 5000, // $50.00
+                  currency: "USD",
+                  onSuccess: (data) => {
+                    addLog("✅ Success: " + JSON.stringify(data), "success");
+                  },
+                  onError: (error) => {
+                    addLog("❌ Error: " + error.message, "error");
+                  },
+                }),
+                logs.length > 0 &&
+                  React.createElement(
+                    "div",
+                    {
+                      style: {
+                        marginTop: "20px",
+                        padding: "15px",
+                        background: "#f9fafb",
+                        borderRadius: "8px",
+                        maxHeight: "200px",
+                        overflow: "auto",
+                      },
+                    },
+                    React.createElement(
+                      "h3",
+                      { style: { margin: "0 0 10px 0" } },
+                      "📝 Event Log"
+                    ),
+                    logs.map((log, i) =>
+                      React.createElement(
+                        "div",
+                        {
+                          key: i,
+                          style: {
+                            fontSize: "12px",
+                            fontFamily: "monospace",
+                            padding: "5px",
+                            borderBottom: "1px solid #e5e7eb",
+                            color:
+                              log.type === "error"
+                                ? "#EF4444"
+                                : log.type === "success"
+                                ? "#10B981"
+                                : "#6b7280",
+                          },
+                        },
+                        `[${log.timestamp}] ${log.message}`
+                      )
+                    )
+                  )
+              );
+            }
+
+            const root = createRoot(document.getElementById("root"));
+            root.render(React.createElement(TestApp));
+          })
+          .catch((error) => {
+            document.getElementById("component-status").textContent =
+              "Failed to load ✗";
+            document.getElementById("component-status").className =
+              "status-value error";
+            console.error("Failed to load Virtual Card component:", error);
+
+            document.getElementById("root").innerHTML = `
+                    <div style="padding: 20px; background: #FEE2E2; border: 1px solid #EF4444; border-radius: 8px; color: #991B1B;">
+                        <h3 style="margin: 0 0 10px 0;">⚠️ Component Load Error</h3>
+                        <p style="margin: 0; font-family: monospace; font-size: 14px;">${error.message}</p>
+                        <p style="margin: 10px 0 0 0; font-size: 14px;">Make sure the development server is running: <code>npm run dev</code></p>
+                    </div>
+                `;
+          });
+      } catch (error) {
+        document.getElementById("component-status").textContent = "Error ✗";
+        document.getElementById("component-status").className =
+          "status-value error";
+        console.error("Error:", error);
+      }
+
+      // Add click handlers for checklist items
+      document.querySelectorAll(".checklist li").forEach((item) => {
+        item.addEventListener("click", function () {
+          this.classList.toggle("completed");
+        });
+      });
+    </script>
+  </body>
+</html>

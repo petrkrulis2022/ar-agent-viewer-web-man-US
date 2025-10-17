@@ -1,246 +1,243 @@
 // src/components/RevolutVirtualCard.jsx
-import React, { useState, useEffect } from 'react';
-import { 
-  createVirtualCard, 
-  getCardDetails, 
-  topUpCard, 
+import React, { useState, useEffect } from "react";
+import {
+  createVirtualCard,
+  getCardDetails,
+  topUpCard,
   freezeCard,
   simulateCardPayment,
-  getCardTransactions
-} from '../services/revolutCardService';
+  getCardTransactions,
+} from "../services/revolutCardService";
 
-export function RevolutVirtualCard({ 
-  agentId, 
-  initialAmount = 5000, 
-  currency = 'USD', 
-  onSuccess, 
-  onError 
+export function RevolutVirtualCard({
+  agentId,
+  initialAmount = 5000,
+  currency = "USD",
+  onSuccess,
+  onError,
 }) {
   const [loading, setLoading] = useState(false);
   const [cardData, setCardData] = useState(null);
-  const [status, setStatus] = useState('idle'); // idle, creating, active, frozen, paying
+  const [status, setStatus] = useState("idle"); // idle, creating, active, frozen, paying
   const [error, setError] = useState(null);
   const [showCardDetails, setShowCardDetails] = useState(false);
-  const [topUpAmount, setTopUpAmount] = useState('');
-  const [paymentAmount, setPaymentAmount] = useState('');
-  const [merchant, setMerchant] = useState('');
+  const [topUpAmount, setTopUpAmount] = useState("");
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const [merchant, setMerchant] = useState("");
   const [transactions, setTransactions] = useState([]);
   const [showTransactions, setShowTransactions] = useState(false);
-  
+
   /**
    * Create virtual card
    */
   const handleCreateCard = async () => {
     try {
       setLoading(true);
-      setStatus('creating');
+      setStatus("creating");
       setError(null);
-      
-      console.log('💳 Creating virtual card...');
-      
+
+      console.log("💳 Creating virtual card...");
+
       const result = await createVirtualCard(
         agentId,
         initialAmount,
         currency,
         `Agent_${agentId}_Card`
       );
-      
-      console.log('✅ Card created:', result);
-      
+
+      console.log("✅ Card created:", result);
+
       setCardData(result.card);
-      setStatus('active');
+      setStatus("active");
       onSuccess?.(result);
-      
     } catch (err) {
-      console.error('❌ Card creation failed:', err);
+      console.error("❌ Card creation failed:", err);
       setError(err.message);
-      setStatus('idle');
+      setStatus("idle");
       onError?.(err);
     } finally {
       setLoading(false);
     }
   };
-  
+
   /**
    * Refresh card details
    */
   const handleRefreshCard = async () => {
     if (!cardData) return;
-    
+
     try {
       setLoading(true);
-      
+
       const result = await getCardDetails(cardData.card_id);
       setCardData(result.card);
-      
-      console.log('✅ Card refreshed');
-      
+
+      console.log("✅ Card refreshed");
     } catch (err) {
-      console.error('❌ Failed to refresh card:', err);
+      console.error("❌ Failed to refresh card:", err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
-  
+
   /**
    * Top up card
    */
   const handleTopUp = async () => {
     if (!cardData || !topUpAmount) return;
-    
+
     try {
       setLoading(true);
       setError(null);
-      
+
       const amount = Math.round(parseFloat(topUpAmount) * 100); // Convert to cents
-      
-      console.log('💰 Topping up card:', amount);
-      
+
+      console.log("💰 Topping up card:", amount);
+
       const result = await topUpCard(cardData.card_id, amount, currency);
-      
-      console.log('✅ Card topped up:', result);
-      
+
+      console.log("✅ Card topped up:", result);
+
       // Update card balance
-      setCardData(prev => ({
+      setCardData((prev) => ({
         ...prev,
-        balance: result.topup.new_balance || (prev.balance + amount)
+        balance: result.topup.new_balance || prev.balance + amount,
       }));
-      
-      setTopUpAmount('');
-      
+
+      setTopUpAmount("");
     } catch (err) {
-      console.error('❌ Top up failed:', err);
+      console.error("❌ Top up failed:", err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
-  
+
   /**
    * Freeze/unfreeze card
    */
   const handleFreeze = async (freeze) => {
     if (!cardData) return;
-    
+
     try {
       setLoading(true);
       setError(null);
-      
-      console.log(freeze ? '❄️ Freezing card' : '🔥 Unfreezing card');
-      
+
+      console.log(freeze ? "❄️ Freezing card" : "🔥 Unfreezing card");
+
       const result = await freezeCard(cardData.card_id, freeze);
-      
-      console.log('✅ Card frozen/unfrozen:', result);
-      
-      setStatus(freeze ? 'frozen' : 'active');
-      setCardData(prev => ({
+
+      console.log("✅ Card frozen/unfrozen:", result);
+
+      setStatus(freeze ? "frozen" : "active");
+      setCardData((prev) => ({
         ...prev,
-        state: result.state
+        state: result.state,
       }));
-      
     } catch (err) {
-      console.error('❌ Freeze operation failed:', err);
+      console.error("❌ Freeze operation failed:", err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
-  
+
   /**
    * Simulate payment
    */
   const handleSimulatePayment = async () => {
     if (!cardData || !paymentAmount || !merchant) return;
-    
+
     try {
       setLoading(true);
-      setStatus('paying');
+      setStatus("paying");
       setError(null);
-      
+
       const amount = Math.round(parseFloat(paymentAmount) * 100); // Convert to cents
-      
-      console.log('💳 Simulating payment:', { amount, merchant });
-      
+
+      console.log("💳 Simulating payment:", { amount, merchant });
+
       const result = await simulateCardPayment(
         cardData.card_id,
         amount,
         currency,
         merchant
       );
-      
-      console.log('✅ Payment completed:', result);
-      
+
+      console.log("✅ Payment completed:", result);
+
       // Update card balance
-      setCardData(prev => ({
+      setCardData((prev) => ({
         ...prev,
-        balance: result.payment?.remaining_balance || (prev.balance - amount)
+        balance: result.payment?.remaining_balance || prev.balance - amount,
       }));
-      
-      setStatus('active');
-      setPaymentAmount('');
-      setMerchant('');
-      
+
+      setStatus("active");
+      setPaymentAmount("");
+      setMerchant("");
+
       // Refresh transactions
       if (showTransactions) {
         handleLoadTransactions();
       }
-      
     } catch (err) {
-      console.error('❌ Payment failed:', err);
+      console.error("❌ Payment failed:", err);
       setError(err.message);
-      setStatus('active');
+      setStatus("active");
     } finally {
       setLoading(false);
     }
   };
-  
+
   /**
    * Load transactions
    */
   const handleLoadTransactions = async () => {
     if (!cardData) return;
-    
+
     try {
       const result = await getCardTransactions(cardData.card_id, 10);
       setTransactions(result.transactions || []);
       setShowTransactions(true);
     } catch (err) {
-      console.error('❌ Failed to load transactions:', err);
+      console.error("❌ Failed to load transactions:", err);
       setError(err.message);
     }
   };
-  
+
   /**
    * Copy card number to clipboard
    */
   const handleCopyCardNumber = async () => {
     if (!cardData?.card_number) return;
-    
+
     try {
-      await navigator.clipboard.writeText(cardData.card_number.replace(/\s/g, ''));
-      alert('Card number copied to clipboard!');
+      await navigator.clipboard.writeText(
+        cardData.card_number.replace(/\s/g, "")
+      );
+      alert("Card number copied to clipboard!");
     } catch (err) {
-      console.error('Failed to copy:', err);
+      console.error("Failed to copy:", err);
     }
   };
-  
+
   /**
    * Mask card number for display
    */
   const maskCardNumber = (cardNumber) => {
-    if (!cardNumber) return 'XXXX XXXX XXXX XXXX';
+    if (!cardNumber) return "XXXX XXXX XXXX XXXX";
     const last4 = cardNumber.slice(-4);
     return `•••• •••• •••• ${last4}`;
   };
-  
+
   /**
    * Format currency
    */
   const formatAmount = (amount, curr = currency) => {
     return `${(amount / 100).toFixed(2)} ${curr}`;
   };
-  
+
   return (
     <>
       {/* CSS Styles */}
@@ -604,224 +601,262 @@ export function RevolutVirtualCard({
           }
         `}
       </style>
-      
+
       <div className="virtual-card-container">
         <h2 className="virtual-card-title">Revolut Virtual Card 💳</h2>
-        
+
         {/* Idle State */}
-        {status === 'idle' && (
+        {status === "idle" && (
           <div className="idle-state">
-            <p>Initial Balance: ${(initialAmount / 100).toFixed(2)} {currency}</p>
-            <button 
+            <p>
+              Initial Balance: ${(initialAmount / 100).toFixed(2)} {currency}
+            </p>
+            <button
               onClick={handleCreateCard}
               disabled={loading}
               className="btn btn-primary"
             >
-              {loading ? 'Creating...' : '✨ Create Virtual Card'}
+              {loading ? "Creating..." : "✨ Create Virtual Card"}
             </button>
           </div>
         )}
-        
+
         {/* Creating State */}
-        {status === 'creating' && (
+        {status === "creating" && (
           <div className="creating-state">
             <div className="spinner"></div>
             <p>Creating your virtual card...</p>
           </div>
         )}
-        
+
         {/* Active/Frozen/Paying State */}
-        {(status === 'active' || status === 'frozen' || status === 'paying') && cardData && (
-          <div className="card-active-state">
-            {/* Card Display */}
-            <div className={`card-display ${status === 'frozen' ? 'frozen' : ''}`}>
-              <div className="card-header">
-                <span className="card-label">{cardData.label}</span>
-                <span className={`card-status ${status}`}>
-                  {status === 'frozen' ? '❄️ FROZEN' : status === 'paying' ? '💳 PAYING' : '✅ ACTIVE'}
-                </span>
-              </div>
-              
-              <div className="card-chip"></div>
-              
-              <div className="card-number">
-                {showCardDetails ? cardData.card_number : maskCardNumber(cardData.card_number)}
-              </div>
-              
-              <div className="card-details-row">
-                <div className="card-detail-item">
-                  <span className="card-detail-label">VALID THRU</span>
-                  <span className="card-detail-value">
-                    {showCardDetails ? cardData.expiry_date : 'XX/XX'}
+        {(status === "active" || status === "frozen" || status === "paying") &&
+          cardData && (
+            <div className="card-active-state">
+              {/* Card Display */}
+              <div
+                className={`card-display ${
+                  status === "frozen" ? "frozen" : ""
+                }`}
+              >
+                <div className="card-header">
+                  <span className="card-label">{cardData.label}</span>
+                  <span className={`card-status ${status}`}>
+                    {status === "frozen"
+                      ? "❄️ FROZEN"
+                      : status === "paying"
+                      ? "💳 PAYING"
+                      : "✅ ACTIVE"}
                   </span>
                 </div>
-                <div className="card-detail-item">
-                  <span className="card-detail-label">CVV</span>
-                  <span className="card-detail-value">
-                    {showCardDetails ? cardData.cvv : 'XXX'}
-                  </span>
+
+                <div className="card-chip"></div>
+
+                <div className="card-number">
+                  {showCardDetails
+                    ? cardData.card_number
+                    : maskCardNumber(cardData.card_number)}
                 </div>
-              </div>
-              
-              <div className="card-balance">
-                <span className="card-balance-label">Available Balance</span>
-                <span className="card-balance-amount">
-                  ${(cardData.balance / 100).toFixed(2)}
-                </span>
-              </div>
-            </div>
-            
-            {/* Card Actions */}
-            <div className="card-actions">
-              <button 
-                onClick={() => setShowCardDetails(!showCardDetails)}
-                className="btn btn-secondary"
-              >
-                {showCardDetails ? '🙈 Hide Details' : '👁️ Show Details'}
-              </button>
-              
-              <button 
-                onClick={handleCopyCardNumber}
-                className="btn btn-secondary"
-                disabled={!showCardDetails}
-              >
-                📋 Copy Number
-              </button>
-              
-              <button 
-                onClick={handleRefreshCard}
-                disabled={loading}
-                className="btn btn-secondary"
-              >
-                🔄 Refresh
-              </button>
-              
-              {status === 'active' && (
-                <button 
-                  onClick={() => handleFreeze(true)}
-                  disabled={loading}
-                  className="btn btn-warning"
-                >
-                  ❄️ Freeze Card
-                </button>
-              )}
-              
-              {status === 'frozen' && (
-                <button 
-                  onClick={() => handleFreeze(false)}
-                  disabled={loading}
-                  className="btn btn-success"
-                >
-                  🔥 Unfreeze Card
-                </button>
-              )}
-            </div>
-            
-            {/* Top Up Section */}
-            {status === 'active' && (
-              <div className="section-box">
-                <h3 className="section-title">💰 Top Up Card</h3>
-                <div className="input-group">
-                  <input 
-                    type="number"
-                    placeholder="Amount (USD)"
-                    value={topUpAmount}
-                    onChange={(e) => setTopUpAmount(e.target.value)}
-                    disabled={loading}
-                    className="input-field"
-                    step="0.01"
-                    min="0"
-                  />
-                  <button 
-                    onClick={handleTopUp}
-                    disabled={loading || !topUpAmount || parseFloat(topUpAmount) <= 0}
-                    className="btn btn-primary"
-                  >
-                    {loading ? '⏳ Processing...' : '💰 Add Funds'}
-                  </button>
-                </div>
-              </div>
-            )}
-            
-            {/* Payment Simulation Section */}
-            {status === 'active' && (
-              <div className="section-box">
-                <h3 className="section-title">🧪 Simulate Payment</h3>
-                <div className="input-group">
-                  <input 
-                    type="number"
-                    placeholder="Amount (USD)"
-                    value={paymentAmount}
-                    onChange={(e) => setPaymentAmount(e.target.value)}
-                    disabled={loading}
-                    className="input-field"
-                    step="0.01"
-                    min="0"
-                  />
-                  <input 
-                    type="text"
-                    placeholder="Merchant name (e.g., Amazon)"
-                    value={merchant}
-                    onChange={(e) => setMerchant(e.target.value)}
-                    disabled={loading}
-                    className="input-field"
-                  />
-                  <button 
-                    onClick={handleSimulatePayment}
-                    disabled={loading || !paymentAmount || !merchant || parseFloat(paymentAmount) <= 0}
-                    className="btn btn-test"
-                  >
-                    {loading ? '⏳ Processing...' : '🧪 Make Test Payment'}
-                  </button>
-                </div>
-              </div>
-            )}
-            
-            {/* Transactions Section */}
-            {status === 'active' && (
-              <div className="section-box">
-                <h3 className="section-title">📊 Recent Transactions</h3>
-                {!showTransactions ? (
-                  <button 
-                    onClick={handleLoadTransactions}
-                    className="btn btn-secondary"
-                    style={{width: '100%'}}
-                  >
-                    📜 Load Transactions
-                  </button>
-                ) : (
-                  <div className="transactions-list">
-                    {transactions.length === 0 ? (
-                      <p style={{textAlign: 'center', color: '#9ca3af'}}>No transactions yet</p>
-                    ) : (
-                      transactions.map((txn) => (
-                        <div key={txn.id} className="transaction-item">
-                          <div>
-                            <div className="transaction-merchant">{txn.merchant}</div>
-                            <div style={{fontSize: '12px', color: '#9ca3af'}}>
-                              {new Date(txn.created_at).toLocaleString()}
-                            </div>
-                          </div>
-                          <div className={`transaction-amount ${txn.amount > 0 ? 'positive' : 'negative'}`}>
-                            {txn.amount > 0 ? '+' : ''}{formatAmount(txn.amount)}
-                          </div>
-                        </div>
-                      ))
-                    )}
+
+                <div className="card-details-row">
+                  <div className="card-detail-item">
+                    <span className="card-detail-label">VALID THRU</span>
+                    <span className="card-detail-value">
+                      {showCardDetails ? cardData.expiry_date : "XX/XX"}
+                    </span>
                   </div>
+                  <div className="card-detail-item">
+                    <span className="card-detail-label">CVV</span>
+                    <span className="card-detail-value">
+                      {showCardDetails ? cardData.cvv : "XXX"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="card-balance">
+                  <span className="card-balance-label">Available Balance</span>
+                  <span className="card-balance-amount">
+                    ${(cardData.balance / 100).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Card Actions */}
+              <div className="card-actions">
+                <button
+                  onClick={() => setShowCardDetails(!showCardDetails)}
+                  className="btn btn-secondary"
+                >
+                  {showCardDetails ? "🙈 Hide Details" : "👁️ Show Details"}
+                </button>
+
+                <button
+                  onClick={handleCopyCardNumber}
+                  className="btn btn-secondary"
+                  disabled={!showCardDetails}
+                >
+                  📋 Copy Number
+                </button>
+
+                <button
+                  onClick={handleRefreshCard}
+                  disabled={loading}
+                  className="btn btn-secondary"
+                >
+                  🔄 Refresh
+                </button>
+
+                {status === "active" && (
+                  <button
+                    onClick={() => handleFreeze(true)}
+                    disabled={loading}
+                    className="btn btn-warning"
+                  >
+                    ❄️ Freeze Card
+                  </button>
+                )}
+
+                {status === "frozen" && (
+                  <button
+                    onClick={() => handleFreeze(false)}
+                    disabled={loading}
+                    className="btn btn-success"
+                  >
+                    🔥 Unfreeze Card
+                  </button>
                 )}
               </div>
-            )}
-            
-            {/* Card Info */}
-            <div className="card-info">
-              <p><strong>Card ID:</strong> {cardData.card_id}</p>
-              <p><strong>Created:</strong> {new Date(cardData.created_at).toLocaleString()}</p>
-              <p><strong>Currency:</strong> {cardData.currency}</p>
+
+              {/* Top Up Section */}
+              {status === "active" && (
+                <div className="section-box">
+                  <h3 className="section-title">💰 Top Up Card</h3>
+                  <div className="input-group">
+                    <input
+                      type="number"
+                      placeholder="Amount (USD)"
+                      value={topUpAmount}
+                      onChange={(e) => setTopUpAmount(e.target.value)}
+                      disabled={loading}
+                      className="input-field"
+                      step="0.01"
+                      min="0"
+                    />
+                    <button
+                      onClick={handleTopUp}
+                      disabled={
+                        loading || !topUpAmount || parseFloat(topUpAmount) <= 0
+                      }
+                      className="btn btn-primary"
+                    >
+                      {loading ? "⏳ Processing..." : "💰 Add Funds"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Payment Simulation Section */}
+              {status === "active" && (
+                <div className="section-box">
+                  <h3 className="section-title">🧪 Simulate Payment</h3>
+                  <div className="input-group">
+                    <input
+                      type="number"
+                      placeholder="Amount (USD)"
+                      value={paymentAmount}
+                      onChange={(e) => setPaymentAmount(e.target.value)}
+                      disabled={loading}
+                      className="input-field"
+                      step="0.01"
+                      min="0"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Merchant name (e.g., Amazon)"
+                      value={merchant}
+                      onChange={(e) => setMerchant(e.target.value)}
+                      disabled={loading}
+                      className="input-field"
+                    />
+                    <button
+                      onClick={handleSimulatePayment}
+                      disabled={
+                        loading ||
+                        !paymentAmount ||
+                        !merchant ||
+                        parseFloat(paymentAmount) <= 0
+                      }
+                      className="btn btn-test"
+                    >
+                      {loading ? "⏳ Processing..." : "🧪 Make Test Payment"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Transactions Section */}
+              {status === "active" && (
+                <div className="section-box">
+                  <h3 className="section-title">📊 Recent Transactions</h3>
+                  {!showTransactions ? (
+                    <button
+                      onClick={handleLoadTransactions}
+                      className="btn btn-secondary"
+                      style={{ width: "100%" }}
+                    >
+                      📜 Load Transactions
+                    </button>
+                  ) : (
+                    <div className="transactions-list">
+                      {transactions.length === 0 ? (
+                        <p style={{ textAlign: "center", color: "#9ca3af" }}>
+                          No transactions yet
+                        </p>
+                      ) : (
+                        transactions.map((txn) => (
+                          <div key={txn.id} className="transaction-item">
+                            <div>
+                              <div className="transaction-merchant">
+                                {txn.merchant}
+                              </div>
+                              <div
+                                style={{ fontSize: "12px", color: "#9ca3af" }}
+                              >
+                                {new Date(txn.created_at).toLocaleString()}
+                              </div>
+                            </div>
+                            <div
+                              className={`transaction-amount ${
+                                txn.amount > 0 ? "positive" : "negative"
+                              }`}
+                            >
+                              {txn.amount > 0 ? "+" : ""}
+                              {formatAmount(txn.amount)}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Card Info */}
+              <div className="card-info">
+                <p>
+                  <strong>Card ID:</strong> {cardData.card_id}
+                </p>
+                <p>
+                  <strong>Created:</strong>{" "}
+                  {new Date(cardData.created_at).toLocaleString()}
+                </p>
+                <p>
+                  <strong>Currency:</strong> {cardData.currency}
+                </p>
+              </div>
             </div>
-          </div>
-        )}
-        
+          )}
+
         {/* Error Display */}
         {error && (
           <div className="error-message">
