@@ -1739,11 +1739,11 @@ const CubePaymentEngine = ({
   const [showRevolutBankModal, setShowRevolutBankModal] = useState(false);
   const [revolutOrderData, setRevolutOrderData] = useState(null);
   const [revolutPaymentStatus, setRevolutPaymentStatus] = useState("idle"); // 'idle', 'processing', 'completed', 'failed', 'cancelled'
-  
+
   // Revolut Virtual Card State
   const [showVirtualCardModal, setShowVirtualCardModal] = useState(false);
   const [virtualCardAgentId, setVirtualCardAgentId] = useState(null);
-  
+
   const [isInitializing, setIsInitializing] = useState(true); // Prevent auto-clicks on load
 
   // Prevent immediate face selection when cube loads
@@ -1975,15 +1975,19 @@ const CubePaymentEngine = ({
     try {
       // Set the agent ID for the Virtual Card component
       setVirtualCardAgentId(agent?.id || "unknown_agent");
-      
+
       // Calculate initial amount from agent configuration
       const initialAmount =
         (paymentAmount ||
-        agent?.interaction_fee_amount ||
-        agent?.interaction_fee ||
-        10.0) * 100; // Convert to cents for Virtual Card
+          agent?.interaction_fee_amount ||
+          agent?.interaction_fee ||
+          10.0) * 100; // Convert to cents for Virtual Card
 
-      console.log("💰 Virtual Card initial amount:", initialAmount / 100, "USD");
+      console.log(
+        "💰 Virtual Card initial amount:",
+        initialAmount / 100,
+        "USD"
+      );
 
       // Open the Virtual Card modal
       setShowVirtualCardModal(true);
@@ -2107,11 +2111,11 @@ const CubePaymentEngine = ({
 
   const handleVirtualCardSuccess = (cardData) => {
     console.log("✅ Virtual Card action successful:", cardData);
-    
+
     // If this was a payment, mark as completed
     if (cardData.action === "payment") {
       setRevolutPaymentStatus("completed");
-      
+
       alert(
         `✅ Virtual Card Payment Successful!\n\n` +
           `💳 Card: ****${cardData.cardNumber?.slice(-4) || "****"}\n` +
@@ -2131,7 +2135,7 @@ const CubePaymentEngine = ({
         });
       }
     }
-    
+
     // Keep modal open for other actions (card created, topped up, etc.)
     // User can manually close it when done
   };
