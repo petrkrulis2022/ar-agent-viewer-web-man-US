@@ -12,6 +12,7 @@ import { supabase } from "../lib/supabase";
 import QRCode from "react-qr-code";
 import IntermediatePaymentModal from "./IntermediatePaymentModal"; // Transaction validation modal
 import RevolutBankQRModal from "./RevolutBankQRModal"; // Revolut Bank QR modal
+import { RevolutVirtualCard } from "./RevolutVirtualCard"; // Revolut Virtual Card component
 import { usePaymentStatus } from "../hooks/usePaymentStatus"; // Real-time payment status hook
 
 // AgentSphere Payment Configuration Reader
@@ -1738,6 +1739,11 @@ const CubePaymentEngine = ({
   const [showRevolutBankModal, setShowRevolutBankModal] = useState(false);
   const [revolutOrderData, setRevolutOrderData] = useState(null);
   const [revolutPaymentStatus, setRevolutPaymentStatus] = useState("idle"); // 'idle', 'processing', 'completed', 'failed', 'cancelled'
+  
+  // Revolut Virtual Card State
+  const [showVirtualCardModal, setShowVirtualCardModal] = useState(false);
+  const [virtualCardAgentId, setVirtualCardAgentId] = useState(null);
+  
   const [isInitializing, setIsInitializing] = useState(true); // Prevent auto-clicks on load
 
   // Prevent immediate face selection when cube loads
@@ -1964,65 +1970,28 @@ const CubePaymentEngine = ({
       return;
     }
 
-    console.log("💳 Handling Revolut Virtual Card payment...");
-    setIsGenerating(true);
+    console.log("💳 Opening Revolut Virtual Card modal...");
 
     try {
-      // Calculate payment amount
-      const amount =
-        paymentAmount ||
+      // Set the agent ID for the Virtual Card component
+      setVirtualCardAgentId(agent?.id || "unknown_agent");
+      
+      // Calculate initial amount from agent configuration
+      const initialAmount =
+        (paymentAmount ||
         agent?.interaction_fee_amount ||
         agent?.interaction_fee ||
-        10.0;
+        10.0) * 100; // Convert to cents for Virtual Card
 
-      console.log(
-        "💰 Processing Revolut Virtual Card payment for amount:",
-        amount
-      );
+      console.log("💰 Virtual Card initial amount:", initialAmount / 100, "USD");
 
-      // Process Virtual Card payment using Revolut SDK
-      const paymentResult =
-        await revolutVirtualCardService.processVirtualCardPayment({
-          agentId: agent?.id,
-          agentName: agent?.name,
-          amount: amount,
-          currency: "EUR", // Revolut Virtual Card typically uses EUR
-          description: `Payment to ${agent?.name || "AgentSphere Agent"}`,
-        });
-
-      if (paymentResult.success) {
-        console.log(
-          "✅ Revolut Virtual Card payment successful:",
-          paymentResult
-        );
-        alert(
-          `✅ Virtual Card Payment Successful!\n\n` +
-            `💳 Payment ID: ${paymentResult.paymentId}\n` +
-            `💰 Amount: ${amount} EUR\n` +
-            `🏪 Merchant: ${agent?.name}\n\n` +
-            `Payment has been processed successfully via Revolut Virtual Card.`
-        );
-        setRevolutPaymentStatus("completed");
-
-        // Call onPaymentComplete callback if provided
-        if (onPaymentComplete) {
-          onPaymentComplete({
-            method: "virtual_card",
-            amount: amount,
-            currency: "EUR",
-            paymentId: paymentResult.paymentId,
-            status: "completed",
-          });
-        }
-      } else {
-        throw new Error(paymentResult.error);
-      }
+      // Open the Virtual Card modal
+      setShowVirtualCardModal(true);
+      setRevolutPaymentStatus("processing");
     } catch (error) {
-      console.error("❌ Error processing Revolut Virtual Card payment:", error);
-      alert(`Error processing Virtual Card payment: ${error.message}`);
+      console.error("❌ Error opening Revolut Virtual Card modal:", error);
+      alert(`Error opening Virtual Card: ${error.message}`);
       setRevolutPaymentStatus("failed");
-    } finally {
-      setIsGenerating(false);
     }
   };
 
@@ -2126,6 +2095,51 @@ const CubePaymentEngine = ({
     }
 
     handleRevolutBankQRClose();
+  };
+
+  // Revolut Virtual Card Modal Handlers
+  const handleVirtualCardClose = () => {
+    console.log("💳 Closing Revolut Virtual Card modal");
+    setShowVirtualCardModal(false);
+    setVirtualCardAgentId(null);
+    setRevolutPaymentStatus("idle");
+  };
+
+  const handleVirtualCardSuccess = (cardData) => {
+    console.log("✅ Virtual Card action successful:", cardData);
+    
+    // If this was a payment, mark as completed
+    if (cardData.action === "payment") {
+      setRevolutPaymentStatus("completed");
+      
+      alert(
+        `✅ Virtual Card Payment Successful!\n\n` +
+          `💳 Card: ****${cardData.cardNumber?.slice(-4) || "****"}\n` +
+          `💰 Amount: $${cardData.amount}\n` +
+          `🏪 Merchant: ${cardData.merchant || agent?.name}\n\n` +
+          `Payment has been processed successfully via Revolut Virtual Card.`
+      );
+
+      // Call onPaymentComplete callback if provided
+      if (onPaymentComplete) {
+        onPaymentComplete({
+          method: "virtual_card",
+          amount: cardData.amount,
+          currency: "USD",
+          cardId: cardData.cardId,
+          status: "completed",
+        });
+      }
+    }
+    
+    // Keep modal open for other actions (card created, topped up, etc.)
+    // User can manually close it when done
+  };
+
+  const handleVirtualCardError = (error) => {
+    console.error("❌ Virtual Card error:", error);
+    setRevolutPaymentStatus("failed");
+    alert(`❌ Virtual Card Error: ${error.message || "Unknown error"}`);
   };
 
   // Handle Cross-Chain Mode - Shows intermediate modal for transaction review
@@ -2469,6 +2483,79 @@ const CubePaymentEngine = ({
           orderData={revolutOrderData}
           agentData={agent}
         />
+
+        {/* Revolut Virtual Card Modal - For Virtual Card Management & Payments */}
+        {showVirtualCardModal && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.7)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 10000,
+              padding: "20px",
+            }}
+            onClick={(e) => {
+              // Close on backdrop click
+              if (e.target === e.currentTarget) {
+                handleVirtualCardClose();
+              }
+            }}
+          >
+            <div
+              style={{
+                maxWidth: "600px",
+                width: "100%",
+                maxHeight: "90vh",
+                overflow: "auto",
+                position: "relative",
+              }}
+            >
+              {/* Close Button */}
+              <button
+                onClick={handleVirtualCardClose}
+                style={{
+                  position: "absolute",
+                  top: "10px",
+                  right: "10px",
+                  background: "rgba(255, 255, 255, 0.9)",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: "36px",
+                  height: "36px",
+                  cursor: "pointer",
+                  fontSize: "20px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  zIndex: 10001,
+                  boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
+                }}
+              >
+                ✕
+              </button>
+
+              {/* Virtual Card Component */}
+              <RevolutVirtualCard
+                agentId={virtualCardAgentId}
+                initialAmount={
+                  (paymentAmount ||
+                    agent?.interaction_fee_amount ||
+                    agent?.interaction_fee ||
+                    10.0) * 100
+                }
+                currency="USD"
+                onSuccess={handleVirtualCardSuccess}
+                onError={handleVirtualCardError}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
