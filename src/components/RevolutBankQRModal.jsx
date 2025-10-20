@@ -2,7 +2,12 @@
 import React, { useEffect, useState, useCallback } from "react";
 import QRCode from "react-qr-code";
 import { usePaymentStatus } from "../hooks/usePaymentStatus";
-import { cancelRevolutOrder } from "../services/revolutBankService";
+import {
+  cancelRevolutOrder,
+  simulatePaymentCompletion,
+} from "../services/revolutBankService";
+
+const USE_MOCK = import.meta.env.VITE_USE_MOCK_BANK === "true";
 
 const RevolutBankQRModal = ({
   isOpen = false, // Add isOpen prop
@@ -19,6 +24,7 @@ const RevolutBankQRModal = ({
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes countdown
   const [showFullUrl, setShowFullUrl] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   // Support both prop patterns
   const actualOrderId = orderId || orderData?.id || orderData?.order_id;
@@ -99,22 +105,67 @@ const RevolutBankQRModal = ({
 
   // QR Code click handler - opens payment in-app (like crypto QR)
   const handleQRClick = () => {
-    console.log("🔥 Revolut QR Code clicked! Opening payment URL...");
+    console.log("🔥 Revolut QR Code clicked!");
 
-    if (actualPaymentUrl) {
-      try {
-        // Open payment URL in new window/tab for in-app payment
-        window.open(actualPaymentUrl, "_blank", "noopener,noreferrer");
-        console.log("✅ Payment URL opened:", actualPaymentUrl);
-      } catch (error) {
-        console.error("❌ Error opening payment URL:", error);
-        alert(
-          "Failed to open payment link. Please try scanning the QR code instead."
-        );
-      }
+    if (USE_MOCK) {
+      // In mock mode, trigger internal payment simulation
+      console.log("🎭 Mock mode: Triggering internal payment simulation...");
+      handlePayNow();
     } else {
-      console.warn("⚠️ No payment URL available");
-      alert("Payment URL not available yet. Please wait...");
+      // In real mode, open external Revolut payment page
+      console.log("🌐 Real mode: Opening external payment URL...");
+      if (actualPaymentUrl) {
+        try {
+          window.open(actualPaymentUrl, "_blank", "noopener,noreferrer");
+          console.log("✅ Payment URL opened:", actualPaymentUrl);
+        } catch (error) {
+          console.error("❌ Error opening payment URL:", error);
+          alert(
+            "Failed to open payment link. Please try scanning the QR code instead."
+          );
+        }
+      } else {
+        console.warn("⚠️ No payment URL available");
+        alert("Payment URL not available yet. Please wait...");
+      }
+    }
+  };
+
+  // Internal payment handler for mock mode (like crypto QR's handleQRClick)
+  const handlePayNow = async () => {
+    if (!actualOrderId) {
+      alert("Order ID not available. Please try again.");
+      return;
+    }
+
+    setIsProcessingPayment(true);
+    console.log(
+      `💳 Processing internal payment for order: ${actualOrderId}...`
+    );
+
+    try {
+      // Simulate payment completion
+      const result = await simulatePaymentCompletion(actualOrderId);
+
+      if (result.success) {
+        console.log("✅ Payment completed successfully:", result);
+        // The payment status hook will detect the completion and trigger handlePaymentSuccess
+        alert(
+          `🎉 Payment Completed!\n\n` +
+            `Order ID: ${actualOrderId}\n` +
+            `Status: ${result.order.state}\n\n` +
+            `Transaction completed successfully!`
+        );
+      } else {
+        throw new Error(result.error || "Payment failed");
+      }
+    } catch (error) {
+      console.error("❌ Payment error:", error);
+      alert(
+        `❌ Payment Failed:\n${error.message}\n\nPlease try again or contact support.`
+      );
+    } finally {
+      setIsProcessingPayment(false);
     }
   };
 
@@ -388,9 +439,19 @@ const RevolutBankQRModal = ({
               Quick Payment Options
             </p>
             <div className="space-y-2 text-sm text-gray-600">
+              {USE_MOCK && (
+                <p className="flex items-center justify-center gap-2">
+                  <span className="text-lg">�</span>
+                  <span>Click "Pay Now" for instant payment</span>
+                </p>
+              )}
               <p className="flex items-center justify-center gap-2">
-                <span className="text-lg">👆</span>
-                <span>Click QR to open in browser</span>
+                <span className="text-lg">{USE_MOCK ? "🖱️" : "�👆"}</span>
+                <span>
+                  {USE_MOCK
+                    ? "Click QR for payment simulation"
+                    : "Click QR to open in browser"}
+                </span>
               </p>
               <p className="flex items-center justify-center gap-2">
                 <span className="text-lg">📱</span>
@@ -402,6 +463,48 @@ const RevolutBankQRModal = ({
               </p>
             </div>
           </div>
+
+          {/* Pay Now Button (Mock Mode Only) */}
+          {USE_MOCK &&
+            (paymentStatus === "pending" || paymentStatus === "processing") && (
+              <div className="mb-6 px-4">
+                <button
+                  onClick={handlePayNow}
+                  disabled={isProcessingPayment}
+                  className="w-full py-4 px-6 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-3"
+                  style={{
+                    background: isProcessingPayment
+                      ? "linear-gradient(135deg, rgba(0, 117, 235, 0.5) 0%, rgba(0, 212, 255, 0.5) 100%)"
+                      : "linear-gradient(135deg, #0075EB 0%, #00D4FF 100%)",
+                    color: "#fff",
+                    boxShadow: isProcessingPayment
+                      ? "0 4px 12px rgba(0, 117, 235, 0.2)"
+                      : "0 8px 20px rgba(0, 117, 235, 0.4)",
+                    border: "none",
+                  }}
+                >
+                  {isProcessingPayment ? (
+                    <>
+                      <div
+                        className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"
+                        style={{
+                          animation: "spin 0.8s linear infinite",
+                        }}
+                      />
+                      <span>Processing Payment...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-xl">💳</span>
+                      <span>Pay Now (Mock)</span>
+                    </>
+                  )}
+                </button>
+                <p className="text-xs text-center mt-2 text-gray-500">
+                  🎭 Testing mode - Instant payment simulation
+                </p>
+              </div>
+            )}
 
           {/* Status and Timer */}
           <div

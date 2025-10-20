@@ -100,11 +100,25 @@ export const checkRevolutOrderStatus = async (orderId) => {
 };
 
 /**
- * Cancels a Revolut payment order.
- * @param {string} orderId - The ID of the order to cancel.
- * @returns {Promise<object>} - The cancellation response.
+ * Cancel a Revolut Bank QR order
  */
 export const cancelRevolutOrder = async (orderId) => {
+  if (!orderId) {
+    throw new Error("Order ID is required");
+  }
+
+  // Mock mode doesn't need cancellation - instant cleanup
+  if (USE_MOCK) {
+    console.log(
+      `🧪 [MOCK] Canceling Revolut Bank order ${orderId} (instant cleanup)`
+    );
+    return {
+      success: true,
+      message: "Order canceled successfully (mock)",
+    };
+  }
+
+  // Real API call
   try {
     const response = await fetch(
       `${API_URL}/api/revolut/cancel-order/${orderId}`,
@@ -117,13 +131,66 @@ export const cancelRevolutOrder = async (orderId) => {
     );
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || "Failed to cancel order");
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    return await response.json();
+    const data = await response.json();
+    return data;
   } catch (error) {
-    console.error("Error canceling Revolut order:", error);
+    console.error("❌ Error canceling Revolut order:", error);
+    throw error;
+  }
+};
+
+/**
+ * Simulate payment completion for testing (mock mode only)
+ * This allows in-app payment testing without requiring external Revolut interaction
+ */
+export const simulatePaymentCompletion = async (orderId) => {
+  if (!orderId) {
+    throw new Error("Order ID is required");
+  }
+
+  console.log(`🎭 Simulating payment completion for order: ${orderId}`);
+
+  // Mock mode: Instant success after brief delay
+  if (USE_MOCK) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        console.log(`✅ [MOCK] Payment completed for order ${orderId}`);
+        resolve({
+          success: true,
+          order: {
+            id: orderId,
+            state: "COMPLETED",
+            updated_at: new Date().toISOString(),
+          },
+          message: "Payment completed successfully (mock)",
+        });
+      }, 1500); // 1.5 second delay to simulate processing
+    });
+  }
+
+  // Real API call: Trigger payment webhook or callback
+  try {
+    const response = await fetch(
+      `${API_URL}/api/revolut/simulate-payment/${orderId}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("❌ Error simulating payment completion:", error);
     throw error;
   }
 };
