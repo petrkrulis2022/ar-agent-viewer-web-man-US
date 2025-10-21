@@ -8,6 +8,13 @@ import {
   simulateCardPayment,
   getCardTransactions,
 } from "../services/revolutCardService";
+import {
+  processRealCardPayment,
+  getAgentCard,
+  validatePayment,
+  formatAmount,
+  isMockMode,
+} from "../services/revolutPayment";
 
 export function RevolutVirtualCard({
   agentId,
@@ -144,47 +151,124 @@ export function RevolutVirtualCard({
   };
 
   /**
-   * Simulate payment
+   * Handle payment (real or simulated based on mode)
    */
   const handleSimulatePayment = async () => {
     if (!cardData || !paymentAmount || !merchant) return;
+
+    const amount = Math.round(parseFloat(paymentAmount) * 100); // Convert to cents
+    const useMock = isMockMode();
+
+    // Validate payment
+    const validation = validatePayment({
+      amount,
+      cardBalance: cardData.balance,
+      currency,
+    });
+
+    if (!validation.isValid) {
+      alert(`❌ Payment Validation Failed\n\n${validation.errors.join("\n")}`);
+      return;
+    }
+
+    // Confirmation for real payments
+    if (!useMock) {
+      const confirmed = window.confirm(
+        `⚠️ REAL PAYMENT CONFIRMATION\n\n` +
+          `Amount: ${formatAmount(amount, currency)}\n` +
+          `Card Balance: ${formatAmount(cardData.balance, currency)}\n` +
+          `Remaining After: ${formatAmount(cardData.balance - amount, currency)}\n` +
+          `Merchant: ${merchant}\n\n` +
+          `This will charge your virtual card with REAL MONEY.\n\n` +
+          `Continue?`
+      );
+
+      if (!confirmed) {
+        console.log("⚠️ User cancelled real payment");
+        return;
+      }
+    }
 
     try {
       setLoading(true);
       setStatus("paying");
       setError(null);
 
-      const amount = Math.round(parseFloat(paymentAmount) * 100); // Convert to cents
-
-      console.log("💳 Simulating payment:", { amount, merchant });
-
-      const result = await simulateCardPayment(
-        cardData.card_id,
+      console.log(`💳 Processing ${useMock ? "simulated" : "REAL"} payment:`, {
         amount,
-        currency,
-        merchant
-      );
+        merchant,
+        mode: useMock ? "MOCK" : "REAL",
+      });
 
-      console.log("✅ Payment completed:", result);
+      let result;
 
-      // Update card balance
-      setCardData((prev) => ({
-        ...prev,
-        balance: result.payment?.remaining_balance || prev.balance - amount,
-      }));
+      if (useMock) {
+        // Mock mode: Use existing simulation
+        result = await simulateCardPayment(
+          cardData.card_id,
+          amount,
+          currency,
+          merchant
+        );
+      } else {
+        // Real mode: Process actual payment
+        result = await processRealCardPayment({
+          agentId,
+          amount,
+          currency,
+          orderId: `order_${Date.now()}_${merchant.replace(/\s/g, "_")}`,
+        });
+      }
 
-      setStatus("active");
-      setPaymentAmount("");
-      setMerchant("");
+      if (result.success) {
+        console.log("✅ Payment completed successfully:", result);
 
-      // Refresh transactions
-      if (showTransactions) {
-        handleLoadTransactions();
+        // Show success message
+        alert(
+          `✅ Payment Successful\n\n` +
+            `Amount: ${formatAmount(amount, currency)}\n` +
+            `New Balance: ${formatAmount(result.remaining_balance, currency)}\n` +
+            `Transaction ID: ${result.transaction_id}\n` +
+            `Merchant: ${merchant}\n\n` +
+            `${useMock ? "🎭 Mock transaction" : "💳 Real transaction processed"}`
+        );
+
+        // Update card balance
+        setCardData((prev) => ({
+          ...prev,
+          balance: result.remaining_balance,
+        }));
+
+        // If real mode, refresh card data from backend
+        if (!useMock) {
+          const updatedCard = await getAgentCard(agentId);
+          if (updatedCard) {
+            setCardData(updatedCard);
+          }
+        }
+
+        setStatus("active");
+        setPaymentAmount("");
+        setMerchant("");
+
+        // Refresh transactions
+        if (showTransactions) {
+          handleLoadTransactions();
+        }
+      } else {
+        throw new Error(result.error || "Payment failed");
       }
     } catch (err) {
       console.error("❌ Payment failed:", err);
       setError(err.message);
       setStatus("active");
+
+      // Show detailed error message
+      alert(
+        `❌ Payment Failed\n\n` +
+          `Error: ${err.message}\n\n` +
+          `Please try again or contact support.`
+      );
     } finally {
       setLoading(false);
     }
@@ -605,6 +689,33 @@ export function RevolutVirtualCard({
       <div className="virtual-card-container">
         <h2 className="virtual-card-title">Revolut Virtual Card 💳</h2>
 
+        {/* Mode Indicator */}
+        <div
+          style={{
+            padding: "12px 20px",
+            borderRadius: "8px",
+            marginBottom: "20px",
+            fontWeight: "bold",
+            textAlign: "center",
+            fontSize: "14px",
+            ...(isMockMode()
+              ? {
+                  backgroundColor: "#e3f2fd",
+                  color: "#1976d2",
+                  border: "2px solid #1976d2",
+                }
+              : {
+                  backgroundColor: "#fff3e0",
+                  color: "#e65100",
+                  border: "2px solid #e65100",
+                }),
+          }}
+        >
+          {isMockMode()
+            ? "🎭 Testing Mode - No real money"
+            : "⚠️ REAL TRANSACTIONS - Real money will be charged"}
+        </div>
+
         {/* Idle State */}
         {status === "idle" && (
           <div className="idle-state">
@@ -758,7 +869,11 @@ export function RevolutVirtualCard({
               {/* Payment Simulation Section */}
               {status === "active" && (
                 <div className="section-box">
-                  <h3 className="section-title">🧪 Simulate Payment</h3>
+                  <h3 className="section-title">
+                    {isMockMode()
+                      ? "🧪 Simulate Payment"
+                      : "💳 Process Payment"}
+                  </h3>
                   <div className="input-group">
                     <input
                       type="number"
@@ -787,8 +902,20 @@ export function RevolutVirtualCard({
                         parseFloat(paymentAmount) <= 0
                       }
                       className="btn btn-test"
+                      style={
+                        !isMockMode()
+                          ? {
+                              backgroundColor: "#ff5722",
+                              borderColor: "#ff5722",
+                            }
+                          : {}
+                      }
                     >
-                      {loading ? "⏳ Processing..." : "🧪 Make Test Payment"}
+                      {loading
+                        ? "⏳ Processing..."
+                        : isMockMode()
+                        ? "🧪 Make Test Payment"
+                        : "💳 Pay Now (Real Transaction)"}
                     </button>
                   </div>
                 </div>
