@@ -6,6 +6,7 @@ import {
   cancelRevolutOrder,
   simulatePaymentCompletion,
 } from "../services/revolutBankService";
+import { RevolutPaymentModal } from "./RevolutPaymentModal/RevolutPaymentModal";
 
 const USE_MOCK = import.meta.env.VITE_USE_MOCK_BANK === "true";
 
@@ -25,6 +26,8 @@ const RevolutBankQRModal = ({
   const [showFullUrl, setShowFullUrl] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [showRevolutModal, setShowRevolutModal] = useState(false);
+  const [pendingPayment, setPendingPayment] = useState(null);
 
   // Support both prop patterns
   const actualOrderId = orderId || orderData?.id || orderData?.order_id;
@@ -138,21 +141,49 @@ const RevolutBankQRModal = ({
       return;
     }
 
+    // Extract payment details and show Revolut modal
+    const amount =
+      actualOrderDetails?.total_amount || actualOrderDetails?.amount || 0;
+    const merchantName =
+      agentData?.name ||
+      agentData?.agent_name ||
+      actualOrderDetails?.merchant ||
+      "AgentSphere Agent";
+    const currencyCode = actualOrderDetails?.currency || "USD";
+
+    console.log("🔍 Agent data for merchant name:", agentData);
+    console.log("📝 Using merchant name:", merchantName);
+
+    setPendingPayment({
+      orderId: actualOrderId,
+      amount,
+      merchant: merchantName,
+      currency: currencyCode,
+    });
+    setShowRevolutModal(true);
+  };
+
+  // Handle payment confirmation from Revolut modal
+  const handleRevolutConfirm = async () => {
+    if (!pendingPayment) return;
+
     setIsProcessingPayment(true);
+    setShowRevolutModal(false);
+
     console.log(
-      `💳 Processing internal payment for order: ${actualOrderId}...`
+      `💳 Processing internal payment for order: ${pendingPayment.orderId}...`
     );
 
     try {
       // Simulate payment completion
-      const result = await simulatePaymentCompletion(actualOrderId);
+      const result = await simulatePaymentCompletion(pendingPayment.orderId);
 
       if (result.success) {
         console.log("✅ Payment completed successfully:", result);
         // The payment status hook will detect the completion and trigger handlePaymentSuccess
         alert(
           `🎉 Payment Completed!\n\n` +
-            `Order ID: ${actualOrderId}\n` +
+            `Order ID: ${pendingPayment.orderId}\n` +
             `Status: ${result.order.state}\n\n` +
             `Transaction completed successfully!`
         );
@@ -166,7 +197,14 @@ const RevolutBankQRModal = ({
       );
     } finally {
       setIsProcessingPayment(false);
+      setPendingPayment(null);
     }
+  };
+
+  // Handle payment cancellation from Revolut modal
+  const handleRevolutCancel = () => {
+    setShowRevolutModal(false);
+    setPendingPayment(null);
   };
 
   // Copy payment link handler
@@ -665,6 +703,18 @@ const RevolutBankQRModal = ({
           </div>
         </div>
       </div>
+
+      {/* Revolut Payment Modal (Mobile) */}
+      {showRevolutModal && pendingPayment && (
+        <RevolutPaymentModal
+          type="mobile"
+          merchantName={pendingPayment.merchant}
+          amount={pendingPayment.amount / 100}
+          currency={pendingPayment.currency}
+          onConfirm={handleRevolutConfirm}
+          onCancel={handleRevolutCancel}
+        />
+      )}
     </>
   );
 };

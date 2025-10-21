@@ -13,7 +13,12 @@ export const usePaymentStatus = (orderId, onStatusChange) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!orderId) return;
+    // Check if we're in mock mode - if so, don't try to connect
+    const useMockBank = import.meta.env.VITE_USE_MOCK_BANK === "true";
+    if (!orderId || useMockBank) {
+      setIsLoading(false);
+      return;
+    }
 
     setIsLoading(true);
     setError(null);

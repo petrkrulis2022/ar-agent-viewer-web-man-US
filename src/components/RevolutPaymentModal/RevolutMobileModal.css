@@ -1,0 +1,291 @@
+/* src/components/RevolutPaymentModal/RevolutMobileModal.css */
+
+.revolut-modal-overlay.mobile {
+  background: #ffffff;
+}
+
+.revolut-mobile-modal {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  animation: slideUp 0.4s ease-out;
+}
+
+.mobile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+}
+
+.reject-button {
+  background: none;
+  border: none;
+  font-size: 17px;
+  color: #000;
+  cursor: pointer;
+  padding: 8px 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.mobile-branding {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.revolut-logo-mobile {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0075eb;
+  letter-spacing: -0.5px;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+.cubepay-badge-mobile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+
+.cubepay-badge-mobile .secured-text {
+  font-size: 10px;
+  color: #333;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.cubepay-badge-mobile .cubepay-logo {
+  font-size: 13px;
+  color: #22c55e;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.timer-section-mobile {
+  display: flex;
+  justify-content: center;
+  margin: 40px 0;
+}
+
+.timer-circle-mobile {
+  position: relative;
+  width: 160px;
+  height: 160px;
+}
+
+.timer-text-mobile {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 40px;
+  font-weight: 600;
+  color: #000;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+.payment-message-mobile {
+  text-align: center;
+  margin: 30px 0;
+}
+
+.payment-message-mobile h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #000;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.payment-card-mobile {
+  background: #f7f7f7;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 30px 0;
+}
+
+.card-icon {
+  flex-shrink: 0;
+}
+
+.card-details {
+  flex: 1;
+}
+
+.merchant-name-mobile {
+  font-size: 18px;
+  font-weight: 600;
+  color: #000;
+  margin-bottom: 4px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.timestamp-mobile {
+  font-size: 14px;
+  color: #666;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.amount-mobile {
+  font-size: 20px;
+  font-weight: 600;
+  color: #000;
+  white-space: nowrap;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.confirm-button-mobile {
+  width: 100%;
+  padding: 18px;
+  background: linear-gradient(135deg, #e91e63 0%, #d81b60 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: auto;
+  box-shadow: 0 4px 12px rgba(233, 30, 99, 0.3);
+  transition: transform 0.2s, box-shadow 0.2s;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.confirm-button-mobile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(233, 30, 99, 0.4);
+}
+
+.confirm-button-mobile:active {
+  transform: translateY(0);
+}
+
+.processing-indicator-mobile {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: auto;
+  padding: 18px;
+}
+
+.spinner-mobile {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #e91e63;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Success Modal Mobile */
+.revolut-success-modal-mobile {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  gap: 20px;
+  animation: slideUp 0.4s ease-out;
+}
+
+.success-revolut-logo-mobile {
+  font-size: 32px;
+  font-weight: 700;
+  color: #0075eb;
+  letter-spacing: -0.5px;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  margin-bottom: 10px;
+}
+
+.success-icon-mobile {
+  margin-bottom: 10px;
+  animation: scaleIn 0.5s ease-out;
+}
+
+@keyframes scaleIn {
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.success-title-mobile {
+  font-size: 28px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+  text-align: center;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.cubepay-success-badge-mobile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.secured-text-success-mobile {
+  font-size: 11px;
+  color: #666;
+  font-weight: 500;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.cubepay-logo-success-mobile {
+  font-size: 16px;
+  font-weight: 800;
+  color: #22c55e;
+  letter-spacing: 0.5px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.success-done-button-mobile {
+  width: 100%;
+  max-width: 300px;
+  padding: 18px;
+  background: #0075eb;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  margin-top: 10px;
+}
+
+.success-done-button-mobile:hover {
+  background: #0062c4;
+}

@@ -725,24 +725,6 @@ const PaymentCube = ({
         })}
       </mesh>
 
-      {/* Floating "Pay With" Text - moved right above cube */}
-      <Html position={[2, 2, -3]} transform>
-        <div
-          style={{
-            color: "#00ff00",
-            fontSize: "28px",
-            fontWeight: "bold",
-            textAlign: "center",
-            textShadow: "0 0 25px #00ff00a0, 0 0 40px #00ff0060",
-            animation: "float 3s ease-in-out infinite",
-            transform: "translate(-50%, -50%)",
-            fontFamily: "'Segoe UI', Arial, sans-serif",
-          }}
-        >
-          💎 Pay With
-        </div>
-      </Html>
-
       {/* Amount Display - moved further down to avoid overlaying cube */}
       {/* Enhanced Dramatic Lighting */}
       <pointLight
@@ -2547,6 +2529,7 @@ const CubePaymentEngine = ({
               {/* Virtual Card Component */}
               <RevolutVirtualCard
                 agentId={virtualCardAgentId}
+                agentName={agent?.name || "AgentSphere Agent"}
                 initialAmount={
                   (paymentAmount ||
                     agent?.interaction_fee_amount ||

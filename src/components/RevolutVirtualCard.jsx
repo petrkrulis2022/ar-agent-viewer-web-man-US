@@ -8,9 +8,11 @@ import {
   simulateCardPayment,
   getCardTransactions,
 } from "../services/revolutCardService";
+import { RevolutPaymentModal } from "./RevolutPaymentModal/RevolutPaymentModal";
 
 export function RevolutVirtualCard({
   agentId,
+  agentName = "AgentSphere Agent",
   initialAmount = 5000,
   currency = "USD",
   onSuccess,
@@ -26,6 +28,8 @@ export function RevolutVirtualCard({
   const [merchant, setMerchant] = useState("");
   const [transactions, setTransactions] = useState([]);
   const [showTransactions, setShowTransactions] = useState(false);
+  const [showRevolutModal, setShowRevolutModal] = useState(false);
+  const [pendingPayment, setPendingPayment] = useState(null);
 
   /**
    * Create virtual card
@@ -149,20 +153,36 @@ export function RevolutVirtualCard({
   const handleSimulatePayment = async () => {
     if (!cardData || !paymentAmount || !merchant) return;
 
+    const amount = Math.round(parseFloat(paymentAmount) * 100); // Convert to cents
+
+    // Store pending payment and show modal
+    setPendingPayment({
+      amount,
+      merchant: agentName,
+      currency,
+    });
+    setShowRevolutModal(true);
+  };
+
+  /**
+   * Handle payment confirmation from modal
+   */
+  const handlePaymentConfirm = async () => {
+    if (!pendingPayment) return;
+
     try {
       setLoading(true);
       setStatus("paying");
       setError(null);
+      setShowRevolutModal(false);
 
-      const amount = Math.round(parseFloat(paymentAmount) * 100); // Convert to cents
-
-      console.log("💳 Simulating payment:", { amount, merchant });
+      console.log("💳 Processing payment:", pendingPayment);
 
       const result = await simulateCardPayment(
         cardData.card_id,
-        amount,
-        currency,
-        merchant
+        pendingPayment.amount,
+        pendingPayment.currency,
+        pendingPayment.merchant
       );
 
       console.log("✅ Payment completed:", result);
@@ -170,12 +190,15 @@ export function RevolutVirtualCard({
       // Update card balance
       setCardData((prev) => ({
         ...prev,
-        balance: result.payment?.remaining_balance || prev.balance - amount,
+        balance:
+          result.payment?.remaining_balance ||
+          prev.balance - pendingPayment.amount,
       }));
 
       setStatus("active");
       setPaymentAmount("");
       setMerchant("");
+      setPendingPayment(null);
 
       // Refresh transactions
       if (showTransactions) {
@@ -188,6 +211,15 @@ export function RevolutVirtualCard({
     } finally {
       setLoading(false);
     }
+  };
+
+  /**
+   * Handle payment cancellation from modal
+   */
+  const handlePaymentCancel = () => {
+    setShowRevolutModal(false);
+    setPendingPayment(null);
+    setStatus("active");
   };
 
   /**
@@ -865,6 +897,18 @@ export function RevolutVirtualCard({
           </div>
         )}
       </div>
+
+      {/* Revolut Payment Modal */}
+      {showRevolutModal && pendingPayment && (
+        <RevolutPaymentModal
+          type="desktop"
+          merchantName={pendingPayment.merchant}
+          amount={pendingPayment.amount / 100}
+          currency={pendingPayment.currency}
+          onConfirm={handlePaymentConfirm}
+          onCancel={handlePaymentCancel}
+        />
+      )}
     </>
   );
 }
