@@ -177,7 +177,10 @@ export function RevolutVirtualCard({
         `⚠️ REAL PAYMENT CONFIRMATION\n\n` +
           `Amount: ${formatAmount(amount, currency)}\n` +
           `Card Balance: ${formatAmount(cardData.balance, currency)}\n` +
-          `Remaining After: ${formatAmount(cardData.balance - amount, currency)}\n` +
+          `Remaining After: ${formatAmount(
+            cardData.balance - amount,
+            currency
+          )}\n` +
           `Merchant: ${merchant}\n\n` +
           `This will charge your virtual card with REAL MONEY.\n\n` +
           `Continue?`
@@ -227,10 +230,15 @@ export function RevolutVirtualCard({
         alert(
           `✅ Payment Successful\n\n` +
             `Amount: ${formatAmount(amount, currency)}\n` +
-            `New Balance: ${formatAmount(result.remaining_balance, currency)}\n` +
+            `New Balance: ${formatAmount(
+              result.remaining_balance,
+              currency
+            )}\n` +
             `Transaction ID: ${result.transaction_id}\n` +
             `Merchant: ${merchant}\n\n` +
-            `${useMock ? "🎭 Mock transaction" : "💳 Real transaction processed"}`
+            `${
+              useMock ? "🎭 Mock transaction" : "💳 Real transaction processed"
+            }`
         );
 
         // Update card balance

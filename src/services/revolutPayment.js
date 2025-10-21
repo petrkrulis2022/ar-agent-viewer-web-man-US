@@ -2,7 +2,8 @@
 // Real Virtual Card Payment Integration
 // Supports both mock (testing) and real (production) modes
 
-const API_URL = import.meta.env.VITE_AGENTSPHERE_API_URL || "http://localhost:3001";
+const API_URL =
+  import.meta.env.VITE_AGENTSPHERE_API_URL || "http://localhost:3001";
 const USE_MOCK_CARD = import.meta.env.VITE_USE_MOCK_CARD === "true";
 
 /**
@@ -48,7 +49,9 @@ export async function processRealCardPayment({
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.error || `HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(
+        result.error || `HTTP ${response.status}: ${response.statusText}`
+      );
     }
 
     console.log("✅ Real payment processed successfully:", result);
@@ -152,7 +155,9 @@ export function validatePayment({ amount, cardBalance, currency }) {
 
   if (amount > cardBalance) {
     errors.push(
-      `Insufficient balance. Available: ${(cardBalance / 100).toFixed(2)} ${currency}`
+      `Insufficient balance. Available: ${(cardBalance / 100).toFixed(
+        2
+      )} ${currency}`
     );
   }
 
