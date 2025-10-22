@@ -4,3 +4,6 @@
 [submodule "onofframp-cube-paygate"]
 	path = onofframp-cube-paygate
 	url = https://github.com/petrkrulis2022/on-off-ramp-cube-paygate.git
+[submodule "agentsphere-full-web-man-US"]
+	path = agentsphere-full-web-man-US
+	url = https://github.com/petrkrulis2022/agentsphere-full-web-man-US.git
