@@ -355,11 +355,23 @@ const CameraView = ({
     };
   }, []);
 
-  // Auto-start camera if isActive prop is true
+  // Auto-start camera on mount if isActive is true
+  useEffect(() => {
+    if (isActive) {
+      console.log(
+        "🎥 MOUNT: Auto-starting camera because isActive=true on mount"
+      );
+      startCamera();
+    }
+  }, []); // Run once on mount
+
+  // Watch for isActive prop changes
   useEffect(() => {
     if (isActive && !isStreaming) {
+      console.log("🎥 PROP CHANGE: Starting camera because isActive=true");
       startCamera();
     } else if (!isActive && isStreaming) {
+      console.log("⏸️ PROP CHANGE: Stopping camera because isActive=false");
       stopCamera();
     }
   }, [isActive]);

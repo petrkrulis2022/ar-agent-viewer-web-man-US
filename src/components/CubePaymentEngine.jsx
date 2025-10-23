@@ -12,7 +12,7 @@ import { supabase } from "../lib/supabase";
 import QRCode from "react-qr-code";
 import IntermediatePaymentModal from "./IntermediatePaymentModal"; // Transaction validation modal
 import RevolutBankQRModal from "./RevolutBankQRModal"; // Revolut Bank QR modal
-import { RevolutVirtualCard } from "./RevolutVirtualCard"; // Revolut Virtual Card component
+import { VirtualCardManager } from "./VirtualCardManager"; // NEW: Virtual Card Manager with card selector
 import { usePaymentStatus } from "../hooks/usePaymentStatus"; // Real-time payment status hook
 
 // AgentSphere Payment Configuration Reader
@@ -1825,12 +1825,65 @@ const CubePaymentEngine = ({
 
       const agentNetwork = agent?.network_id || agent?.chain_id;
 
+      console.log("🔍 DETAILED Network Detection:");
+      console.log(
+        "  - window.ethereum.chainId (raw):",
+        window.ethereum?.chainId
+      );
+      console.log("  - userNetwork (parsed):", userNetwork);
+      console.log("  - Base Sepolia should be: 84532");
+      console.log("  - agentNetwork:", agentNetwork);
+      console.log("  - agent?.network_id:", agent?.network_id);
+      console.log("  - agent?.chain_id:", agent?.chain_id);
+
       console.log("🌐 Network Detection:", {
         userNetwork,
         agentNetwork,
         needsCrossChain:
           userNetwork && agentNetwork && userNetwork !== agentNetwork,
       });
+
+      // VALIDATION: Check if user is on a supported network
+      const SUPPORTED_TESTNETS = [
+        11155111, 421614, 84532, 11155420, 80002, 43113,
+      ]; // Sepolia, Arb, Base, OP, Polygon, Avalanche
+      const MAINNET_CHAINS = [1, 137, 42161, 8453, 10, 43114]; // ETH, Polygon, Arb, Base, OP, Avalanche mainnets
+
+      if (userNetwork && MAINNET_CHAINS.includes(userNetwork)) {
+        console.error("❌ User is on MAINNET but agent requires TESTNET");
+        alert(
+          `⚠️ Network Mismatch\n\n` +
+            `You're connected to a MAINNET network.\n` +
+            `This agent requires a TESTNET connection.\n\n` +
+            `Please switch to one of these testnets:\n` +
+            `• Sepolia (11155111)\n` +
+            `• Base Sepolia (84532)\n` +
+            `• Arbitrum Sepolia (421614)\n` +
+            `• OP Sepolia (11155420)\n\n` +
+            `Then try again.`
+        );
+        setIsGenerating(false);
+        return;
+      }
+
+      if (
+        userNetwork &&
+        !SUPPORTED_TESTNETS.includes(userNetwork) &&
+        !MAINNET_CHAINS.includes(userNetwork)
+      ) {
+        console.error("❌ User network not supported:", userNetwork);
+        alert(
+          `⚠️ Unsupported Network\n\n` +
+            `Your current network (${userNetwork}) is not supported.\n\n` +
+            `Please switch to one of these testnets:\n` +
+            `• Sepolia (11155111)\n` +
+            `• Base Sepolia (84532)\n` +
+            `• Arbitrum Sepolia (421614)\n` +
+            `• OP Sepolia (11155420)`
+        );
+        setIsGenerating(false);
+        return;
+      }
 
       // STEP 2: Route to appropriate flow
       if (userNetwork && agentNetwork && userNetwork !== agentNetwork) {
@@ -1909,21 +1962,25 @@ const CubePaymentEngine = ({
     setIsGenerating(true);
 
     try {
-      // Calculate payment amount
-      const amount =
-        paymentAmount ||
-        agent?.interaction_fee_amount ||
-        agent?.interaction_fee ||
-        10.0;
+      // Default payment amount: $10 USD
+      // NOTE: Will be dynamic based on agent interaction fee later
+      const amount = 10.0;
 
-      console.log("💰 Creating Revolut Bank QR order for amount:", amount);
+      console.log(
+        "💰 Creating Revolut Bank QR order for amount:",
+        amount,
+        "USD"
+      );
+      console.log(
+        "💰 NOTE: Payment amount will be $10 USD (default - will be dynamic later)"
+      );
 
       // Create Revolut Bank QR order
       const orderResult = await revolutBankService.createRevolutBankOrder({
         agentId: agent?.id,
         agentName: agent?.name,
         amount: amount,
-        currency: "EUR", // Revolut Bank QR typically uses EUR
+        currency: "USD",
         description: `Payment to ${agent?.name || "AgentSphere Agent"}`,
       });
 
@@ -1952,30 +2009,20 @@ const CubePaymentEngine = ({
       return;
     }
 
-    console.log("💳 Opening Revolut Virtual Card modal...");
+    console.log("💳 Opening Virtual Card Manager...");
+    console.log(
+      "💰 NOTE: Payment amount will be $10 USD (default - will be dynamic later)"
+    );
 
     try {
       // Set the agent ID for the Virtual Card component
       setVirtualCardAgentId(agent?.id || "unknown_agent");
 
-      // Calculate initial amount from agent configuration
-      const initialAmount =
-        (paymentAmount ||
-          agent?.interaction_fee_amount ||
-          agent?.interaction_fee ||
-          10.0) * 100; // Convert to cents for Virtual Card
-
-      console.log(
-        "💰 Virtual Card initial amount:",
-        initialAmount / 100,
-        "USD"
-      );
-
-      // Open the Virtual Card modal
+      // Open the Virtual Card modal with new manager
       setShowVirtualCardModal(true);
       setRevolutPaymentStatus("processing");
     } catch (error) {
-      console.error("❌ Error opening Revolut Virtual Card modal:", error);
+      console.error("❌ Error opening Virtual Card Manager:", error);
       alert(`Error opening Virtual Card: ${error.message}`);
       setRevolutPaymentStatus("failed");
     }
@@ -2526,19 +2573,12 @@ const CubePaymentEngine = ({
                 ✕
               </button>
 
-              {/* Virtual Card Component */}
-              <RevolutVirtualCard
+              {/* Virtual Card Manager Component */}
+              <VirtualCardManager
                 agentId={virtualCardAgentId}
                 agentName={agent?.name || "AgentSphere Agent"}
-                initialAmount={
-                  (paymentAmount ||
-                    agent?.interaction_fee_amount ||
-                    agent?.interaction_fee ||
-                    10.0) * 100
-                }
-                currency="USD"
-                onSuccess={handleVirtualCardSuccess}
-                onError={handleVirtualCardError}
+                onClose={() => setShowVirtualCardModal(false)}
+                onPaymentComplete={handleVirtualCardSuccess}
               />
             </div>
           </div>

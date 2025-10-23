@@ -44,7 +44,7 @@ const ARViewer = () => {
   const [initializationStep, setInitializationStep] = useState(0);
   const [isInitialized, setIsInitialized] = useState(false);
   const [nearAgents, setNearAgents] = useState([]);
-  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraActive, setCameraActive] = useState(true); // 🎥 Camera ON by default
   const [selectedTab, setSelectedTab] = useState("viewer");
   const [viewMode, setViewMode] = useState("3d"); // "2d" or "3d" - Default to 3D for immersive experience
   const [rtkStatus, setRtkStatus] = useState({
@@ -271,13 +271,12 @@ const ARViewer = () => {
 
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      // Step 2: Camera
-      if (isMountedRef.current) {
-        await initializeCamera();
-      }
+      // Step 2: Camera - SKIP MANUAL INITIALIZATION
+      // Camera is now handled automatically by CameraView component
+      console.log("📷 Camera initialization delegated to CameraView component");
       if (!isMountedRef.current) return;
 
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       // Step 3: Database and objects
       if (isMountedRef.current) {
@@ -682,21 +681,35 @@ const ARViewer = () => {
                       </p>
                     </div>
                   </div>{" "}
-                  {/* Camera Toggle for 3D Mode */}
+                  {/* Camera View Toggle - Switch between AR Camera and Blue Background */}
                   <div className="absolute bottom-4 right-4 z-30">
                     <button
                       onClick={() => setCameraActive(!cameraActive)}
-                      className={`p-3 rounded-full ${
+                      className={`flex items-center space-x-2 px-4 py-3 rounded-full ${
                         cameraActive
-                          ? "bg-green-500 hover:bg-green-600"
-                          : "bg-red-500 hover:bg-red-600"
-                      } transition-colors shadow-lg`}
-                      title={cameraActive ? "Stop Camera" : "Start Camera"}
+                          ? "bg-blue-500 hover:bg-blue-600 shadow-blue-500/50"
+                          : "bg-gray-600 hover:bg-gray-700 shadow-gray-600/50"
+                      } transition-all shadow-lg backdrop-blur-sm border-2 border-white/20`}
+                      title={
+                        cameraActive
+                          ? "Switch to Blue Background"
+                          : "Switch to Camera View"
+                      }
                     >
                       {cameraActive ? (
-                        <Pause className="w-6 h-6 text-white" />
+                        <>
+                          <Camera className="w-5 h-5 text-white" />
+                          <span className="text-white text-sm font-medium">
+                            AR View
+                          </span>
+                        </>
                       ) : (
-                        <Play className="w-6 h-6 text-white" />
+                        <>
+                          <Box className="w-5 h-5 text-white" />
+                          <span className="text-white text-sm font-medium">
+                            Non-AR
+                          </span>
+                        </>
                       )}
                     </button>
                   </div>

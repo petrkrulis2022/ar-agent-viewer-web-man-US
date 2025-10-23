@@ -28,6 +28,8 @@ const RevolutBankQRModal = ({
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [showRevolutModal, setShowRevolutModal] = useState(false);
   const [pendingPayment, setPendingPayment] = useState(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successData, setSuccessData] = useState(null);
 
   // Support both prop patterns
   const actualOrderId = orderId || orderData?.id || orderData?.order_id;
@@ -180,13 +182,16 @@ const RevolutBankQRModal = ({
 
       if (result.success) {
         console.log("✅ Payment completed successfully:", result);
-        // The payment status hook will detect the completion and trigger handlePaymentSuccess
-        alert(
-          `🎉 Payment Completed!\n\n` +
-            `Order ID: ${pendingPayment.orderId}\n` +
-            `Status: ${result.order.state}\n\n` +
-            `Transaction completed successfully!`
-        );
+
+        // Show success modal instead of alert
+        setSuccessData({
+          orderId: pendingPayment.orderId,
+          amount: pendingPayment.amount,
+          currency: pendingPayment.currency,
+          merchant: pendingPayment.merchant,
+          status: result.order.state,
+        });
+        setShowSuccessModal(true);
       } else {
         throw new Error(result.error || "Payment failed");
       }
@@ -534,12 +539,12 @@ const RevolutBankQRModal = ({
                   ) : (
                     <>
                       <span className="text-xl">💳</span>
-                      <span>Pay Now (Mock)</span>
+                      <span>Pay Now</span>
                     </>
                   )}
                 </button>
                 <p className="text-xs text-center mt-2 text-gray-500">
-                  🎭 Testing mode - Instant payment simulation
+                  ⚡ Instant payment simulation
                 </p>
               </div>
             )}
@@ -715,6 +720,158 @@ const RevolutBankQRModal = ({
           onCancel={handleRevolutCancel}
         />
       )}
+
+      {/* Success Modal */}
+      {showSuccessModal && successData && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-[10002]"
+          style={{
+            background: "rgba(0, 0, 0, 0.8)",
+            backdropFilter: "blur(10px)",
+          }}
+        >
+          <div
+            className="relative rounded-3xl p-10 max-w-md w-full mx-4 shadow-2xl text-center"
+            style={{
+              background: "linear-gradient(135deg, #ffffff 0%, #f9fafb 100%)",
+              animation: "slideUpFade 0.4s ease-out",
+            }}
+          >
+            {/* Revolut Logo */}
+            <div
+              className="text-3xl font-bold mb-6"
+              style={{
+                background: "linear-gradient(135deg, #0075EB 0%, #00D4FF 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}
+            >
+              Revolut
+            </div>
+
+            {/* Success Icon */}
+            <div className="mb-6">
+              <div
+                className="w-24 h-24 mx-auto rounded-full flex items-center justify-center"
+                style={{
+                  background:
+                    "linear-gradient(135deg, #10B981 0%, #059669 100%)",
+                  boxShadow: "0 8px 24px rgba(16, 185, 129, 0.3)",
+                }}
+              >
+                <svg
+                  width="48"
+                  height="48"
+                  viewBox="0 0 48 48"
+                  fill="none"
+                  style={{
+                    animation: "checkmarkDraw 0.5s ease-out 0.2s forwards",
+                    opacity: 0,
+                  }}
+                >
+                  <path
+                    d="M14 24 L20 30 L34 16"
+                    stroke="#ffffff"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
+            </div>
+
+            {/* Success Title */}
+            <h2
+              className="text-3xl font-bold mb-4"
+              style={{ color: "#1F2937" }}
+            >
+              Payment Successful!
+            </h2>
+
+            {/* Payment Details */}
+            <div
+              className="mb-6 p-4 rounded-xl"
+              style={{
+                background:
+                  "linear-gradient(135deg, rgba(0, 117, 235, 0.05) 0%, rgba(0, 212, 255, 0.05) 100%)",
+                border: "1px solid rgba(0, 117, 235, 0.1)",
+              }}
+            >
+              <div className="text-sm text-gray-600 mb-2">Amount Paid</div>
+              <div className="text-2xl font-bold" style={{ color: "#0075EB" }}>
+                ${(successData.amount / 100).toFixed(2)} {successData.currency}
+              </div>
+              <div className="text-sm text-gray-600 mt-3 mb-1">To</div>
+              <div
+                className="text-base font-semibold"
+                style={{ color: "#374151" }}
+              >
+                {successData.merchant}
+              </div>
+              <div className="text-xs text-gray-500 mt-3">
+                Order ID: {successData.orderId}
+              </div>
+            </div>
+
+            {/* CUBEPAY GATE Badge */}
+            <div className="mb-6">
+              <div className="text-xs text-gray-500 mb-1">Secured by</div>
+              <div
+                className="text-sm font-bold"
+                style={{
+                  background:
+                    "linear-gradient(135deg, #10B981 0%, #059669 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}
+              >
+                CUBEPAY GATE
+              </div>
+            </div>
+
+            {/* Done Button */}
+            <button
+              onClick={() => {
+                setShowSuccessModal(false);
+                handlePaymentSuccess();
+              }}
+              className="w-full py-4 px-6 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105"
+              style={{
+                background: "linear-gradient(135deg, #0075EB 0%, #00D4FF 100%)",
+                color: "#fff",
+                boxShadow: "0 8px 20px rgba(0, 117, 235, 0.4)",
+                border: "none",
+              }}
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Success Modal Animation */}
+      <style>
+        {`
+          @keyframes slideUpFade {
+            from {
+              opacity: 0;
+              transform: translateY(20px) scale(0.95);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0) scale(1);
+            }
+          }
+          
+          @keyframes checkmarkDraw {
+            to {
+              opacity: 1;
+            }
+          }
+        `}
+      </style>
     </>
   );
 };

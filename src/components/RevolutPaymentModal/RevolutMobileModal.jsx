@@ -2,6 +2,23 @@
 import React, { useState, useEffect } from "react";
 import "./RevolutMobileModal.css";
 
+/**
+ * Revolut Mobile Payment Modal
+ *
+ * Simulates Revolut mobile app payment confirmation screen for Bank QR payments
+ * Shows countdown timer, merchant details, and manual confirm/reject options
+ *
+ * 🔴 SIMULATION MODE - Replace with real Revolut API in Phase 3
+ * TODO: Real Revolut Merchant API Integration
+ * API: POST https://merchant.revolut.com/api/1.0/orders
+ * DOCS: https://developer.revolut.com/docs/accept-payments
+ * Required: REVOLUT_API_KEY, REVOLUT_MERCHANT_ID
+ *
+ * For cross-platform payments (fiat→crypto or crypto→fiat):
+ * API: POST https://api.revolut.com/crypto/sell or /crypto/buy
+ * DOCS: https://developer.revolut.com/docs/business/crypto
+ * Required: REVOLUT_CRYPTO_API_KEY
+ */
 export function RevolutMobileModal({
   merchantName,
   amount,
@@ -38,9 +55,51 @@ export function RevolutMobileModal({
   const handleConfirm = async () => {
     setIsProcessing(true);
 
-    // Simulate payment processing
+    console.log("📱 Processing Bank QR payment...", {
+      merchantName,
+      amount,
+      currency,
+      timestamp: new Date().toISOString(),
+    });
+
+    // 🔴 SIMULATION - Simulate payment processing delay
+    // TODO: Replace with real Revolut API call in Phase 3
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
+    /* REAL API CALL (Phase 3):
+    try {
+      const response = await fetch('https://merchant.revolut.com/api/1.0/orders', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.REVOLUT_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          amount: Math.round(amount * 100), // Amount in cents
+          currency: currency,
+          merchant_order_ext_ref: generateOrderId(),
+          description: `Payment to ${merchantName}`,
+          payment_method: 'bank_qr'
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (result.state === 'COMPLETED') {
+        console.log('✅ Real payment completed:', result.id);
+        setShowSuccess(true);
+      } else {
+        throw new Error('Payment failed');
+      }
+    } catch (error) {
+      console.error('❌ Payment error:', error);
+      setIsProcessing(false);
+      // Show error state
+      return;
+    }
+    */
+
+    console.log("✅ Simulated payment confirmed");
     setShowSuccess(true);
   };
 

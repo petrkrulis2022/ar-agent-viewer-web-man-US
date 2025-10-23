@@ -62,7 +62,7 @@ function AppContent() {
           path="/"
           element={
             <MainLandingScreen
-              onEnterAgentWorld={() => navigate("/camera-activation")}
+              onEnterAgentWorld={() => navigate("/ar-view")}
               onShowWallet={handleShowWallet}
             />
           }
