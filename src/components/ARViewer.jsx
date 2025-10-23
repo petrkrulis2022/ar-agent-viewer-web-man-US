@@ -342,22 +342,51 @@ const ARViewer = () => {
       return nearAgents;
     }
 
-    // Get connected wallet address
-    const userWallet = walletConnection.address?.toLowerCase();
+    // Get connected wallet address from EVM, Solana, or Hedera
+    const userWallet = (
+      walletConnection?.evm?.address ||
+      walletConnection?.solana?.address ||
+      walletConnection?.hedera?.address ||
+      walletConnection?.address
+    ) // Fallback for old structure
+      ?.toLowerCase();
+
+    // Debug logging
+    console.log("🔍 Filter Debug:", {
+      userWallet,
+      walletConnection,
+      totalAgents: nearAgents.length,
+      filters,
+      sampleAgent: nearAgents[0]
+        ? {
+            name: nearAgents[0].name,
+            agent_wallet: nearAgents[0].agent_wallet_address,
+            owner_wallet: nearAgents[0].owner_wallet,
+            type: nearAgents[0].agent_type,
+          }
+        : null,
+    });
 
     return nearAgents.filter((agent) => {
       // Use agent_wallet_address (or owner_wallet as fallback) - these are the populated fields
       const agentWallet = (
         agent.agent_wallet_address || agent.owner_wallet
       )?.toLowerCase();
-      const agentType = (
-        agent.agent_type ||
-        agent.object_type ||
-        ""
-      ).toLowerCase();
+
+      // Normalize agent type - replace underscores with spaces
+      const agentType = (agent.agent_type || agent.object_type || "")
+        .toLowerCase()
+        .replace(/_/g, " ");
 
       // Check if it's user's agent
       const isMyAgent = userWallet && agentWallet === userWallet;
+
+      // Debug log for each agent
+      if (filters.myAgents) {
+        console.log(
+          `Agent: ${agent.name}, AgentWallet: ${agentWallet}, UserWallet: ${userWallet}, IsMyAgent: ${isMyAgent}`
+        );
+      }
 
       // User-based filters
       if (filters.myAgents && !isMyAgent) return false;
@@ -453,6 +482,34 @@ const ARViewer = () => {
   useEffect(() => {
     isMountedRef.current = true;
     initializeApp();
+
+    // Auto-detect already connected wallet
+    const detectConnectedWallet = async () => {
+      if (window.ethereum) {
+        try {
+          const accounts = await window.ethereum.request({
+            method: "eth_accounts",
+          });
+
+          if (accounts && accounts.length > 0) {
+            console.log("🔗 Auto-detected connected wallet:", accounts[0]);
+            setWalletConnection({
+              isConnected: true,
+              address: accounts[0],
+              evm: {
+                isConnected: true,
+                address: accounts[0],
+              },
+              hasAnyConnection: true,
+            });
+          }
+        } catch (error) {
+          console.log("No wallet auto-detected:", error);
+        }
+      }
+    };
+
+    detectConnectedWallet();
 
     return () => {
       isMountedRef.current = false;
@@ -1082,7 +1139,7 @@ const ARViewer = () => {
 
         {selectedTab === "wallet" && (
           <div className="space-y-4">
-            <UnifiedWalletConnect onConnectionChange={setWalletConnection} />
+            <UnifiedWalletConnect onOpenChange={setWalletConnection} />
 
             {/* Wallet Status Summary */}
             {walletConnection.hasAnyConnection && (

@@ -134,9 +134,31 @@ class NetworkDetectionService {
     }
 
     try {
-      const chainId = await window.ethereum.request({
-        method: "eth_chainId",
-      });
+      // Try eth_chainId first (standard method)
+      let chainId;
+      try {
+        chainId = await window.ethereum.request({
+          method: "eth_chainId",
+        });
+      } catch (chainIdError) {
+        // Fallback: try net_version if eth_chainId is not supported
+        console.log("eth_chainId not supported, trying net_version...");
+        try {
+          const netVersion = await window.ethereum.request({
+            method: "net_version",
+          });
+          chainId = `0x${parseInt(netVersion).toString(16)}`;
+        } catch (netError) {
+          // If both fail, return a default/unknown network
+          console.warn("Cannot detect chain ID, wallet may not be connected");
+          return {
+            chainId: null,
+            name: "Unknown Network",
+            isSupported: false,
+            type: "unknown",
+          };
+        }
+      }
 
       const numericChainId = parseInt(chainId, 16);
 
@@ -162,7 +184,13 @@ class NetworkDetectionService {
       };
     } catch (error) {
       console.error("Failed to detect network:", error);
-      throw error;
+      // Return unknown network instead of throwing
+      return {
+        chainId: null,
+        name: "Unknown Network",
+        isSupported: false,
+        type: "unknown",
+      };
     }
   }
 

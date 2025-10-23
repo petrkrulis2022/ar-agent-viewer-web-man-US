@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AR Viewer Debug</title>
+    <style>
+      body {
+        font-family: monospace;
+        padding: 20px;
+        background: #1a1a1a;
+        color: #00ff00;
+      }
+      .log {
+        margin: 5px 0;
+      }
+      .error {
+        color: #ff4444;
+      }
+      .warning {
+        color: #ffaa00;
+      }
+      .info {
+        color: #00aaff;
+      }
+      iframe {
+        width: 100%;
+        height: 600px;
+        border: 2px solid #444;
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🐛 AR Viewer Debug Console</h1>
+    <div id="logs"></div>
+    <button onclick="location.reload()" style="padding: 10px; margin: 10px 0">
+      🔄 Reload
+    </button>
+    <iframe src="http://localhost:5173" id="appFrame"></iframe>
+
+    <script>
+      const logsDiv = document.getElementById("logs");
+      const iframe = document.getElementById("appFrame");
+
+      // Capture console logs from iframe
+      window.addEventListener("message", (event) => {
+        console.log("Message from iframe:", event.data);
+        addLog("info", JSON.stringify(event.data));
+      });
+
+      function addLog(type, message) {
+        const logEntry = document.createElement("div");
+        logEntry.className = `log ${type}`;
+        logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+        logsDiv.appendChild(logEntry);
+        logsDiv.scrollTop = logsDiv.scrollHeight;
+      }
+
+      // Monitor iframe load
+      iframe.onload = () => {
+        addLog("info", "✅ Iframe loaded");
+        try {
+          // Try to access iframe console (same origin only)
+          const iframeWindow = iframe.contentWindow;
+          const originalLog = iframeWindow.console.log;
+          const originalError = iframeWindow.console.error;
+          const originalWarn = iframeWindow.console.warn;
+
+          iframeWindow.console.log = function (...args) {
+            addLog("info", args.join(" "));
+            originalLog.apply(iframeWindow.console, args);
+          };
+
+          iframeWindow.console.error = function (...args) {
+            addLog("error", "❌ " + args.join(" "));
+            originalError.apply(iframeWindow.console, args);
+          };
+
+          iframeWindow.console.warn = function (...args) {
+            addLog("warning", "⚠️ " + args.join(" "));
+            originalWarn.apply(iframeWindow.console, args);
+          };
+        } catch (e) {
+          addLog(
+            "warning",
+            "Cannot access iframe console (CORS): " + e.message
+          );
+        }
+      };
+
+      iframe.onerror = (e) => {
+        addLog("error", "❌ Iframe error: " + e);
+      };
+
+      addLog("info", "🚀 Debug console started");
+      addLog("info", "Loading AR Viewer from http://localhost:5173");
+    </script>
+  </body>
+</html>

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Debug AR Viewer Blank Page</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        padding: 20px;
+        background: #1a1a1a;
+        color: #fff;
+      }
+      .section {
+        background: #2a2a2a;
+        padding: 20px;
+        margin: 20px 0;
+        border-radius: 8px;
+        border-left: 4px solid #4caf50;
+      }
+      .error {
+        background: #3a1a1a;
+        border-left-color: #f44336;
+      }
+      .warning {
+        background: #3a3a1a;
+        border-left-color: #ff9800;
+      }
+      pre {
+        background: #1a1a1a;
+        padding: 10px;
+        border-radius: 4px;
+        overflow-x: auto;
+      }
+      button {
+        background: #4caf50;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      button:hover {
+        background: #45a049;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🔍 AR Viewer Blank Page Debugger</h1>
+
+    <div class="section">
+      <h2>Quick Actions</h2>
+      <button onclick="checkApp()">Check if App Renders</button>
+      <button onclick="checkConsole()">Check Console Errors</button>
+      <button onclick="testARViewer()">Test AR Viewer Direct</button>
+      <button onclick="clearCacheReload()">Clear Cache & Reload</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script type="module">
+      window.checkApp = async () => {
+        const results = document.getElementById("results");
+        results.innerHTML =
+          '<div class="section"><h2>Checking App...</h2></div>';
+
+        try {
+          // Check if React is loaded
+          const reactCheck = typeof window.React !== "undefined";
+          results.innerHTML += `<div class="section">React loaded: ${
+            reactCheck ? "✅" : "❌"
+          }</div>`;
+
+          // Check if root element exists
+          const rootExists = document.getElementById("root") !== null;
+          results.innerHTML += `<div class="section">Root element exists: ${
+            rootExists ? "✅" : "❌"
+          }</div>`;
+
+          // Check if app is mounted
+          const appMounted = document.querySelector("#root > *") !== null;
+          results.innerHTML += `<div class="section">App mounted: ${
+            appMounted ? "✅" : "❌"
+          }</div>`;
+
+          // Try to load main.jsx
+          const response = await fetch("/src/main.jsx");
+          const mainJsx = await response.text();
+          results.innerHTML += `<div class="section">main.jsx loaded: ✅<pre>${mainJsx.substring(
+            0,
+            500
+          )}...</pre></div>`;
+        } catch (error) {
+          results.innerHTML += `<div class="section error"><h3>Error:</h3><pre>${error.message}\n${error.stack}</pre></div>`;
+        }
+      };
+
+      window.checkConsole = () => {
+        const results = document.getElementById("results");
+        results.innerHTML =
+          '<div class="section"><h2>Console Check</h2><p>Open DevTools Console (F12) and look for errors</p></div>';
+        console.log("🔍 Checking for errors...");
+        console.error("Test error - if you see this, console.error works");
+        console.warn("Test warning - if you see this, console.warn works");
+      };
+
+      window.testARViewer = async () => {
+        const results = document.getElementById("results");
+        try {
+          results.innerHTML =
+            '<div class="section"><h2>Testing AR Viewer Component...</h2></div>';
+
+          // Try to navigate to AR view
+          window.location.hash = "#/ar-view";
+          results.innerHTML +=
+            '<div class="section">✅ Navigated to #/ar-view</div>';
+
+          setTimeout(() => {
+            const arViewerExists =
+              document.querySelector('[class*="ARViewer"]') !== null;
+            results.innerHTML += `<div class="section">AR Viewer rendered: ${
+              arViewerExists ? "✅" : "❌"
+            }</div>`;
+          }, 2000);
+        } catch (error) {
+          results.innerHTML += `<div class="section error"><h3>Error:</h3><pre>${error.message}</pre></div>`;
+        }
+      };
+
+      window.clearCacheReload = () => {
+        // Clear localStorage
+        localStorage.clear();
+        sessionStorage.clear();
+
+        // Hard reload
+        window.location.reload(true);
+      };
+
+      // Auto-check on load
+      window.addEventListener("load", () => {
+        setTimeout(() => {
+          const results = document.getElementById("results");
+
+          // Check for common issues
+          const issues = [];
+
+          if (!document.getElementById("root")) {
+            issues.push("❌ No #root element found");
+          }
+
+          if (typeof window.React === "undefined") {
+            issues.push("❌ React not loaded");
+          }
+
+          const scripts = Array.from(document.scripts);
+          const hasMainModule = scripts.some((s) => s.src.includes("main"));
+          if (!hasMainModule) {
+            issues.push("❌ No main module script found");
+          }
+
+          if (issues.length > 0) {
+            results.innerHTML = `<div class="section error"><h2>Issues Found:</h2>${issues
+              .map((i) => `<p>${i}</p>`)
+              .join("")}</div>`;
+          } else {
+            results.innerHTML =
+              '<div class="section"><h2>✅ Basic checks passed</h2><p>Click buttons above for detailed checks</p></div>';
+          }
+        }, 1000);
+      });
+
+      // Intercept console errors
+      const originalError = console.error;
+      console.error = function (...args) {
+        const results = document.getElementById("results");
+        if (results) {
+          results.innerHTML += `<div class="section error"><h3>Console Error:</h3><pre>${args.join(
+            " "
+          )}</pre></div>`;
+        }
+        originalError.apply(console, args);
+      };
+    </script>
+  </body>
+</html>

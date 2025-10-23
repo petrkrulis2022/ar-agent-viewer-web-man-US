@@ -93,23 +93,36 @@ const UnifiedWalletConnect = ({ open, onOpenChange }) => {
         setWalletAddress(address);
         setWalletConnected(true);
 
-        // Get balance
-        const balance = await window.ethereum.request({
-          method: "eth_getBalance",
-          params: [address, "latest"],
-        });
-        setBalance((parseInt(balance, 16) / 1e18).toFixed(4));
+        // Get balance (with fallback)
+        let balance = "0";
+        try {
+          const balanceHex = await window.ethereum.request({
+            method: "eth_getBalance",
+            params: [address, "latest"],
+          });
+          balance = (parseInt(balanceHex, 16) / 1e18).toFixed(4);
+          setBalance(balance);
+        } catch (balanceError) {
+          console.warn("Could not fetch balance:", balanceError);
+          setBalance("N/A");
+        }
 
-        await detectCurrentNetwork();
+        // Detect network (with fallback)
+        let networkInfo = { name: "Unknown", chainId: null };
+        try {
+          networkInfo = await detectCurrentNetwork();
+        } catch (networkError) {
+          console.warn("Could not detect network:", networkError);
+        }
 
-        // Notify parent component
+        // Notify parent component - ALWAYS notify even if network detection fails
         if (onOpenChange) {
           onOpenChange({
             evm: {
               isConnected: true,
               address: address,
-              balance: (parseInt(balance, 16) / 1e18).toFixed(4),
-              network: currentNetwork,
+              balance: balance,
+              network: networkInfo,
             },
             solana: connectionStates.solana, // Include Solana state
             hedera: connectionStates.hedera, // Include Hedera state
@@ -119,6 +132,7 @@ const UnifiedWalletConnect = ({ open, onOpenChange }) => {
       }
     } catch (error) {
       console.error("Failed to connect wallet:", error);
+      alert(`Failed to connect wallet: ${error.message}`);
     } finally {
       setIsConnecting(false);
     }
