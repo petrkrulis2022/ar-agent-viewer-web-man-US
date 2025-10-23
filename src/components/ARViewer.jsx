@@ -61,6 +61,28 @@ const ARViewer = () => {
   const [paymentContext, setPaymentContext] = useState(null);
   const [showOnlyTerminals, setShowOnlyTerminals] = useState(false);
 
+  // 🔍 Agent Filtering State
+  const [agentFilters, setAgentFilters] = useState({
+    allAgents: true,
+    noAgents: false,
+    myAgents: false,
+    myPaymentTerminals: false,
+    allNonMyAgents: false,
+    allPaymentTerminals: false,
+    // Individual agent types
+    intelligentAssistant: false,
+    localServices: false,
+    paymentTerminal: false,
+    gameAgent: false,
+    worldBuilder3D: false,
+    homeSecurity: false,
+    contentCreator: false,
+    realEstateBroker: false,
+    busStopAgent: false,
+    trailingPaymentTerminal: false,
+    myGhost: false,
+  });
+
   const {
     isLoading,
     error: dbError,
@@ -256,6 +278,132 @@ const ARViewer = () => {
       setNearAgents([]);
       return [];
     }
+  };
+
+  // 🔍 Agent Filter Handler
+  const handleFilterChange = (filterName) => {
+    setAgentFilters((prev) => {
+      const newFilters = { ...prev };
+
+      // Handle "All Agents" - overrides everything
+      if (filterName === "allAgents") {
+        if (!prev.allAgents) {
+          // Selecting "All Agents" - turn everything else off
+          Object.keys(newFilters).forEach((key) => {
+            newFilters[key] = key === "allAgents";
+          });
+        }
+        return newFilters;
+      }
+
+      // Handle "No Agents" - clears everything
+      if (filterName === "noAgents") {
+        Object.keys(newFilters).forEach((key) => {
+          newFilters[key] = key === "noAgents" && !prev.noAgents;
+        });
+        return newFilters;
+      }
+
+      // Any other filter deselects "All Agents" and "No Agents"
+      newFilters.allAgents = false;
+      newFilters.noAgents = false;
+      newFilters[filterName] = !prev[filterName];
+
+      // Handle mutual exclusivity for user-based filters
+      if (filterName === "myAgents" && newFilters.myAgents) {
+        newFilters.allNonMyAgents = false;
+      }
+      if (filterName === "allNonMyAgents" && newFilters.allNonMyAgents) {
+        newFilters.myAgents = false;
+        newFilters.myPaymentTerminals = false;
+      }
+      if (
+        filterName === "myPaymentTerminals" &&
+        newFilters.myPaymentTerminals
+      ) {
+        newFilters.allNonMyAgents = false;
+      }
+
+      return newFilters;
+    });
+  };
+
+  // 🔍 Apply Agent Filters
+  const getFilteredAgents = () => {
+    const filters = agentFilters;
+
+    // If "No Agents" is selected, return empty array
+    if (filters.noAgents) {
+      return [];
+    }
+
+    // If "All Agents" is selected, return all
+    if (filters.allAgents) {
+      return nearAgents;
+    }
+
+    // Get connected wallet address
+    const userWallet = walletConnection.address?.toLowerCase();
+
+    return nearAgents.filter((agent) => {
+      // Use agent_wallet_address (or owner_wallet as fallback) - these are the populated fields
+      const agentWallet = (
+        agent.agent_wallet_address || agent.owner_wallet
+      )?.toLowerCase();
+      const agentType = (
+        agent.agent_type ||
+        agent.object_type ||
+        ""
+      ).toLowerCase();
+
+      // Check if it's user's agent
+      const isMyAgent = userWallet && agentWallet === userWallet;
+
+      // User-based filters
+      if (filters.myAgents && !isMyAgent) return false;
+      if (filters.allNonMyAgents && isMyAgent) return false;
+
+      // Payment terminal filters
+      const isPaymentTerminal = agentType === "payment terminal";
+      const isTrailingPaymentTerminal =
+        agentType === "trailing payment terminal";
+      const isAnyPaymentTerminal =
+        isPaymentTerminal || isTrailingPaymentTerminal;
+
+      if (filters.myPaymentTerminals) {
+        return isMyAgent && isAnyPaymentTerminal;
+      }
+
+      if (filters.allPaymentTerminals) {
+        return !isMyAgent && isAnyPaymentTerminal;
+      }
+
+      // Individual type filters
+      const typeFilters = [
+        { key: "intelligentAssistant", value: "intelligent assistant" },
+        { key: "localServices", value: "local services" },
+        { key: "paymentTerminal", value: "payment terminal" },
+        { key: "gameAgent", value: "game agent" },
+        { key: "worldBuilder3D", value: "3d world builder" },
+        { key: "homeSecurity", value: "home security" },
+        { key: "contentCreator", value: "content creator" },
+        { key: "realEstateBroker", value: "real estate broker" },
+        { key: "busStopAgent", value: "bus stop agent" },
+        { key: "trailingPaymentTerminal", value: "trailing payment terminal" },
+        { key: "myGhost", value: "my ghost" },
+      ];
+
+      // Check if any type filter is active
+      const hasActiveTypeFilter = typeFilters.some((f) => filters[f.key]);
+
+      if (!hasActiveTypeFilter) {
+        // No type filters active - show all (respecting user filters)
+        return true;
+      }
+
+      // Check if agent matches any active type filter
+      return typeFilters.some((f) => filters[f.key] && agentType === f.value);
+    });
   };
 
   // Full initialization sequence
@@ -537,77 +685,207 @@ const ARViewer = () => {
               </div>
             </div>
 
-            {/* Status Cards - Moved to top for better camera view */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="bg-black/50 border-purple-500/30 backdrop-blur-sm">
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-3">
+            {/* Status Cards & Filters - Reorganized layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Left Side - 3 Info Tiles */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <Card className="bg-black/50 border-purple-500/30 backdrop-blur-sm">
+                  <CardContent className="p-3">
                     <div className="flex items-center space-x-2">
-                      <MapPin className="w-8 h-8 text-purple-400" />
-                      {rtkStatus.isRTKEnhanced && (
-                        <Satellite className="w-4 h-4 text-green-400" />
-                      )}
-                    </div>
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <p className="text-sm text-purple-200">Location</p>
+                      <div className="flex items-center space-x-1">
+                        <MapPin className="w-6 h-6 text-purple-400" />
                         {rtkStatus.isRTKEnhanced && (
-                          <Badge
-                            variant="outline"
-                            className="text-xs bg-green-500/20 border-green-500 text-green-300"
-                          >
-                            RTK Enhanced
-                          </Badge>
+                          <Satellite className="w-3 h-3 text-green-400" />
                         )}
                       </div>
-                      <p className="font-semibold text-white">
-                        {currentLocation
-                          ? `${currentLocation.latitude.toFixed(
-                              6
-                            )}, ${currentLocation.longitude.toFixed(6)}`
-                          : "Unknown"}
-                      </p>
-                      {currentLocation && (
-                        <div className="text-xs text-purple-300 mt-1">
-                          <div>
-                            Alt: {(currentLocation.altitude || 0).toFixed(1)}m
-                          </div>
-                          <div>
-                            ±{(rtkStatus.accuracy || 10).toFixed(2)}m •{" "}
-                            {rtkStatus.source}
-                          </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-1">
+                          <p className="text-xs text-purple-200">Location</p>
+                          {rtkStatus.isRTKEnhanced && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] px-1 bg-green-500/20 border-green-500 text-green-300"
+                            >
+                              RTK
+                            </Badge>
+                          )}
                         </div>
-                      )}
+                        <p className="text-sm font-semibold text-white truncate">
+                          {currentLocation
+                            ? `${currentLocation.latitude.toFixed(
+                                4
+                              )}, ${currentLocation.longitude.toFixed(4)}`
+                            : "Unknown"}
+                        </p>
+                        {currentLocation && (
+                          <div className="text-[10px] text-purple-300">
+                            ±{(rtkStatus.accuracy || 10).toFixed(1)}m
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
 
-              <Card className="bg-black/50 border-purple-500/30 backdrop-blur-sm">
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-3">
-                    <Users className="w-8 h-8 text-purple-400" />
-                    <div>
-                      <p className="text-sm text-purple-200">NeAR Agents</p>
-                      <p className="font-semibold text-white">
-                        {nearAgents.length}
-                      </p>
+                <Card className="bg-black/50 border-purple-500/30 backdrop-blur-sm">
+                  <CardContent className="p-3">
+                    <div className="flex items-center space-x-2">
+                      <Users className="w-6 h-6 text-purple-400" />
+                      <div>
+                        <p className="text-xs text-purple-200">NeAR Agents</p>
+                        <p className="text-lg font-semibold text-white">
+                          {getFilteredAgents().length}/{nearAgents.length}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
 
+                <Card className="bg-black/50 border-purple-500/30 backdrop-blur-sm">
+                  <CardContent className="p-3">
+                    <div className="flex items-center space-x-2">
+                      <Globe className="w-6 h-6 text-purple-400" />
+                      <div>
+                        <p className="text-xs text-purple-200">Database</p>
+                        <p className="text-sm font-semibold text-white">
+                          {connectionStatus === "connected"
+                            ? "Connected"
+                            : "Offline"}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Right Side - Filter Agents Tile */}
               <Card className="bg-black/50 border-purple-500/30 backdrop-blur-sm">
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-3">
-                    <Globe className="w-8 h-8 text-purple-400" />
-                    <div>
-                      <p className="text-sm text-purple-200">Database</p>
-                      <p className="font-semibold text-white">
-                        {connectionStatus === "connected"
-                          ? "Connected"
-                          : "Offline"}
-                      </p>
+                <CardContent className="p-3">
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-semibold text-white flex items-center space-x-2">
+                      <span>🔍</span>
+                      <span>Filter Agents</span>
+                    </h3>
+
+                    {/* Primary Filters */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <label className="flex items-center space-x-2 cursor-pointer hover:bg-purple-500/10 p-1.5 rounded transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={agentFilters.allAgents}
+                          onChange={() => handleFilterChange("allAgents")}
+                          className="w-4 h-4 text-purple-500 border-purple-400 rounded focus:ring-purple-500"
+                        />
+                        <span className="text-xs text-white font-medium">
+                          All agents
+                        </span>
+                      </label>
+
+                      <label className="flex items-center space-x-2 cursor-pointer hover:bg-red-500/10 p-1.5 rounded transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={agentFilters.noAgents}
+                          onChange={() => handleFilterChange("noAgents")}
+                          className="w-4 h-4 text-red-500 border-red-400 rounded focus:ring-red-500"
+                        />
+                        <span className="text-xs text-white font-medium">
+                          No Agents
+                        </span>
+                      </label>
+                    </div>
+
+                    {/* User-Based Filters */}
+                    <div className="grid grid-cols-2 gap-2 pt-1 border-t border-purple-500/20">
+                      <label className="flex items-center space-x-2 cursor-pointer hover:bg-blue-500/10 p-1.5 rounded transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={agentFilters.myAgents}
+                          onChange={() => handleFilterChange("myAgents")}
+                          className="w-4 h-4 text-blue-500 border-blue-400 rounded focus:ring-blue-500"
+                        />
+                        <span className="text-xs text-white">My agents</span>
+                      </label>
+
+                      <label className="flex items-center space-x-2 cursor-pointer hover:bg-green-500/10 p-1.5 rounded transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={agentFilters.myPaymentTerminals}
+                          onChange={() =>
+                            handleFilterChange("myPaymentTerminals")
+                          }
+                          className="w-4 h-4 text-green-500 border-green-400 rounded focus:ring-green-500"
+                        />
+                        <span className="text-xs text-white">
+                          My Payment terminals
+                        </span>
+                      </label>
+
+                      <label className="flex items-center space-x-2 cursor-pointer hover:bg-orange-500/10 p-1.5 rounded transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={agentFilters.allNonMyAgents}
+                          onChange={() => handleFilterChange("allNonMyAgents")}
+                          className="w-4 h-4 text-orange-500 border-orange-400 rounded focus:ring-orange-500"
+                        />
+                        <span className="text-xs text-white">
+                          All non-my agents
+                        </span>
+                      </label>
+
+                      <label className="flex items-center space-x-2 cursor-pointer hover:bg-yellow-500/10 p-1.5 rounded transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={agentFilters.allPaymentTerminals}
+                          onChange={() =>
+                            handleFilterChange("allPaymentTerminals")
+                          }
+                          className="w-4 h-4 text-yellow-500 border-yellow-400 rounded focus:ring-yellow-500"
+                        />
+                        <span className="text-xs text-white">
+                          All payment terminals
+                        </span>
+                      </label>
+                    </div>
+
+                    {/* Individual Agent Types */}
+                    <div className="grid grid-cols-2 gap-1 pt-1 border-t border-purple-500/20 max-h-32 overflow-y-auto">
+                      {[
+                        {
+                          key: "intelligentAssistant",
+                          label: "Intelligent Assistant",
+                        },
+                        { key: "localServices", label: "Local Services" },
+                        { key: "paymentTerminal", label: "Payment Terminal" },
+                        { key: "gameAgent", label: "Game Agent" },
+                        { key: "worldBuilder3D", label: "3D World Builder" },
+                        { key: "homeSecurity", label: "Home Security" },
+                        { key: "contentCreator", label: "Content Creator" },
+                        {
+                          key: "realEstateBroker",
+                          label: "Real Estate Broker",
+                        },
+                        { key: "busStopAgent", label: "Bus Stop Agent" },
+                        {
+                          key: "trailingPaymentTerminal",
+                          label: "Trailing Payment Terminal",
+                        },
+                        { key: "myGhost", label: "My Ghost" },
+                      ].map((filter) => (
+                        <label
+                          key={filter.key}
+                          className="flex items-center space-x-1.5 cursor-pointer hover:bg-purple-500/10 p-1 rounded transition-colors"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={agentFilters[filter.key]}
+                            onChange={() => handleFilterChange(filter.key)}
+                            className="w-3 h-3 text-purple-500 border-purple-400 rounded focus:ring-purple-500"
+                          />
+                          <span className="text-[10px] text-purple-200">
+                            {filter.label}
+                          </span>
+                        </label>
+                      ))}
                     </div>
                   </div>
                 </CardContent>
@@ -622,7 +900,7 @@ const ARViewer = () => {
                   isActive={cameraActive}
                   onToggle={setCameraActive}
                   onError={(err) => console.error("Camera error:", err)}
-                  agents={nearAgents}
+                  agents={getFilteredAgents()}
                   userLocation={currentLocation}
                   onAgentInteraction={(agent, action, data) => {
                     console.log("Agent interaction:", agent.name, action, data);
@@ -653,7 +931,7 @@ const ARViewer = () => {
                     style={{ pointerEvents: "auto" }}
                   >
                     <AR3DScene
-                      agents={nearAgents}
+                      agents={getFilteredAgents()}
                       onAgentClick={(agent) => {
                         console.log("3D Agent clicked:", agent.name);
                         // Handle 3D agent interactions - same as 2D
