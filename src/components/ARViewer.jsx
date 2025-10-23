@@ -61,12 +61,12 @@ const ARViewer = () => {
   const [paymentContext, setPaymentContext] = useState(null);
   const [showOnlyTerminals, setShowOnlyTerminals] = useState(false);
 
-  // 🔍 Agent Filtering State
+  // 🔍 Agent Filtering State - Default to "My Payment Terminals"
   const [agentFilters, setAgentFilters] = useState({
-    allAgents: true,
+    allAgents: false,
     noAgents: false,
     myAgents: false,
-    myPaymentTerminals: false,
+    myPaymentTerminals: true, // 🎯 Default to showing user's payment terminals
     allNonMyAgents: false,
     allPaymentTerminals: false,
     // Individual agent types
@@ -82,6 +82,8 @@ const ARViewer = () => {
     trailingPaymentTerminal: false,
     myGhost: false,
   });
+
+  console.log("🎨 ARViewer component rendered. URL:", window.location.href);
 
   const {
     isLoading,
@@ -515,6 +517,11 @@ const ARViewer = () => {
       isMountedRef.current = false;
     };
   }, []);
+
+  // Debug: Log filter state changes
+  useEffect(() => {
+    console.log("📊 Filter state changed:", agentFilters);
+  }, [agentFilters]);
 
   // Render initialization screen
   if (!isInitialized) {
