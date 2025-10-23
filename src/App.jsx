@@ -16,6 +16,7 @@ import CameraTest from "./components/CameraTest";
 import UnifiedWalletConnect from "./components/UnifiedWalletConnect";
 import AgentFeeValidationDashboard from "./components/AgentFeeValidationDashboard";
 import SimpleTest from "./components/SimpleTest"; // Add simple test component
+import VirtualTerminalPayment from "./components/VirtualTerminalPayment";
 import ThirdWebProviderWrapper from "./providers/ThirdWebProvider";
 import NotificationProvider, {
   useNotifications,
@@ -75,6 +76,9 @@ function AppContent() {
 
         {/* Camera Debug Test Route */}
         <Route path="/camera-test" element={<CameraTest />} />
+
+        {/* Virtual Terminal Payment Gateway */}
+        <Route path="/virtual-terminal" element={<VirtualTerminalPayment />} />
 
         {/* Camera Activation Screen Route */}
         <Route

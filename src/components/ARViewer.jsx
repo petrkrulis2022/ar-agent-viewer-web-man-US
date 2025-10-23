@@ -57,6 +57,10 @@ const ARViewer = () => {
     user: null,
   });
 
+  // 🎯 Payment Terminal Mode
+  const [paymentContext, setPaymentContext] = useState(null);
+  const [showOnlyTerminals, setShowOnlyTerminals] = useState(false);
+
   const {
     isLoading,
     error: dbError,
@@ -66,6 +70,27 @@ const ARViewer = () => {
   } = useDatabase();
 
   const isMountedRef = useRef(true);
+
+  // 🎯 Check for pending payment on mount
+  useEffect(() => {
+    const pendingPaymentStr = sessionStorage.getItem("pendingPayment");
+    const showTerminalsOnly = sessionStorage.getItem("showOnlyTerminals");
+
+    if (pendingPaymentStr) {
+      try {
+        const payment = JSON.parse(pendingPaymentStr);
+        setPaymentContext(payment);
+        console.log("💳 Payment context loaded:", payment);
+      } catch (error) {
+        console.error("❌ Error parsing payment context:", error);
+      }
+    }
+
+    if (showTerminalsOnly === "true") {
+      setShowOnlyTerminals(true);
+      console.log("🔒 Filtering to show only Payment Terminals");
+    }
+  }, []);
 
   // Initialize RTK-enhanced location services
   const initializeLocation = async () => {
@@ -166,16 +191,53 @@ const ARViewer = () => {
         );
       }
 
-      setNearAgents(objects || []);
+      // 🎯 Filter agents if payment terminal mode is active
+      let filteredObjects = objects || [];
+      if (showOnlyTerminals && walletConnection.address) {
+        console.log("🔒 Payment Terminal Mode: Filtering agents...");
+        console.log("👤 Connected wallet:", walletConnection.address);
+
+        filteredObjects = objects.filter((agent) => {
+          const agentType = agent.agent_type || agent.object_type;
+          const isPaymentTerminal = agentType === "Payment Terminal";
+          const isTrailingTerminal = agentType === "Trailing Payment Terminal";
+
+          // Check if agent belongs to current user
+          const isOwnedByUser =
+            agent.wallet_address &&
+            walletConnection.address &&
+            agent.wallet_address.toLowerCase() ===
+              walletConnection.address.toLowerCase();
+
+          const shouldShow =
+            (isPaymentTerminal || isTrailingTerminal) && isOwnedByUser;
+
+          if (shouldShow) {
+            console.log("✅ Showing terminal:", {
+              name: agent.name,
+              type: agentType,
+              wallet: agent.wallet_address,
+            });
+          }
+
+          return shouldShow;
+        });
+
+        console.log(
+          `🎯 Filtered to ${filteredObjects.length} payment terminals`
+        );
+      }
+
+      setNearAgents(filteredObjects || []);
       console.log(
-        `✅ Set nearAgents state with ${objects?.length || 0} agents`
+        `✅ Set nearAgents state with ${filteredObjects?.length || 0} agents`
       );
-      console.log("🎯 Setting nearAgents to:", objects);
+      console.log("🎯 Setting nearAgents to:", filteredObjects);
 
       // Additional debug for 3D rendering
-      if (objects && objects.length > 0) {
+      if (filteredObjects && filteredObjects.length > 0) {
         console.log("🔍 Object properties check:");
-        objects.forEach((obj, i) => {
+        filteredObjects.forEach((obj, i) => {
           console.log(`Agent ${i + 1}:`, {
             id: obj.id,
             name: obj.name,
@@ -183,11 +245,12 @@ const ARViewer = () => {
             lat: obj.latitude,
             lng: obj.longitude,
             distance: obj.distance_meters,
+            wallet: obj.wallet_address,
           });
         });
       }
 
-      return objects;
+      return filteredObjects;
     } catch (error) {
       console.error("❌ Error loading objects:", error);
       setNearAgents([]);
@@ -600,6 +663,8 @@ const ARViewer = () => {
                       userLocation={currentLocation}
                       cameraViewSize={{ width: 1280, height: 720 }}
                       connectedWallet={walletConnection.address}
+                      paymentContext={paymentContext}
+                      isPaymentMode={showOnlyTerminals}
                     />
                   </div>
                   {/* 3D Mode Controls - Highest priority */}
