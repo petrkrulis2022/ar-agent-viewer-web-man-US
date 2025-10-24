@@ -42,7 +42,17 @@ const networkToChainId = {
 };
 
 // Helper functions for dynamic agent payment data
-const getServiceFeeDisplay = (agent) => {
+const getServiceFeeDisplay = (agent, paymentAmount = null) => {
+  // 💰 PRIORITY 0: Use dynamic payment amount from e-shop/on-ramp if available
+  if (
+    paymentAmount !== null &&
+    paymentAmount !== undefined &&
+    paymentAmount > 0
+  ) {
+    console.log("💰 Using dynamic payment amount:", paymentAmount);
+    return `${paymentAmount} USDC`;
+  }
+
   // Use the same priority logic as resolveInteractionFee to ensure consistency
   console.log("🔍 AgentInteractionModal: Full agent data for fee:", {
     name: agent?.name,
@@ -324,6 +334,7 @@ const AgentInteractionModal = ({
   onClose,
   onPayment,
   onQRScan = null,
+  paymentAmount = null, // 💰 Dynamic payment amount from e-shop/on-ramp
 }) => {
   const [activeTab, setActiveTab] = useState("chat");
   const [messages, setMessages] = useState([]);
@@ -681,7 +692,7 @@ const AgentInteractionModal = ({
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-slate-400">Service Fee:</span>
                       <span className="text-white font-semibold">
-                        {getServiceFeeDisplay(agent)}
+                        {getServiceFeeDisplay(agent, paymentAmount)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center mb-2">

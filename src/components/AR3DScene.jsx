@@ -523,6 +523,24 @@ const AR3DScene = ({
         onClose={closeModals}
         onPayment={handlePaymentRequest}
         onQRScan={handleQRScanRequest}
+        paymentAmount={
+          // 💰 ONLY pass dynamic amount to Payment Terminals, NOT regular agents
+          (() => {
+            const isPaymentTerminal =
+              selectedAgent?.agent_type === "Payment Terminal" ||
+              selectedAgent?.agent_type === "Trailing Payment Terminal";
+
+            console.log("🔍 AR3DScene: Determining paymentAmount for modal", {
+              agentName: selectedAgent?.name,
+              agentType: selectedAgent?.agent_type,
+              isPaymentTerminal,
+              paymentContextAmount: paymentContext?.amount,
+              willPass: isPaymentTerminal ? paymentContext?.amount : null,
+            });
+
+            return isPaymentTerminal ? paymentContext?.amount : null;
+          })()
+        }
       />
 
       {/* 3D Cube Payment Engine - Revolutionary AR Payment Interface */}
@@ -532,7 +550,30 @@ const AR3DScene = ({
         onClose={closeModals}
         onPaymentComplete={handleCubePaymentComplete}
         paymentAmount={
-          paymentContext?.amount || selectedAgent?.interaction_fee || 10.0
+          // 💰 ONLY use dynamic amount for Payment Terminals, NOT regular agents
+          (() => {
+            const isPaymentTerminal =
+              selectedAgent?.agent_type === "Payment Terminal" ||
+              selectedAgent?.agent_type === "Trailing Payment Terminal";
+
+            const amount = isPaymentTerminal
+              ? paymentContext?.amount || selectedAgent?.interaction_fee || 10.0
+              : selectedAgent?.interaction_fee_amount ||
+                selectedAgent?.interaction_fee ||
+                10.0;
+
+            console.log("🔍 AR3DScene: Determining paymentAmount for cube", {
+              agentName: selectedAgent?.name,
+              agentType: selectedAgent?.agent_type,
+              isPaymentTerminal,
+              paymentContextAmount: paymentContext?.amount,
+              selectedAgentFee: selectedAgent?.interaction_fee,
+              selectedAgentFeeAmount: selectedAgent?.interaction_fee_amount,
+              finalAmount: amount,
+            });
+
+            return amount;
+          })()
         }
         paymentContext={paymentContext}
         enabledMethods={[

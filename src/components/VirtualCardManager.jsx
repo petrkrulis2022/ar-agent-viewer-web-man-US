@@ -5,17 +5,18 @@ import { createVirtualCard, topUpCard } from "../services/revolutCardService";
 
 /**
  * Virtual Card Manager Component
+ * Manages Revolut Virtual Cards for AR Agent payments
  *
- * Handles two flows:
- * 1. SELECT EXISTING CARD → Pay with selected card
- * 2. CREATE NEW CARD → Top up → Pay with new card
- *
- * NOTE: Payment amount currently defaults to $10 USD
- * TODO: Make payment amount dynamic based on agent interaction fee
+ * Features:
+ * - View existing virtual cards
+ * - Create new virtual cards
+ * - Top up cards with funds
+ * - Use cards for payments
  */
 export function VirtualCardManager({
   agentId,
   agentName = "AgentSphere Agent",
+  paymentAmount = 10.0, // 💰 Dynamic payment amount from e-shop/on-ramp or agent fee
   onClose,
   onPaymentComplete,
 }) {
@@ -64,7 +65,11 @@ export function VirtualCardManager({
   // Handle "Pay with this card" button
   const handlePayWithSelectedCard = () => {
     console.log("💳 Initiating payment with selected card");
-    console.log("💰 Payment amount: $10 USD (default - will be dynamic later)");
+    console.log("💰 Payment amount:", {
+      amount: paymentAmount,
+      currency: "USD",
+      source: "Dynamic from e-shop/on-ramp or agent fee",
+    });
     setShowRevolutModal(true);
   };
 
@@ -144,7 +149,11 @@ export function VirtualCardManager({
   // Handle "Pay with this Virtual Card" after top-up
   const handlePayWithNewCard = () => {
     console.log("💳 Initiating payment with new card");
-    console.log("💰 Payment amount: $10 USD (default - will be dynamic later)");
+    console.log("💰 Payment amount:", {
+      amount: paymentAmount,
+      currency: "USD",
+      source: "Dynamic from e-shop/on-ramp or agent fee",
+    });
     setShowRevolutModal(true);
   };
 
@@ -156,7 +165,7 @@ export function VirtualCardManager({
     setTimeout(() => {
       onPaymentComplete?.({
         success: true,
-        amount: 10.0,
+        amount: paymentAmount, // 💰 Use dynamic payment amount
         currency: "USD",
         card: selectedCard || newCard,
       });
@@ -493,7 +502,7 @@ export function VirtualCardManager({
         <RevolutPaymentModal
           type="desktop"
           merchantName={agentName}
-          amount={10.0}
+          amount={paymentAmount} // 💰 Dynamic payment amount from e-shop/on-ramp
           currency="USD"
           onConfirm={handlePaymentConfirm}
           onCancel={handlePaymentCancel}

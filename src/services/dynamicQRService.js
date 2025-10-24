@@ -10,11 +10,11 @@ import ccipConfigConsolidated from "../config/ccip-config-consolidated.json";
 class DynamicQRService {
   constructor() {
     this.currentNetwork = null;
-    
+
     // Initialize USDC token addresses and network configurations from consolidated config
     this.usdcTokenAddresses = {};
     this.supportedNetworks = {};
-    
+
     this.initializeFromConsolidatedConfig();
   }
 
@@ -24,37 +24,41 @@ class DynamicQRService {
    */
   initializeFromConsolidatedConfig() {
     console.log("🔄 Initializing DynamicQRService from consolidated config...");
-    
-    Object.entries(ccipConfigConsolidated.chains).forEach(([chainName, config]) => {
-      const chainId = config.chainId;
-      
-      // Build USDC token addresses map
-      if (chainId === "devnet") {
-        this.usdcTokenAddresses["solana-devnet"] = config.usdc.tokenAddress;
-      } else {
-        this.usdcTokenAddresses[chainId] = config.usdc.tokenAddress;
+
+    Object.entries(ccipConfigConsolidated.chains).forEach(
+      ([chainName, config]) => {
+        const chainId = config.chainId;
+
+        // Build USDC token addresses map
+        if (chainId === "devnet") {
+          this.usdcTokenAddresses["solana-devnet"] = config.usdc.tokenAddress;
+        } else {
+          this.usdcTokenAddresses[chainId] = config.usdc.tokenAddress;
+        }
+
+        // Build supported networks configuration
+        const networkConfig = {
+          name: config.chainName,
+          symbol: config.currencySymbol,
+          type: chainId === "devnet" ? "SVM" : "EVM",
+          rpc: config.rpcUrl.startsWith("http")
+            ? config.rpcUrl
+            : `https://${config.rpcUrl}`,
+          chainSelector: config.chainSelector,
+          router: config.router,
+        };
+
+        if (chainId === "devnet") {
+          this.supportedNetworks["solana-devnet"] = networkConfig;
+        } else {
+          this.supportedNetworks[chainId] = networkConfig;
+        }
       }
-      
-      // Build supported networks configuration
-      const networkConfig = {
-        name: config.chainName,
-        symbol: config.currencySymbol,
-        type: chainId === "devnet" ? "SVM" : "EVM",
-        rpc: config.rpcUrl.startsWith("http") ? config.rpcUrl : `https://${config.rpcUrl}`,
-        chainSelector: config.chainSelector,
-        router: config.router
-      };
-      
-      if (chainId === "devnet") {
-        this.supportedNetworks["solana-devnet"] = networkConfig;
-      } else {
-        this.supportedNetworks[chainId] = networkConfig;
-      }
-    });
-    
+    );
+
     console.log("✅ DynamicQRService initialized with consolidated config:", {
       usdcAddresses: Object.keys(this.usdcTokenAddresses).length,
-      networks: Object.keys(this.supportedNetworks).length
+      networks: Object.keys(this.supportedNetworks).length,
     });
   }
 
@@ -394,8 +398,14 @@ class DynamicQRService {
       // Extract payment details from agent data
       const walletAddress =
         agentData.agent_wallet_address || agentData.payment_recipient_address;
+
+      // 💰 ONLY use amountUSD if explicitly provided (not null/undefined)
+      // Otherwise use agent's fee amount
       const feeAmount =
-        agentData.interaction_fee_amount || agentData.fee_amount || "1.00";
+        amountUSD !== null && amountUSD !== undefined
+          ? amountUSD
+          : agentData.interaction_fee_amount || agentData.fee_amount || "1.00";
+
       const feeToken =
         agentData.interaction_fee_token || agentData.fee_token || "USDC";
       const agentChainId = String(

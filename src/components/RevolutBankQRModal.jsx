@@ -714,7 +714,7 @@ const RevolutBankQRModal = ({
         <RevolutPaymentModal
           type="mobile"
           merchantName={pendingPayment.merchant}
-          amount={pendingPayment.amount / 100}
+          amount={pendingPayment.amount} // Already in dollars, no need to divide
           currency={pendingPayment.currency}
           onConfirm={handleRevolutConfirm}
           onCancel={handleRevolutCancel}
@@ -800,7 +800,7 @@ const RevolutBankQRModal = ({
             >
               <div className="text-sm text-gray-600 mb-2">Amount Paid</div>
               <div className="text-2xl font-bold" style={{ color: "#0075EB" }}>
-                ${(successData.amount / 100).toFixed(2)} {successData.currency}
+                ${successData.amount.toFixed(2)} {successData.currency}
               </div>
               <div className="text-sm text-gray-600 mt-3 mb-1">To</div>
               <div

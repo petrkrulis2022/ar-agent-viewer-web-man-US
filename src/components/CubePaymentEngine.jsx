@@ -1905,8 +1905,8 @@ const CubePaymentEngine = ({
 
         console.log("✅ Same-chain QR generated:", result);
 
-        // Use the EIP-681 URI for QR display
-        setQrData(result.eip681URI);
+        // Use the payment URI for QR display
+        setQrData(result.paymentUri);
         setCurrentView("qr");
       }
     } catch (error) {
@@ -1962,18 +1962,24 @@ const CubePaymentEngine = ({
     setIsGenerating(true);
 
     try {
-      // Default payment amount: $10 USD
-      // NOTE: Will be dynamic based on agent interaction fee later
-      const amount = 10.0;
+      // 💰 Use dynamic payment amount from e-shop/on-ramp OR agent's fee OR default
+      const amount =
+        paymentAmount ||
+        agent?.interaction_fee_amount ||
+        agent?.interaction_fee ||
+        10.0;
 
       console.log(
         "💰 Creating Revolut Bank QR order for amount:",
         amount,
         "USD"
       );
-      console.log(
-        "💰 NOTE: Payment amount will be $10 USD (default - will be dynamic later)"
-      );
+      console.log("💰 Payment amount source:", {
+        fromPaymentContext: paymentAmount,
+        fromAgentFeeAmount: agent?.interaction_fee_amount,
+        fromAgentFee: agent?.interaction_fee,
+        finalAmount: amount,
+      });
 
       // Create Revolut Bank QR order
       const orderResult = await revolutBankService.createRevolutBankOrder({
@@ -2010,9 +2016,20 @@ const CubePaymentEngine = ({
     }
 
     console.log("💳 Opening Virtual Card Manager...");
-    console.log(
-      "💰 NOTE: Payment amount will be $10 USD (default - will be dynamic later)"
-    );
+
+    // 💰 Calculate dynamic payment amount
+    const amount =
+      paymentAmount ||
+      agent?.interaction_fee_amount ||
+      agent?.interaction_fee ||
+      10.0;
+
+    console.log("💰 Payment amount:", {
+      fromPaymentContext: paymentAmount,
+      fromAgentFeeAmount: agent?.interaction_fee_amount,
+      fromAgentFee: agent?.interaction_fee,
+      finalAmount: amount,
+    });
 
     try {
       // Set the agent ID for the Virtual Card component
@@ -2577,6 +2594,12 @@ const CubePaymentEngine = ({
               <VirtualCardManager
                 agentId={virtualCardAgentId}
                 agentName={agent?.name || "AgentSphere Agent"}
+                paymentAmount={
+                  paymentAmount ||
+                  agent?.interaction_fee_amount ||
+                  agent?.interaction_fee ||
+                  10.0
+                }
                 onClose={() => setShowVirtualCardModal(false)}
                 onPaymentComplete={handleVirtualCardSuccess}
               />

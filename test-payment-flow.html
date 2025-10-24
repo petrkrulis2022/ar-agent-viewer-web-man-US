@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Payment Flow Tester</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        max-width: 1200px;
+        margin: 40px auto;
+        padding: 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+      .container {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      }
+      h1 {
+        text-align: center;
+        font-size: 2.5em;
+        margin-bottom: 10px;
+      }
+      .subtitle {
+        text-align: center;
+        opacity: 0.9;
+        margin-bottom: 30px;
+      }
+      .test-section {
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+      }
+      .test-section h2 {
+        margin-top: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .test-button {
+        background: linear-gradient(135deg, #00d4ff, #0075eb);
+        border: none;
+        color: white;
+        padding: 15px 30px;
+        font-size: 16px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        width: 100%;
+        margin: 10px 0;
+      }
+      .test-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(0, 212, 255, 0.4);
+      }
+      .test-button.secondary {
+        background: linear-gradient(135deg, #f093fb, #f5576c);
+      }
+      .info-box {
+        background: rgba(255, 255, 255, 0.1);
+        border-left: 4px solid #00d4ff;
+        padding: 15px;
+        margin: 15px 0;
+        border-radius: 8px;
+      }
+      .info-box h3 {
+        margin-top: 0;
+        color: #00d4ff;
+      }
+      .code {
+        background: rgba(0, 0, 0, 0.3);
+        padding: 10px;
+        border-radius: 5px;
+        font-family: "Courier New", monospace;
+        font-size: 14px;
+        overflow-x: auto;
+        margin: 10px 0;
+      }
+      .amount {
+        font-size: 2em;
+        font-weight: bold;
+        color: #00ff88;
+        text-align: center;
+        margin: 20px 0;
+      }
+      .checklist {
+        list-style: none;
+        padding: 0;
+      }
+      .checklist li {
+        padding: 10px;
+        margin: 5px 0;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 5px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .checklist li:before {
+        content: "☐";
+        font-size: 1.5em;
+      }
+      .icon {
+        font-size: 1.5em;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🧪 Dynamic Payment Flow Tester</h1>
+      <p class="subtitle">
+        Test all three payment methods with dynamic amounts
+      </p>
+
+      <div class="test-section">
+        <h2><span class="icon">🛒</span> E-shop Payment Test ($162)</h2>
+        <div class="info-box">
+          <h3>Payment Context</h3>
+          <div class="code">
+            { "orderId": "ORD-TEST123", "amount": 162, "currency": "USD",
+            "merchantName": "CubePay Merch" }
+          </div>
+        </div>
+        <div class="amount">$162.00 USD</div>
+        <button class="test-button" onclick="testEshopPayment()">
+          🚀 Open AR Viewer with $162 Payment
+        </button>
+      </div>
+
+      <div class="test-section">
+        <h2><span class="icon">💳</span> Normal Mode Test ($10 default)</h2>
+        <div class="info-box">
+          <h3>Payment Terminal Default</h3>
+          <p>
+            Tests that payment terminals use their default $10 fee when not in
+            payment mode
+          </p>
+        </div>
+        <div class="amount">$10.00 USD</div>
+        <button class="test-button secondary" onclick="testNormalMode()">
+          🎯 Open AR Viewer in Normal Mode
+        </button>
+      </div>
+
+      <div class="test-section">
+        <h2><span class="icon">✅</span> What to Verify</h2>
+        <ul class="checklist">
+          <li>
+            <strong>Payment Mode:</strong> Shows only your 3 payment terminals
+          </li>
+          <li>
+            <strong>Crypto QR:</strong> Console shows "paymentAmount: 162"
+          </li>
+          <li><strong>Bank QR:</strong> Creates order for $162</li>
+          <li><strong>Virtual Card:</strong> Payment modal shows $162</li>
+          <li><strong>Normal Mode:</strong> All methods use $10 default</li>
+        </ul>
+      </div>
+
+      <div class="test-section">
+        <h2><span class="icon">📊</span> Console Commands</h2>
+        <div class="info-box">
+          <h3>Check Payment Context in Browser Console:</h3>
+          <div class="code">
+            // After clicking payment terminal, check: console.log("Payment
+            Amount:", paymentAmount || agent?.interaction_fee_amount || 10.0 );
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const PAYMENT_DATA = {
+        orderId: "ORD-TEST123",
+        amount: 162,
+        currency: "USD",
+        items: [
+          { name: "CubePay Tech Hoodie", quantity: 1, price: 100 },
+          { name: "CubePay Classic Tee", quantity: 1, price: 50 },
+        ],
+        merchantName: "CubePay Merch",
+        redirectUrl:
+          "http://localhost:5175/order-confirmation?order_id=ORD-TEST123",
+      };
+
+      function testEshopPayment() {
+        const encodedData = btoa(JSON.stringify(PAYMENT_DATA));
+        const url = `http://localhost:5173/ar-view?payment=true&data=${encodedData}`;
+
+        console.log("🧪 Opening Payment Test with $162");
+        console.log("Payment Data:", PAYMENT_DATA);
+        console.log("URL:", url);
+
+        window.open(url, "_blank");
+      }
+
+      function testNormalMode() {
+        const url = `http://localhost:5173/ar-view`;
+
+        console.log("🧪 Opening Normal Mode (should use $10 default)");
+        console.log("URL:", url);
+
+        window.open(url, "_blank");
+      }
+
+      // Display test info on load
+      console.log("🧪 Payment Flow Tester Loaded");
+      console.log("Test Payment Amount: $162");
+      console.log("Expected in Payment Mode: $162");
+      console.log("Expected in Normal Mode: $10");
+    </script>
+  </body>
+</html>
