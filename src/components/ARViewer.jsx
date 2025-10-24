@@ -97,22 +97,47 @@ const ARViewer = () => {
 
   // 🎯 Check for pending payment on mount
   useEffect(() => {
-    const pendingPaymentStr = sessionStorage.getItem("pendingPayment");
-    const showTerminalsOnly = sessionStorage.getItem("showOnlyTerminals");
+    // Check URL parameters for payment data
+    const urlParams = new URLSearchParams(window.location.search);
+    const isPaymentMode = urlParams.get("payment") === "true";
+    const encodedData = urlParams.get("data");
 
-    if (pendingPaymentStr) {
+    if (isPaymentMode && encodedData) {
       try {
-        const payment = JSON.parse(pendingPaymentStr);
-        setPaymentContext(payment);
-        console.log("💳 Payment context loaded:", payment);
-      } catch (error) {
-        console.error("❌ Error parsing payment context:", error);
-      }
-    }
+        const paymentData = JSON.parse(atob(encodedData));
+        setPaymentContext(paymentData);
+        setShowOnlyTerminals(true);
+        console.log("💳 Payment mode activated with data:", paymentData);
+        console.log("🔒 Showing only Payment Terminal agents");
 
-    if (showTerminalsOnly === "true") {
-      setShowOnlyTerminals(true);
-      console.log("🔒 Filtering to show only Payment Terminals");
+        // Update filters to show all payment terminals
+        setAgentFilters({
+          ...agentFilters,
+          allPaymentTerminals: true,
+          myPaymentTerminals: false,
+        });
+      } catch (error) {
+        console.error("❌ Error parsing payment data:", error);
+      }
+    } else {
+      // Check sessionStorage for backward compatibility
+      const pendingPaymentStr = sessionStorage.getItem("pendingPayment");
+      const showTerminalsOnly = sessionStorage.getItem("showOnlyTerminals");
+
+      if (pendingPaymentStr) {
+        try {
+          const payment = JSON.parse(pendingPaymentStr);
+          setPaymentContext(payment);
+          console.log("💳 Payment context loaded from session:", payment);
+        } catch (error) {
+          console.error("❌ Error parsing payment context:", error);
+        }
+      }
+
+      if (showTerminalsOnly === "true") {
+        setShowOnlyTerminals(true);
+        console.log("🔒 Filtering to show only Payment Terminals");
+      }
     }
   }, []);
 
