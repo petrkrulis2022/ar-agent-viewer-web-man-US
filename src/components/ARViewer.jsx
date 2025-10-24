@@ -108,13 +108,16 @@ const ARViewer = () => {
         setPaymentContext(paymentData);
         setShowOnlyTerminals(true);
         console.log("💳 Payment mode activated with data:", paymentData);
-        console.log("🔒 Showing only Payment Terminal agents");
+        console.log(
+          "🔒 Showing only MY Payment Terminal agents (user's own terminals)"
+        );
 
-        // Update filters to show all payment terminals
+        // 🔐 SECURITY: Update filters to show ONLY user's own payment terminals
+        // Users can only process online payments through their own terminals
         setAgentFilters({
           ...agentFilters,
-          allPaymentTerminals: true,
-          myPaymentTerminals: false,
+          allPaymentTerminals: false, // Changed from true
+          myPaymentTerminals: true, // Changed from false - ONLY user's terminals
         });
       } catch (error) {
         console.error("❌ Error parsing payment data:", error);
