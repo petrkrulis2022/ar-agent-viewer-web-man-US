@@ -1,40 +1,40 @@
-import React, { useState, useEffect } from 'react';
-import { Wallet, Shield, Zap, Check, ArrowLeft } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Wallet, Shield, Zap, Check, ArrowLeft } from "lucide-react";
 
 /**
  * BaseWalletCreationFlow - Simulates Base wallet creation with official branding
  * Uses Base Account SDK for wallet generation
  */
 const BaseWalletCreationFlow = ({ onWalletCreated, onBack }) => {
-  const [step, setStep] = useState('intro'); // 'intro', 'creating', 'created'
-  const [walletAddress, setWalletAddress] = useState('');
+  const [step, setStep] = useState("intro"); // 'intro', 'creating', 'created'
+  const [walletAddress, setWalletAddress] = useState("");
   const [progress, setProgress] = useState(0);
 
   // Simulate wallet creation (in real scenario, user already has wallet)
   const createWallet = async () => {
-    setStep('creating');
-    
+    setStep("creating");
+
     // Simulate creation steps with progress
     const steps = [
-      { progress: 20, delay: 500, message: 'Initializing Base Account...' },
-      { progress: 40, delay: 800, message: 'Generating secure keys...' },
-      { progress: 60, delay: 700, message: 'Setting up smart wallet...' },
-      { progress: 80, delay: 600, message: 'Connecting to Base network...' },
-      { progress: 100, delay: 500, message: 'Wallet ready!' }
+      { progress: 20, delay: 500, message: "Initializing Base Account..." },
+      { progress: 40, delay: 800, message: "Generating secure keys..." },
+      { progress: 60, delay: 700, message: "Setting up smart wallet..." },
+      { progress: 80, delay: 600, message: "Connecting to Base network..." },
+      { progress: 100, delay: 500, message: "Wallet ready!" },
     ];
 
     for (const step of steps) {
-      await new Promise(resolve => setTimeout(resolve, step.delay));
+      await new Promise((resolve) => setTimeout(resolve, step.delay));
       setProgress(step.progress);
     }
 
     // Generate a simulated wallet address (in production, use actual Base Account SDK)
-    const mockWalletAddress = `0x${Array.from({ length: 40 }, () => 
+    const mockWalletAddress = `0x${Array.from({ length: 40 }, () =>
       Math.floor(Math.random() * 16).toString(16)
-    ).join('')}`;
-    
+    ).join("")}`;
+
     setWalletAddress(mockWalletAddress);
-    setStep('created');
+    setStep("created");
 
     // Auto-proceed after showing success
     setTimeout(() => {
@@ -45,7 +45,7 @@ const BaseWalletCreationFlow = ({ onWalletCreated, onBack }) => {
   return (
     <div className="bg-gradient-to-br from-gray-900 via-blue-900/20 to-gray-900 rounded-2xl p-8 shadow-2xl border border-blue-500/30">
       {/* Back button */}
-      {step === 'intro' && (
+      {step === "intro" && (
         <button
           onClick={onBack}
           className="flex items-center text-gray-400 hover:text-white mb-4 transition-colors"
@@ -55,7 +55,7 @@ const BaseWalletCreationFlow = ({ onWalletCreated, onBack }) => {
         </button>
       )}
 
-      {step === 'intro' && (
+      {step === "intro" && (
         <div>
           {/* Base Logo & Header */}
           <div className="text-center mb-8">
@@ -79,7 +79,9 @@ const BaseWalletCreationFlow = ({ onWalletCreated, onBack }) => {
                 <Shield className="w-6 h-6 text-blue-400" />
               </div>
               <div>
-                <h3 className="font-semibold text-white mb-1">Secure & Non-Custodial</h3>
+                <h3 className="font-semibold text-white mb-1">
+                  Secure & Non-Custodial
+                </h3>
                 <p className="text-sm text-gray-400">
                   Your keys, your crypto. Full control over your assets.
                 </p>
@@ -91,7 +93,9 @@ const BaseWalletCreationFlow = ({ onWalletCreated, onBack }) => {
                 <Zap className="w-6 h-6 text-blue-400" />
               </div>
               <div>
-                <h3 className="font-semibold text-white mb-1">Fast & Low Cost</h3>
+                <h3 className="font-semibold text-white mb-1">
+                  Fast & Low Cost
+                </h3>
                 <p className="text-sm text-gray-400">
                   Built on Base for instant transactions with minimal fees.
                 </p>
@@ -105,7 +109,8 @@ const BaseWalletCreationFlow = ({ onWalletCreated, onBack }) => {
               <div>
                 <h3 className="font-semibold text-white mb-1">Smart Wallet</h3>
                 <p className="text-sm text-gray-400">
-                  Advanced features like gas sponsorship and batched transactions.
+                  Advanced features like gas sponsorship and batched
+                  transactions.
                 </p>
               </div>
             </div>
@@ -125,7 +130,7 @@ const BaseWalletCreationFlow = ({ onWalletCreated, onBack }) => {
         </div>
       )}
 
-      {step === 'creating' && (
+      {step === "creating" && (
         <div className="text-center py-8">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-blue-600 mb-6 animate-pulse">
             <svg viewBox="0 0 111 111" className="w-12 h-12" fill="white">
@@ -142,19 +147,17 @@ const BaseWalletCreationFlow = ({ onWalletCreated, onBack }) => {
 
           {/* Progress bar */}
           <div className="w-full bg-gray-800 rounded-full h-3 overflow-hidden mb-4">
-            <div 
+            <div
               className="h-full bg-gradient-to-r from-blue-600 to-blue-400 transition-all duration-500 ease-out"
               style={{ width: `${progress}%` }}
             ></div>
           </div>
 
-          <div className="text-sm text-gray-500">
-            {progress}% Complete
-          </div>
+          <div className="text-sm text-gray-500">{progress}% Complete</div>
         </div>
       )}
 
-      {step === 'created' && (
+      {step === "created" && (
         <div className="text-center py-8">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-500/20 mb-6">
             <Check className="w-12 h-12 text-green-400" />
@@ -163,13 +166,13 @@ const BaseWalletCreationFlow = ({ onWalletCreated, onBack }) => {
           <h2 className="text-2xl font-bold text-white mb-2">
             Wallet Created Successfully! 🎉
           </h2>
-          <p className="text-gray-400 mb-6">
-            Your Base wallet is ready to use
-          </p>
+          <p className="text-gray-400 mb-6">Your Base wallet is ready to use</p>
 
           {/* Wallet address */}
           <div className="bg-gray-800 rounded-xl p-4 mb-6">
-            <div className="text-xs text-gray-500 mb-2">Your Wallet Address</div>
+            <div className="text-xs text-gray-500 mb-2">
+              Your Wallet Address
+            </div>
             <div className="font-mono text-sm text-blue-400 break-all">
               {walletAddress}
             </div>

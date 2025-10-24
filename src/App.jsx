@@ -19,6 +19,7 @@ import SimpleTest from "./components/SimpleTest"; // Add simple test component
 import VirtualTerminal from "./components/VirtualTerminal"; // NEW: Dynamic payment terminal
 import PaymentRedirect from "./components/PaymentRedirect"; // NEW: Payment redirect page
 import PaymentRedirectSimple from "./components/PaymentRedirectSimple"; // Simple test version
+import TestCryptoOnboarding from "./pages/TestCryptoOnboarding"; // TEST: Crypto onboarding flow
 import ThirdWebProviderWrapper from "./providers/ThirdWebProvider";
 import NotificationProvider, {
   useNotifications,
@@ -75,6 +76,12 @@ function AppContent() {
 
         {/* Agent Fee Validation Dashboard (Debug) */}
         <Route path="/debug-fees" element={<AgentFeeValidationDashboard />} />
+
+        {/* Crypto Onboarding Test Page */}
+        <Route
+          path="/test-crypto-onboarding"
+          element={<TestCryptoOnboarding />}
+        />
 
         {/* Camera Debug Test Route */}
         <Route path="/camera-test" element={<CameraTest />} />

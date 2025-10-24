@@ -1,22 +1,33 @@
-import React, { useState, useEffect } from 'react';
-import { CreditCard, ArrowLeft, ExternalLink, Check, Loader } from 'lucide-react';
-import { generateSessionToken, buildOnrampUrl, openOnrampPopup, waitForPopupClose } from '../services/onrampService';
+import React, { useState, useEffect } from "react";
+import {
+  CreditCard,
+  ArrowLeft,
+  ExternalLink,
+  Check,
+  Loader,
+} from "lucide-react";
+import {
+  generateSessionToken,
+  buildOnrampUrl,
+  openOnrampPopup,
+  waitForPopupClose,
+} from "../services/onrampService";
 
 /**
  * OnrampPurchaseFlow - Integrates with Coinbase Onramp for USDC purchase
  * Opens Coinbase Pay sandbox in iframe/popup for testnet purchases
  */
-const OnrampPurchaseFlow = ({ 
-  amount, 
-  token, 
-  recipientAddress, 
+const OnrampPurchaseFlow = ({
+  amount,
+  token,
+  recipientAddress,
   agentAddress,
-  onComplete, 
-  onBack 
+  onComplete,
+  onBack,
 }) => {
-  const [step, setStep] = useState('preparing'); // 'preparing', 'ready', 'purchasing', 'confirming', 'complete'
+  const [step, setStep] = useState("preparing"); // 'preparing', 'ready', 'purchasing', 'confirming', 'complete'
   const [sessionToken, setSessionToken] = useState(null);
-  const [onrampUrl, setOnrampUrl] = useState('');
+  const [onrampUrl, setOnrampUrl] = useState("");
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -26,18 +37,20 @@ const OnrampPurchaseFlow = ({
   // Prepare onramp session (calls backend API)
   const prepareOnramp = async () => {
     try {
-      console.log('🚀 Preparing Coinbase Onramp session...');
-      console.log('📍 Recipient Address:', recipientAddress);
-      console.log('💰 Amount:', amount, token);
-      
+      console.log("🚀 Preparing Coinbase Onramp session...");
+      console.log("📍 Recipient Address:", recipientAddress);
+      console.log("💰 Amount:", amount, token);
+
       // Generate session token via backend API
       const sessionData = await generateSessionToken({
-        addresses: [{
-          address: recipientAddress,
-          blockchains: ['base']
-        }],
+        addresses: [
+          {
+            address: recipientAddress,
+            blockchains: ["base"],
+          },
+        ],
         assets: [token],
-        amount
+        amount,
       });
 
       setSessionToken(sessionData.token);
@@ -47,58 +60,62 @@ const OnrampPurchaseFlow = ({
         sessionToken: sessionData.token,
         asset: token,
         amount,
-        network: 'base',
-        testnet: true // Using sandbox for testing
+        network: "base",
+        testnet: true, // Using sandbox for testing
       });
-      
+
       setOnrampUrl(url);
-      setStep('ready');
+      setStep("ready");
     } catch (err) {
-      console.error('Failed to prepare onramp:', err);
-      setError(err.message || 'Failed to initialize payment. Please try again.');
-      setStep('ready');
+      console.error("Failed to prepare onramp:", err);
+      setError(
+        err.message || "Failed to initialize payment. Please try again."
+      );
+      setStep("ready");
     }
   };
 
   // Open Coinbase Pay in new window
   const handleStartPurchase = async () => {
     try {
-      setStep('purchasing');
-      
+      setStep("purchasing");
+
       // Open Coinbase Pay popup
       const popup = openOnrampPopup(onrampUrl);
 
       // Wait for user to complete purchase and close popup
       await waitForPopupClose(popup);
-      
-      setStep('confirming');
+
+      setStep("confirming");
       simulateConfirmation();
     } catch (err) {
-      console.error('Purchase failed:', err);
-      setError(err.message || 'Failed to open payment window');
-      setStep('ready');
+      console.error("Purchase failed:", err);
+      setError(err.message || "Failed to open payment window");
+      setStep("ready");
     }
   };
 
   // Simulate transaction confirmation
   const simulateConfirmation = async () => {
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
     const mockTransaction = {
-      id: 'onramp_' + Date.now(),
-      status: 'success',
+      id: "onramp_" + Date.now(),
+      status: "success",
       amount: amount,
       token: token,
       from: recipientAddress,
       to: agentAddress,
-      network: 'base-sepolia',
-      txHash: '0x' + Array.from({ length: 64 }, () => 
-        Math.floor(Math.random() * 16).toString(16)
-      ).join('')
+      network: "base-sepolia",
+      txHash:
+        "0x" +
+        Array.from({ length: 64 }, () =>
+          Math.floor(Math.random() * 16).toString(16)
+        ).join(""),
     };
 
-    setStep('complete');
-    
+    setStep("complete");
+
     setTimeout(() => {
       onComplete(mockTransaction);
     }, 2000);
@@ -107,7 +124,7 @@ const OnrampPurchaseFlow = ({
   return (
     <div className="bg-gradient-to-br from-gray-900 via-blue-900/20 to-gray-900 rounded-2xl p-8 shadow-2xl border border-blue-500/30">
       {/* Back button */}
-      {step === 'ready' && (
+      {step === "ready" && (
         <button
           onClick={onBack}
           className="flex items-center text-gray-400 hover:text-white mb-4 transition-colors"
@@ -117,7 +134,7 @@ const OnrampPurchaseFlow = ({
         </button>
       )}
 
-      {step === 'preparing' && (
+      {step === "preparing" && (
         <div className="text-center py-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-500/20 mb-6">
             <Loader className="w-8 h-8 text-blue-400 animate-spin" />
@@ -131,7 +148,7 @@ const OnrampPurchaseFlow = ({
         </div>
       )}
 
-      {step === 'ready' && (
+      {step === "ready" && (
         <div>
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-500/20 mb-4">
@@ -149,11 +166,15 @@ const OnrampPurchaseFlow = ({
           <div className="bg-gray-800/50 rounded-xl p-6 mb-6 space-y-4">
             <div className="flex justify-between">
               <span className="text-gray-400">Amount to Buy</span>
-              <span className="text-white font-semibold">{amount} {token}</span>
+              <span className="text-white font-semibold">
+                {amount} {token}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-400">Network</span>
-              <span className="text-white font-semibold">Base Sepolia (Testnet)</span>
+              <span className="text-white font-semibold">
+                Base Sepolia (Testnet)
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-400">Estimated Cost</span>
@@ -172,14 +193,24 @@ const OnrampPurchaseFlow = ({
             <div className="flex items-start space-x-3">
               <div className="text-2xl">🧪</div>
               <div>
-                <div className="font-semibold text-blue-400 mb-1">Testnet Mode</div>
+                <div className="font-semibold text-blue-400 mb-1">
+                  Testnet Mode
+                </div>
                 <div className="text-sm text-gray-400 mb-2">
                   Use this test card for sandbox purchases:
                 </div>
                 <div className="bg-gray-900/50 p-3 rounded font-mono text-xs space-y-1">
-                  <div className="text-gray-300"><span className="text-gray-500">Card:</span> 4242 4242 4242 4242</div>
-                  <div className="text-gray-300"><span className="text-gray-500">Exp:</span> 12/31 | <span className="text-gray-500">CVC:</span> 123</div>
-                  <div className="text-gray-300"><span className="text-gray-500">Code:</span> 000000</div>
+                  <div className="text-gray-300">
+                    <span className="text-gray-500">Card:</span> 4242 4242 4242
+                    4242
+                  </div>
+                  <div className="text-gray-300">
+                    <span className="text-gray-500">Exp:</span> 12/31 |{" "}
+                    <span className="text-gray-500">CVC:</span> 123
+                  </div>
+                  <div className="text-gray-300">
+                    <span className="text-gray-500">Code:</span> 000000
+                  </div>
                 </div>
               </div>
             </div>
@@ -207,7 +238,7 @@ const OnrampPurchaseFlow = ({
         </div>
       )}
 
-      {step === 'purchasing' && (
+      {step === "purchasing" && (
         <div className="text-center py-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-500/20 mb-6 animate-pulse">
             <CreditCard className="w-8 h-8 text-blue-400" />
@@ -219,12 +250,13 @@ const OnrampPurchaseFlow = ({
             Follow the steps in the Coinbase window
           </p>
           <div className="bg-gray-800/50 rounded-xl p-4 text-sm text-gray-400">
-            Once you've completed the purchase, close the Coinbase window to continue
+            Once you've completed the purchase, close the Coinbase window to
+            continue
           </div>
         </div>
       )}
 
-      {step === 'confirming' && (
+      {step === "confirming" && (
         <div className="text-center py-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-500/20 mb-6">
             <Loader className="w-8 h-8 text-blue-400 animate-spin" />
@@ -238,7 +270,7 @@ const OnrampPurchaseFlow = ({
         </div>
       )}
 
-      {step === 'complete' && (
+      {step === "complete" && (
         <div className="text-center py-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500/20 mb-6">
             <Check className="w-10 h-10 text-green-400" />

@@ -14,6 +14,7 @@ import QRCode from "react-qr-code";
 import IntermediatePaymentModal from "./IntermediatePaymentModal"; // Transaction validation modal
 import RevolutBankQRModal from "./RevolutBankQRModal"; // Revolut Bank QR modal
 import { VirtualCardManager } from "./VirtualCardManager"; // NEW: Virtual Card Manager with card selector
+import CryptoOnboardingModal from "./CryptoOnboardingModal"; // 🆕 Crypto onboarding for cross-platform payments
 import { usePaymentStatus } from "../hooks/usePaymentStatus"; // Real-time payment status hook
 
 // AgentSphere Payment Configuration Reader
@@ -2437,77 +2438,24 @@ const CubePaymentEngine = ({
           agentData={agent}
         />
 
-        {/* Revolut Virtual Card Modal - For Virtual Card Management & Payments */}
+        {/* Crypto Onboarding Modal - Cross-Platform Payments Branch */}
         {showVirtualCardModal && (
-          <div
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: "rgba(0, 0, 0, 0.7)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              zIndex: 10000,
-              padding: "20px",
+          <CryptoOnboardingModal
+            isOpen={showVirtualCardModal}
+            onClose={handleVirtualCardClose}
+            agentName={agent?.name || "AgentSphere Agent"}
+            agentFee={
+              paymentAmount ||
+              agent?.interaction_fee_amount ||
+              agent?.interaction_fee ||
+              10.0
+            }
+            agentToken="USDC"
+            onPaymentComplete={(result) => {
+              console.log("✅ Crypto onboarding payment completed:", result);
+              handleVirtualCardSuccess(result);
             }}
-            onClick={(e) => {
-              // Close on backdrop click
-              if (e.target === e.currentTarget) {
-                handleVirtualCardClose();
-              }
-            }}
-          >
-            <div
-              style={{
-                maxWidth: "600px",
-                width: "100%",
-                maxHeight: "90vh",
-                overflow: "auto",
-                position: "relative",
-              }}
-            >
-              {/* Close Button */}
-              <button
-                onClick={handleVirtualCardClose}
-                style={{
-                  position: "absolute",
-                  top: "10px",
-                  right: "10px",
-                  background: "rgba(255, 255, 255, 0.9)",
-                  border: "none",
-                  borderRadius: "50%",
-                  width: "36px",
-                  height: "36px",
-                  cursor: "pointer",
-                  fontSize: "20px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  zIndex: 10001,
-                  boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
-                }}
-              >
-                ✕
-              </button>
-
-              {/* Virtual Card Manager Component */}
-              <VirtualCardManager
-                agentId={virtualCardAgentId}
-                agentName={agent?.name || "AgentSphere Agent"}
-                paymentAmount={
-                  paymentAmount ||
-                  agent?.interaction_fee_amount ||
-                  agent?.interaction_fee ||
-                  10.0
-                }
-                onClose={() => setShowVirtualCardModal(false)}
-                onPaymentComplete={handleVirtualCardSuccess}
-              />
-            </div>
-          </div>
+          />
         )}
       </div>
     </div>

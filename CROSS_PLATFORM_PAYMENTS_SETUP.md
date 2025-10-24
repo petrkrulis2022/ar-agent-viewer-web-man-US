@@ -7,6 +7,7 @@
 ## 🎯 Overview
 
 Complete integration of crypto onboarding and fiat-to-crypto onramp for AR Agent payments. Users without crypto wallets can now:
+
 1. Create a Base wallet
 2. Buy USDC with a credit card (via Coinbase)
 3. Pay crypto-only agents
@@ -16,11 +17,13 @@ Complete integration of crypto onboarding and fiat-to-crypto onramp for AR Agent
 ### Frontend Components
 
 1. **`CryptoOnboardingModal.jsx`** - Main onboarding flow orchestrator
+
    - Replaces Revolut confirmation screen
    - Presents "Buy Crypto" vs "Connect Wallet" options
    - Manages overall payment flow state
 
 2. **`BaseWalletCreationFlow.jsx`** - Wallet creation UI
+
    - Base-branded wallet creation experience
    - Simulates wallet generation (user already has wallet)
    - Progress tracking and success confirmation
@@ -33,6 +36,7 @@ Complete integration of crypto onboarding and fiat-to-crypto onramp for AR Agent
 ### Backend Services
 
 4. **`src/server/onrampAPI.js`** - Express API server
+
    - Generates Coinbase session tokens
    - Handles CDP authentication
    - Secure JWT signing for API calls
@@ -100,6 +104,7 @@ npm run dev
 ```
 
 You should see:
+
 ```
 🚀 Onramp API server running on port 3001
 📍 Health check: http://localhost:3001/health
@@ -127,36 +132,44 @@ npm run dev
 ### Test Flow Walkthrough
 
 1. **Select an Agent**
+
    - Choose any agent deployed on Base Sepolia
    - Agent must have a fixed interaction fee (e.g., 3 USDC)
 
 2. **Initiate Chat/Interaction**
+
    - Start chatting with the agent
    - Agent requests payment for interaction
 
 3. **Open Payment Modal**
+
    - Click "Pay Agent" button
    - Payment cube appears
 
 4. **Select Virtual Card**
+
    - Choose "Virtual Card" payment method
    - Select existing card or create new one
 
 5. **Crypto Onboarding Modal Appears** ✨
+
    - Instead of Revolut screen, see onboarding options
    - Choose **"Buy Crypto with Card"**
 
 6. **Wallet Creation Flow**
+
    - See Base-branded wallet creation
    - Watch progress: "Generating secure keys..."
    - Wallet created successfully
 
 7. **Onramp Purchase Flow**
+
    - Review purchase details (3 USDC on Base Sepolia)
    - See test card instructions
    - Click **"Open Coinbase Pay"**
 
 8. **Coinbase Pay Sandbox**
+
    - Popup window opens to Coinbase Pay
    - Use test card: `4242 4242 4242 4242`
    - Expiry: `12/31`, CVC: `123`
@@ -190,6 +203,7 @@ curl http://localhost:3001/health
 ```
 
 Expected response:
+
 ```json
 {
   "status": "ok",
@@ -296,7 +310,7 @@ return (
   <>
     {/* Existing payment cube */}
     <CubePaymentEngine ... />
-    
+
     {/* New crypto onboarding */}
     <CryptoOnboardingModal
       isOpen={showCryptoOnboarding}
@@ -333,6 +347,7 @@ return (
 ### Backend Security
 
 The backend API implements:
+
 - ✅ JWT authentication for Coinbase API
 - ✅ Client IP validation
 - ✅ Secure key storage in environment
@@ -345,7 +360,8 @@ The backend API implements:
 
 **Error:** "CDP credentials not configured"
 
-**Solution:** 
+**Solution:**
+
 1. Check `.env` file exists in `src/server/`
 2. Verify `CDP_API_KEY_NAME` is set correctly
 3. Ensure `CDP_API_PRIVATE_KEY` includes BEGIN/END markers
@@ -356,6 +372,7 @@ The backend API implements:
 **Error:** "Failed to generate session token"
 
 **Solution:**
+
 1. Verify CDP API key has Onramp permissions
 2. Check API key is not expired
 3. Ensure backend server is running on port 3001
@@ -366,6 +383,7 @@ The backend API implements:
 **Error:** "Popup blocked. Please allow popups..."
 
 **Solution:**
+
 1. Enable popups for localhost in browser settings
 2. User must click button to trigger popup (not automatic)
 3. Check browser console for security errors
@@ -375,6 +393,7 @@ The backend API implements:
 **Warning:** "Development mode: Returning mock session token"
 
 **Solution:**
+
 1. Set `NODE_ENV=production` in `.env`
 2. Ensure CDP credentials are configured
 3. Restart backend server
@@ -384,6 +403,7 @@ The backend API implements:
 ### Logging
 
 All components log to console:
+
 - 🚀 Initialization events
 - 📍 Address and amount details
 - ✅ Success confirmations
@@ -392,6 +412,7 @@ All components log to console:
 ### Recommended Analytics Events
 
 Track these for insights:
+
 - `crypto_onboarding_modal_opened`
 - `wallet_creation_started`
 - `wallet_creation_completed`
@@ -405,6 +426,7 @@ Track these for insights:
 ### Styling
 
 All components use Tailwind CSS with:
+
 - Base blue theme (`blue-500`, `blue-600`)
 - Gradient backgrounds
 - Smooth transitions and animations
@@ -419,13 +441,14 @@ The wallet creation flow includes official Base logo (SVG path). Update colors i
 Configure default amounts and limits:
 
 ```jsx
-const MIN_AMOUNT = 5;   // Coinbase minimum
+const MIN_AMOUNT = 5; // Coinbase minimum
 const MAX_AMOUNT = 500; // Guest checkout weekly limit
 ```
 
 ## 🔄 Next Steps
 
 ### Phase 1 (Current) ✅
+
 - [x] Crypto onboarding modal
 - [x] Base wallet creation flow
 - [x] Onramp purchase integration
@@ -433,6 +456,7 @@ const MAX_AMOUNT = 500; // Guest checkout weekly limit
 - [x] Sandbox testing
 
 ### Phase 2 (Recommended)
+
 - [ ] Real wallet integration with Base Account SDK
 - [ ] Webhook verification for transaction confirmations
 - [ ] Transaction history tracking
@@ -440,6 +464,7 @@ const MAX_AMOUNT = 500; // Guest checkout weekly limit
 - [ ] Production CDP credentials
 
 ### Phase 3 (Advanced)
+
 - [ ] Gas sponsorship for first transaction
 - [ ] Batch payment support
 - [ ] Subscription payments

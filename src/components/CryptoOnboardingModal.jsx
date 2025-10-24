@@ -1,52 +1,52 @@
-import React, { useState } from 'react';
-import { X, Wallet, CreditCard, Sparkles, ArrowRight } from 'lucide-react';
-import BaseWalletCreationFlow from './BaseWalletCreationFlow';
-import OnrampPurchaseFlow from './OnrampPurchaseFlow';
+import React, { useState } from "react";
+import { X, Wallet, CreditCard, Sparkles, ArrowRight } from "lucide-react";
+import BaseWalletCreationFlow from "./BaseWalletCreationFlow";
+import OnrampPurchaseFlow from "./OnrampPurchaseFlow";
 
 /**
  * CryptoOnboardingModal - Replaces Revolut confirmation screen
  * Guides users through crypto wallet creation and USDC purchase
  */
-const CryptoOnboardingModal = ({ 
-  isOpen, 
-  onClose, 
-  agentFee, 
-  agentToken = 'USDC',
+const CryptoOnboardingModal = ({
+  isOpen,
+  onClose,
+  agentFee,
+  agentToken = "USDC",
   agentName,
   agentAddress,
-  onPaymentComplete 
+  onPaymentComplete,
 }) => {
-  const [step, setStep] = useState('onboarding'); // 'onboarding', 'wallet-creation', 'onramp', 'sending'
+  const [step, setStep] = useState("onboarding"); // 'onboarding', 'wallet-creation', 'onramp', 'sending'
   const [userWallet, setUserWallet] = useState(null);
 
   if (!isOpen) return null;
 
   const handleBuyWithCard = () => {
-    setStep('wallet-creation');
+    setStep("wallet-creation");
   };
 
   const handleWalletCreated = (walletAddress) => {
     setUserWallet(walletAddress);
-    setStep('onramp');
+    setStep("onramp");
   };
 
   const handleOnrampComplete = (transactionData) => {
-    setStep('sending');
+    setStep("sending");
     // Proceed to send crypto to agent
     setTimeout(() => {
       onPaymentComplete({
-        method: 'crypto-onramp',
+        method: "crypto-onramp",
         wallet: userWallet,
         amount: agentFee,
         token: agentToken,
-        onrampTx: transactionData
+        onrampTx: transactionData,
       });
     }, 2000);
   };
 
   const handleConnectExisting = () => {
     // Trigger existing wallet connection flow
-    console.log('Connect existing wallet');
+    console.log("Connect existing wallet");
     onClose();
     // This would trigger your existing Web3 connection
   };
@@ -63,7 +63,7 @@ const CryptoOnboardingModal = ({
         </button>
 
         {/* Content based on step */}
-        {step === 'onboarding' && (
+        {step === "onboarding" && (
           <div className="bg-gradient-to-br from-gray-900 via-blue-900/20 to-gray-900 rounded-2xl p-8 shadow-2xl border border-blue-500/30">
             {/* Header */}
             <div className="text-center mb-8">
@@ -103,7 +103,9 @@ const CryptoOnboardingModal = ({
                       <CreditCard className="w-6 h-6" />
                     </div>
                     <div className="text-left">
-                      <div className="font-semibold text-lg">Buy Crypto with Card</div>
+                      <div className="font-semibold text-lg">
+                        Buy Crypto with Card
+                      </div>
                       <div className="text-sm text-blue-100">
                         Get a wallet & buy USDC instantly
                       </div>
@@ -123,7 +125,9 @@ const CryptoOnboardingModal = ({
                       <Wallet className="w-6 h-6" />
                     </div>
                     <div className="text-left">
-                      <div className="font-semibold text-lg">Connect Existing Wallet</div>
+                      <div className="font-semibold text-lg">
+                        Connect Existing Wallet
+                      </div>
                       <div className="text-sm text-gray-400">
                         I already have a crypto wallet
                       </div>
@@ -141,25 +145,25 @@ const CryptoOnboardingModal = ({
           </div>
         )}
 
-        {step === 'wallet-creation' && (
+        {step === "wallet-creation" && (
           <BaseWalletCreationFlow
             onWalletCreated={handleWalletCreated}
-            onBack={() => setStep('onboarding')}
+            onBack={() => setStep("onboarding")}
           />
         )}
 
-        {step === 'onramp' && (
+        {step === "onramp" && (
           <OnrampPurchaseFlow
             amount={agentFee}
             token={agentToken}
             recipientAddress={userWallet}
             agentAddress={agentAddress}
             onComplete={handleOnrampComplete}
-            onBack={() => setStep('wallet-creation')}
+            onBack={() => setStep("wallet-creation")}
           />
         )}
 
-        {step === 'sending' && (
+        {step === "sending" && (
           <div className="bg-gradient-to-br from-gray-900 via-blue-900/20 to-gray-900 rounded-2xl p-8 shadow-2xl border border-blue-500/30">
             <div className="text-center">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500/20 mb-4 animate-pulse">
@@ -172,7 +176,10 @@ const CryptoOnboardingModal = ({
                 Transferring {agentFee} {agentToken} to {agentName}...
               </p>
               <div className="w-full bg-gray-800 rounded-full h-2 overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-blue-500 to-green-500 animate-pulse" style={{ width: '75%' }}></div>
+                <div
+                  className="h-full bg-gradient-to-r from-blue-500 to-green-500 animate-pulse"
+                  style={{ width: "75%" }}
+                ></div>
               </div>
             </div>
           </div>
