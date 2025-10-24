@@ -305,7 +305,7 @@ const AR3DScene = ({
       // Use circular distribution for better spread - closer to camera
       const angle = (index / totalAgents) * 2 * Math.PI;
       const radiusVariation = index % 4;
-      const radius = 2 + radiusVariation * 1.5; // Closer: 2-6.5 units instead of 3-9
+      const radius = 3 + radiusVariation * 2.5; // More spacing: 3-10.5 units instead of 2-6.5
 
       // Create multiple layers to avoid clustering
       const layerAngleOffset = Math.floor(index / 4) * 30 * (Math.PI / 180);

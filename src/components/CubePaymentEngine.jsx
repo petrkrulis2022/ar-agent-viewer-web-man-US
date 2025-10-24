@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Text, Html } from "@react-three/drei";
+import * as THREE from "three"; // Import THREE for DoubleSide
 import morphPaymentService from "../services/morphPaymentService";
 import solanaPaymentService from "../services/solanaPaymentService";
 import { dynamicQRService } from "../services/dynamicQRService"; // Add dynamic QR service
@@ -123,43 +124,43 @@ const PaymentCube = ({
   const [rotationVelocity, setRotationVelocity] = useState({ x: 0, y: 0 });
   const { camera, viewport, gl } = useThree();
 
-  // Payment method configuration
+  // Payment method configuration - Unified green shiny metallic cube
   const paymentMethods = {
     crypto_qr: {
-      icon: "📱", // QR code icon will be added in text
+      icon: "�", // QR code icon
       text: "Crypto QR",
-      color: "#00ff66",
-      description: "",
+      color: "#00ff66", // Unified green for all faces
+      description: "Tap to Scan",
     },
     virtual_card: {
-      icon: "💳",
+      icon: "💳", // Card icon
       text: "Virtual Card",
-      color: "#0088ff",
-      description: "",
+      color: "#00ff66", // Unified green for all faces
+      description: "Tap to Pay",
     },
     bank_qr: {
-      icon: "🔲", // QR code icon instead of bank
+      icon: "", // No icon
       text: "Bank QR",
-      color: "#0066cc",
-      description: "",
+      color: "#00ff66", // Unified green for all faces
+      description: "Tap to Scan",
     },
     voice_pay: {
-      icon: "🎤", // Microphone icon for voice
+      icon: "🎤", // Microphone icon
       text: "Voice Pay",
-      color: "#9900ff",
-      description: "",
+      color: "#00ff66", // Unified green for all faces
+      description: "Tap to Speak",
     },
     sound_pay: {
-      icon: "🎵",
+      icon: "🎵", // Audio waves icon
       text: "Sound Pay",
-      color: "#ff6600",
-      description: "",
+      color: "#00ff66", // Unified green for all faces
+      description: "Tap to Pay",
     },
     btc_payments: {
-      icon: "🪙", // Changed from ₿ to 🪙 for better visibility
+      icon: "₿", // Bitcoin symbol
       text: "BTC Payments",
-      color: "#f7931a",
-      description: "",
+      color: "#00ff66", // Unified green for all faces
+      description: "Tap to Select",
     },
   };
 
@@ -563,10 +564,12 @@ const PaymentCube = ({
                 }}
                 onPointerOver={(e) => {
                   e.stopPropagation();
+                  setHoveredFace(true);
                   gl.domElement.style.cursor = "pointer";
                 }}
                 onPointerOut={(e) => {
                   e.stopPropagation();
+                  setHoveredFace(false);
                   gl.domElement.style.cursor = "grab";
                 }}
               >
@@ -574,7 +577,7 @@ const PaymentCube = ({
                 <meshStandardMaterial
                   color={method === "btc_payments" ? "#f7931a" : config.color}
                   transparent
-                  opacity={isActiveFace ? 1.0 : 0.9}
+                  opacity={0.3}
                   emissive={
                     method === "btc_payments"
                       ? "#803d00"
@@ -588,87 +591,66 @@ const PaymentCube = ({
                 />
               </mesh>
 
-              {/* Button face surface for better text contrast */}
-              <mesh
-                position={[
-                  facePositions[faceIndex][0] + textOffsets[faceIndex][0] * 2.1,
-                  facePositions[faceIndex][1] + textOffsets[faceIndex][1] * 2.1,
-                  facePositions[faceIndex][2] + textOffsets[faceIndex][2] * 2.1,
-                ]}
-                rotation={faceRotations[faceIndex]}
-              >
-                <planeGeometry args={[2.3, 2.3]} />
-                <meshBasicMaterial
-                  color={
-                    method === "btc_payments"
-                      ? "#fff5e6"
-                      : isActiveFace
-                      ? "#ffffff"
-                      : "#f8f8f8"
-                  }
-                  transparent
-                  opacity={0.95}
-                />
-              </mesh>
-
-              {/* Icon text - positioned on the 3D button */}
+              {/* Icon text with outline/shadow for visibility */}
               <Text
                 position={[
                   facePositions[faceIndex][0] + textOffsets[faceIndex][0] * 2.2,
                   facePositions[faceIndex][1] +
                     textOffsets[faceIndex][1] * 2.2 +
                     0.4,
-                  facePositions[faceIndex][2] + textOffsets[faceIndex][2] * 2.2,
+                  facePositions[faceIndex][2] +
+                    textOffsets[faceIndex][2] * 2.2 +
+                    0.02,
                 ]}
                 rotation={faceRotations[faceIndex]}
                 fontSize={0.6}
-                color="#000000"
+                color="#ffffff"
                 anchorX="center"
                 anchorY="middle"
                 fontWeight="bold"
-                outlineWidth={0.1}
-                outlineColor="#ffffff"
+                outlineWidth={0.05}
+                outlineColor="#000000"
               >
                 {config.icon}
               </Text>
 
-              {/* Method name - with multi-line support for long text */}
+              {/* Method name with outline for visibility */}
               {config.text.length > 15 ? (
                 // Multi-line text for long payment method names
                 <>
                   <Text
                     position={[
                       textPosition[0],
-                      textPosition[1] + 0.1,
-                      textPosition[2],
+                      textPosition[1] + 0.2,
+                      textPosition[2] + 0.02,
                     ]}
                     rotation={faceRotations[faceIndex]}
-                    fontSize={0.28}
-                    color="#000000"
+                    fontSize={0.22}
+                    color="#ffffff"
                     anchorX="center"
                     anchorY="middle"
-                    outlineWidth={0.1}
-                    outlineColor="#ffffff"
                     fontWeight="bold"
+                    outlineWidth={0.08}
+                    outlineColor="#000000"
                   >
-                    {config.text.split(" - ")[0]}
+                    {config.text.split(" ")[0]}
                   </Text>
                   <Text
                     position={[
                       textPosition[0],
-                      textPosition[1] - 0.2,
-                      textPosition[2],
+                      textPosition[1] - 0.1,
+                      textPosition[2] + 0.02,
                     ]}
                     rotation={faceRotations[faceIndex]}
-                    fontSize={0.28}
-                    color="#000000"
+                    fontSize={0.22}
+                    color="#ffffff"
                     anchorX="center"
                     anchorY="middle"
-                    outlineWidth={0.1}
-                    outlineColor="#ffffff"
                     fontWeight="bold"
+                    outlineWidth={0.08}
+                    outlineColor="#000000"
                   >
-                    {config.text.split(" - ")[1] || ""}
+                    {config.text.split(" ").slice(1).join(" ")}
                   </Text>
                 </>
               ) : (
@@ -676,87 +658,27 @@ const PaymentCube = ({
                 <Text
                   position={[
                     textPosition[0],
-                    textPosition[1] + 0.1,
-                    textPosition[2],
+                    textPosition[1] + 0.05,
+                    textPosition[2] + 0.02,
                   ]}
                   rotation={faceRotations[faceIndex]}
-                  fontSize={0.26}
-                  color="#000000"
+                  fontSize={0.28}
+                  color="#ffffff"
                   anchorX="center"
                   anchorY="middle"
-                  outlineWidth={0.1}
-                  outlineColor="#ffffff"
                   fontWeight="bold"
+                  outlineWidth={0.08}
+                  outlineColor="#000000"
                 >
                   {config.text}
                 </Text>
               )}
-
-              {/* Method-specific action text with larger font and better contrast */}
-              <Text
-                position={[
-                  textPosition[0],
-                  textPosition[1] - 0.7,
-                  textPosition[2],
-                ]}
-                rotation={faceRotations[faceIndex]}
-                fontSize={0.18}
-                color="#000000"
-                anchorX="center"
-                anchorY="middle"
-                outlineWidth={0.08}
-                outlineColor="#ffffff"
-                fontWeight="bold"
-              >
-                {method === "virtual_card"
-                  ? "Tap To Pay"
-                  : method === "voice_pay"
-                  ? "Tap To Speak"
-                  : method === "sound_pay"
-                  ? "Tap To Pay"
-                  : method.includes("qr")
-                  ? "Tap To Scan"
-                  : method === "btc_payments"
-                  ? "Tap To Select"
-                  : "Tap To Select"}
-              </Text>
             </group>
           );
         })}
       </mesh>
 
       {/* Amount Display - moved further down to avoid overlaying cube */}
-      {/* Enhanced Dramatic Lighting */}
-      <pointLight
-        position={[0, 0, -1]}
-        color="#00ff66"
-        intensity={1.5}
-        distance={15}
-      />
-      <pointLight
-        position={[3, 3, -3]}
-        color="#44ff88"
-        intensity={0.8}
-        distance={10}
-      />
-      <pointLight
-        position={[-3, -3, -3]}
-        color="#88ffaa"
-        intensity={0.6}
-        distance={10}
-      />
-      <pointLight
-        position={[0, 5, 0]}
-        color="#66ff99"
-        intensity={0.7}
-        distance={12}
-      />
-      <pointLight
-        position={[0, -5, 0]}
-        color="#22dd55"
-        intensity={0.5}
-        distance={12}
-      />
     </group>
   );
 };
@@ -2407,31 +2329,12 @@ const CubePaymentEngine = ({
             height: "100%",
           }}
         >
-          {/* Enhanced Dramatic Scene Lighting */}
-          <ambientLight intensity={0.3} color="#002200" />
+          {/* Soft ambient lighting for visibility without glare */}
+          <ambientLight intensity={0.6} color="#ffffff" />
           <directionalLight
             position={[10, 10, 5]}
-            intensity={0.8}
-            color="#88ff88"
-            castShadow
-          />
-          <pointLight
-            position={[0, 0, 10]}
-            intensity={1.2}
-            color="#00ff44"
-            distance={20}
-          />
-          <pointLight
-            position={[5, 0, 0]}
-            intensity={0.6}
-            color="#44ff88"
-            distance={15}
-          />
-          <pointLight
-            position={[-5, 0, 0]}
-            intensity={0.6}
-            color="#66ffaa"
-            distance={15}
+            intensity={0.4}
+            color="#ffffff"
           />
 
           {/* Render current view */}

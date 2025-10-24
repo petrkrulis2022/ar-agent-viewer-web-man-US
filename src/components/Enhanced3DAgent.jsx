@@ -17,7 +17,13 @@ const RoboticFaceModel = ({ hovered }) => {
 const PaymentTerminalModel = ({ hovered }) => {
   const { scene } = useGLTF("/models/terminals/pax-a920_highpoly.glb");
 
-  return <primitive object={scene.clone()} scale={0.6} />;
+  return (
+    <primitive
+      object={scene.clone()}
+      scale={0.6}
+      rotation={[Math.PI * 0.25, 0, 0]}
+    />
+  );
 };
 
 const Enhanced3DAgent = ({
