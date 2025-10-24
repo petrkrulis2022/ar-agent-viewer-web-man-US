@@ -1,0 +1,16 @@
+{
+  "name": "onramp-api-server",
+  "version": "1.0.0",
+  "description": "Backend API for Coinbase Onramp session token generation",
+  "type": "module",
+  "main": "onrampAPI.js",
+  "scripts": {
+    "start": "node onrampAPI.js",
+    "dev": "node --watch onrampAPI.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1"
+  }
+}
