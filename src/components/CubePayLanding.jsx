@@ -35,7 +35,11 @@ const CubePayLanding = () => {
         <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
           <ambientLight intensity={0.5} />
           <pointLight position={[10, 10, 10]} intensity={1} />
-          <pointLight position={[-10, -10, -10]} intensity={0.5} color="#00ff66" />
+          <pointLight
+            position={[-10, -10, -10]}
+            intensity={0.5}
+            color="#00ff66"
+          />
           <RotatingCube />
         </Canvas>
       </div>
@@ -92,7 +96,7 @@ const CubePayLanding = () => {
 
         {/* GitHub Button */}
         <a
-          href="https://github.com/petrkrulis2022/ar-agent-viewer-web-man-US"
+          href="https://github.com/BeerSlothAgent/cube-pay-ar/tree/sim"
           target="_blank"
           rel="noopener noreferrer"
           className="group relative overflow-hidden bg-gradient-to-br from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white rounded-2xl p-8 text-center transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-gray-500/50"
