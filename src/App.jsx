@@ -58,7 +58,7 @@ function AppContent() {
       <Routes>
         {/* CubePay Landing Page */}
         <Route path="/cubepay" element={<CubePayLanding />} />
-        
+
         {/* Debug Route for Simple Test */}
         <Route path="/test" element={<SimpleTest />} />
         {/* New Agent Marketplace Route (Cube-Ready) */}
