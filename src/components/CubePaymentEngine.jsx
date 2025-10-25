@@ -2453,7 +2453,37 @@ const CubePaymentEngine = ({
             agentToken="USDC"
             onPaymentComplete={(result) => {
               console.log("✅ Crypto onboarding payment completed:", result);
-              handleVirtualCardSuccess(result);
+              // Close virtual card modal
+              setShowVirtualCardModal(false);
+              // Call parent's onPaymentComplete to close cube and return to AR viewer
+              if (onPaymentComplete) {
+                onPaymentComplete({
+                  method: "crypto-onramp",
+                  amount: result.amount,
+                  token: result.token,
+                  wallet: result.wallet,
+                  status: "completed",
+                });
+              }
+            }}
+            onSwitchToCubePay={() => {
+              console.log("🔄 Switching from crypto onboarding to CubePay...");
+              // Close crypto modal
+              setShowVirtualCardModal(false);
+              // Close the entire cube payment engine to return to AR viewer
+              // AR viewer will show the transaction result
+              if (onPaymentComplete) {
+                onPaymentComplete({
+                  method: "cubepay-terminal",
+                  switchToCubePay: true,
+                  amount:
+                    paymentAmount ||
+                    agent?.interaction_fee_amount ||
+                    agent?.interaction_fee ||
+                    10.0,
+                  status: "pending_cubepay",
+                });
+              }
             }}
           />
         )}

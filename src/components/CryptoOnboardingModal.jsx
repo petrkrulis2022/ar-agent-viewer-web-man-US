@@ -15,6 +15,7 @@ const CryptoOnboardingModal = ({
   agentName,
   agentAddress,
   onPaymentComplete,
+  onSwitchToCubePay, // NEW: Callback to switch to CubePay terminal
 }) => {
   const [step, setStep] = useState("onboarding"); // 'onboarding', 'wallet-creation', 'onramp', 'sending'
   const [userWallet, setUserWallet] = useState(null);
@@ -31,9 +32,13 @@ const CryptoOnboardingModal = ({
   };
 
   const handleOnrampComplete = (transactionData) => {
+    console.log("✅ Onramp completed, starting payment animation...");
     setStep("sending");
-    // Proceed to send crypto to agent
+    // Proceed to send crypto to agent with shorter animation
     setTimeout(() => {
+      console.log(
+        "✅ Payment animation complete, calling onPaymentComplete..."
+      );
       onPaymentComplete({
         method: "crypto-onramp",
         wallet: userWallet,
@@ -41,7 +46,7 @@ const CryptoOnboardingModal = ({
         token: agentToken,
         onrampTx: transactionData,
       });
-    }, 2000);
+    }, 1500); // Reduced from 2000ms to 1500ms
   };
 
   const handleConnectExisting = () => {
@@ -49,6 +54,14 @@ const CryptoOnboardingModal = ({
     console.log("Connect existing wallet");
     onClose();
     // This would trigger your existing Web3 connection
+  };
+
+  const handleSwitchToCubePay = () => {
+    console.log("🔄 Switching to CubePay terminal...");
+    // Close the modal and trigger CubePay flow
+    if (onSwitchToCubePay) {
+      onSwitchToCubePay();
+    }
   };
 
   return (
@@ -160,6 +173,7 @@ const CryptoOnboardingModal = ({
             agentAddress={agentAddress}
             onComplete={handleOnrampComplete}
             onBack={() => setStep("wallet-creation")}
+            onSwitchToCubePay={handleSwitchToCubePay}
           />
         )}
 
@@ -177,10 +191,13 @@ const CryptoOnboardingModal = ({
               </p>
               <div className="w-full bg-gray-800 rounded-full h-2 overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-blue-500 to-green-500 animate-pulse"
-                  style={{ width: "75%" }}
+                  className="h-full bg-gradient-to-r from-blue-500 to-green-500 transition-all duration-1500 ease-linear"
+                  style={{ width: "100%" }}
                 ></div>
               </div>
+              <p className="text-sm text-gray-500 mt-4">
+                Completing transaction and returning to AR viewer...
+              </p>
             </div>
           </div>
         )}

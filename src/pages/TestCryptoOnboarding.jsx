@@ -24,6 +24,20 @@ const TestCryptoOnboarding = () => {
     setShowOnboarding(false);
   };
 
+  const handleSwitchToCubePay = () => {
+    console.log("🔄 User chose to pay with CubePay terminal");
+    setPaymentResult({
+      method: "cubepay-terminal",
+      switchToCubePay: true,
+      message: "User selected private CubePay payment",
+      timestamp: new Date().toISOString(),
+    });
+    setShowOnboarding(false);
+    alert(
+      "🔒 Switching to CubePay Terminal!\n\nIn the real app, this would:\n1. Close crypto modal\n2. Return to AR viewer\n3. Open CubePay payment terminal"
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 p-8">
       <div className="max-w-2xl mx-auto">
@@ -100,16 +114,22 @@ const TestCryptoOnboarding = () => {
             <li>Click "Pay with Virtual Card" button above</li>
             <li>In the modal, click "Buy Crypto with Card"</li>
             <li>Watch the Base wallet creation animation</li>
-            <li>Review purchase details (3 USDC)</li>
-            <li>Click "Open Coinbase Pay" to launch sandbox</li>
+            <li>Review purchase details ({mockAgent.fee} USDC)</li>
             <li>
-              Use test card:{" "}
+              <strong className="text-green-400">Option 1 (New!):</strong> Click
+              green "🔒 Pay Privately with CubePay" button
+            </li>
+            <li>
+              <strong className="text-blue-400">Option 2:</strong> Click "Open
+              Coinbase Pay" to launch sandbox
+            </li>
+            <li>
+              If using Coinbase: Use test card:{" "}
               <code className="bg-gray-900 px-2 py-1 rounded">
                 4242 4242 4242 4242
               </code>
             </li>
-            <li>Complete the purchase and close the popup</li>
-            <li>Watch the confirmation and agent payment flow</li>
+            <li>Complete the purchase and watch the payment flow</li>
           </ol>
         </div>
 
@@ -147,6 +167,7 @@ const TestCryptoOnboarding = () => {
         agentName={mockAgent.name}
         agentAddress={mockAgent.walletAddress}
         onPaymentComplete={handlePaymentComplete}
+        onSwitchToCubePay={handleSwitchToCubePay}
       />
     </div>
   );

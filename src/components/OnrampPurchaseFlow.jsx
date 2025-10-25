@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   CreditCard,
   ArrowLeft,
+  ArrowRight,
   ExternalLink,
   Check,
   Loader,
@@ -24,8 +25,9 @@ const OnrampPurchaseFlow = ({
   agentAddress,
   onComplete,
   onBack,
+  onSwitchToCubePay, // NEW: Callback to switch to CubePay terminal
 }) => {
-  const [step, setStep] = useState("preparing"); // 'preparing', 'ready', 'purchasing', 'confirming', 'complete'
+  const [step, setStep] = useState("preparing"); // 'preparing', 'ready', 'choice', 'purchasing', 'confirming', 'complete'
   const [sessionToken, setSessionToken] = useState(null);
   const [onrampUrl, setOnrampUrl] = useState("");
   const [error, setError] = useState(null);
@@ -65,13 +67,13 @@ const OnrampPurchaseFlow = ({
       });
 
       setOnrampUrl(url);
-      setStep("ready");
+      setStep("choice"); // Show choice modal instead of going directly to ready
     } catch (err) {
       console.error("Failed to prepare onramp:", err);
       setError(
         err.message || "Failed to initialize payment. Please try again."
       );
-      setStep("ready");
+      setStep("choice"); // Show choice even on error so user can still see CubePay option
     }
   };
 
@@ -145,6 +147,95 @@ const OnrampPurchaseFlow = ({
           <p className="text-gray-400">
             Setting up secure connection to Coinbase...
           </p>
+        </div>
+      )}
+
+      {step === "choice" && (
+        <div>
+          {/* Back button */}
+          <button
+            onClick={onBack}
+            className="flex items-center text-gray-400 hover:text-white mb-4 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5 mr-2" />
+            Back
+          </button>
+
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-500/20 mb-4">
+              <CreditCard className="w-8 h-8 text-blue-400" />
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-2">
+              Choose Payment Method
+            </h2>
+            <p className="text-gray-400">
+              How would you like to complete the payment?
+            </p>
+          </div>
+
+          {/* Payment amount display */}
+          <div className="bg-gray-800/50 rounded-xl p-6 mb-8">
+            <div className="text-center">
+              <div className="text-sm text-gray-400 mb-2">Amount to Pay</div>
+              <div className="text-4xl font-bold text-white mb-1">
+                {amount} {token}
+              </div>
+              <div className="text-sm text-gray-500">
+                ≈ ${amount} USD on Base Sepolia
+              </div>
+            </div>
+          </div>
+
+          {/* Choice 1: Coinbase Pay */}
+          <button
+            onClick={() => setStep("ready")}
+            className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-600 text-white rounded-xl p-6 mb-4 font-semibold transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-blue-500/50 flex items-center justify-between"
+          >
+            <div className="flex items-center space-x-4">
+              <div className="p-3 bg-white/20 rounded-lg">
+                <CreditCard className="w-6 h-6" />
+              </div>
+              <div className="text-left">
+                <div className="font-semibold text-lg">
+                  Buy with Coinbase Pay
+                </div>
+                <div className="text-sm text-blue-100">
+                  Purchase crypto with your credit card
+                </div>
+              </div>
+            </div>
+            <ExternalLink className="w-5 h-5" />
+          </button>
+
+          {/* Choice 2: CubePay Terminal */}
+          {onSwitchToCubePay && (
+            <button
+              onClick={onSwitchToCubePay}
+              className="w-full bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-600 text-white rounded-xl p-6 font-semibold transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-green-500/50 flex items-center justify-between"
+            >
+              <div className="flex items-center space-x-4">
+                <div className="p-3 bg-white/20 rounded-lg">
+                  <div className="text-2xl">🔒</div>
+                </div>
+                <div className="text-left">
+                  <div className="font-semibold text-lg">
+                    Pay Privately with CubePay
+                  </div>
+                  <div className="text-sm text-green-100">
+                    Use your own payment terminal for maximum privacy
+                  </div>
+                </div>
+              </div>
+              <ArrowRight className="w-5 h-5" />
+            </button>
+          )}
+
+          {/* Info note */}
+          <div className="mt-6 text-center">
+            <p className="text-xs text-gray-500">
+              💎 CubePay offers enhanced privacy and security
+            </p>
+          </div>
         </div>
       )}
 
