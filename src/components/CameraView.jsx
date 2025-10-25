@@ -468,7 +468,7 @@ const CameraView = ({
       agent.name,
       paymentData
     );
-    
+
     // Check if user switched to CubePay terminal
     if (paymentData?.switchToCubePay) {
       console.log("🔒 Opening CubePay terminal for private payment...");
@@ -478,7 +478,7 @@ const CameraView = ({
       setSelectedAgent(agent);
       return;
     }
-    
+
     setShowCubePayment(false);
     setShowAgentModal(true); // Return to agent modal
 
