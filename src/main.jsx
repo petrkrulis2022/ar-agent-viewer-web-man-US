@@ -2,6 +2,10 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.jsx";
+import TestApp from "./TestApp.jsx"; // TEMPORARY TEST
+import SimpleApp from "./SimpleApp.jsx"; // SIMPLE ROUTING TEST
+import DebugApp from "./DebugApp.jsx"; // DEBUG VERSION
+import WorkingApp from "./WorkingApp.jsx"; // WORKING VERSION WITH REAL DB
 
 // Enhanced Buffer polyfill for Solana Web3.js compatibility
 import { Buffer } from "buffer";

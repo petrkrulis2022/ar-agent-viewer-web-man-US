@@ -1,7 +1,30 @@
 import React, { useRef, useState, useCallback } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Text, Box, Sphere, Cylinder, Torus } from "@react-three/drei";
+import { Text, Box, Sphere, Cylinder, Torus, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
+
+// Preload 3D models for better performance
+useGLTF.preload("/models/terminals/humanoid_robot_face.glb");
+useGLTF.preload("/models/terminals/pax-a920_highpoly.glb");
+
+// 3D Model Components
+const RoboticFaceModel = ({ hovered }) => {
+  const { scene } = useGLTF("/models/terminals/humanoid_robot_face.glb");
+
+  return <primitive object={scene.clone()} scale={3.0} />;
+};
+
+const PaymentTerminalModel = ({ hovered }) => {
+  const { scene } = useGLTF("/models/terminals/pax-a920_highpoly.glb");
+
+  return (
+    <primitive
+      object={scene.clone()}
+      scale={0.6}
+      rotation={[Math.PI * 0.25, 0, 0]}
+    />
+  );
+};
 
 const Enhanced3DAgent = ({
   agent,
@@ -108,66 +131,95 @@ const Enhanced3DAgent = ({
     }
   };
 
-  // Enhanced 3D models with complex animations
+  // Enhanced 3D models with GLB files for professional appearance
   const getEnhanced3DModel = useCallback(() => {
     const baseColor = getAgentColor(agent.agent_type);
     const emissiveColor = new THREE.Color(baseColor).multiplyScalar(0.35);
 
-    const commonMaterial = {
-      color: baseColor,
-      emissive: emissiveColor,
-      emissiveIntensity: hovered ? 0.6 : 0.3,
-      metalness: 0.9,
-      roughness: 0.1,
-      transparent: true,
-      opacity: hovered ? 1.0 : 0.95,
-    };
+    // Check if this is a payment terminal (use payment terminal model)
+    const isPaymentTerminal =
+      agent.agent_type === "payment_terminal" ||
+      agent.agent_type === "trailing_payment_terminal" ||
+      agent.agent_type === "Payment Terminal" ||
+      agent.agent_type === "Trailing Payment Terminal" ||
+      agent.object_type === "payment_terminal" ||
+      agent.object_type === "trailing_payment_terminal";
 
-    const time = animationTime.current;
+    console.log(`🤖 Enhanced3DAgent rendering for ${agent.name}:`, {
+      agent_type: agent.agent_type,
+      object_type: agent.object_type,
+      isPaymentTerminal,
+      willUseModel: isPaymentTerminal
+        ? "pax-a920_highpoly"
+        : "humanoid_robot_face",
+    });
 
-    switch (agent.agent_type) {
-      case "intelligent_assistant":
-      case "Intelligent Assistant":
-        return (
-          <group>
-            {/* Core cube with animated rotation */}
-            <Box ref={meshRef} args={[1.0, 1.0, 1.0]} position={[0, 0, 0]}>
-              <meshStandardMaterial {...commonMaterial} />
-            </Box>
+    // Use GLB models for all agents
+    if (isPaymentTerminal) {
+      // Payment Terminal - use PAX A920 model
+      return (
+        <group ref={meshRef}>
+          <PaymentTerminalModel hovered={hovered} />
 
-            {/* Animated ring system */}
-            <Torus
-              args={[0.8, 0.12, 8, 24]}
-              position={[0, 0, 0]}
-              rotation={[Math.PI / 4, time * 0.3, 0]}
-            >
-              <meshStandardMaterial
-                {...commonMaterial}
-                transparent
-                opacity={0.6}
-              />
-            </Torus>
+          {/* Add ambient glow for payment terminals */}
+          <pointLight
+            position={[0, 0.5, 0]}
+            color="#ffa500"
+            intensity={hovered ? 1.2 : 0.6}
+            distance={3}
+          />
 
-            <Torus
-              args={[0.6, 0.08, 6, 16]}
-              position={[0, 0, 0]}
-              rotation={[Math.PI / 3, -time * 0.4, Math.PI / 4]}
-            >
-              <meshStandardMaterial
-                {...commonMaterial}
-                transparent
-                opacity={0.5}
-              />
-            </Torus>
+          {/* Payment indicator particles when hovered */}
+          {hovered &&
+            [...Array(8)].map((_, i) => {
+              const angle = (i / 8) * Math.PI * 2 + animationTime.current * 2;
+              const radius = 1.5;
+              return (
+                <Sphere
+                  key={i}
+                  args={[0.05]}
+                  position={[
+                    Math.cos(angle) * radius,
+                    Math.sin(animationTime.current * 3 + i) * 0.3,
+                    Math.sin(angle) * radius,
+                  ]}
+                >
+                  <meshStandardMaterial
+                    color="#ffa500"
+                    emissive="#ffa500"
+                    emissiveIntensity={1.2}
+                    transparent
+                    opacity={0.8}
+                  />
+                </Sphere>
+              );
+            })}
+        </group>
+      );
+    } else {
+      // All other agents - use Robotic Face model
+      return (
+        <group ref={meshRef}>
+          <RoboticFaceModel hovered={hovered} />
 
-            {/* Data particles orbiting */}
-            {[...Array(6)].map((_, i) => {
-              const orbitAngle = (i / 6) * Math.PI * 2 + time * 0.5;
+          {/* Add ambient glow for robotic agents */}
+          <pointLight
+            position={[0, 0.5, 0]}
+            color={baseColor}
+            intensity={hovered ? 1.0 : 0.5}
+            distance={3}
+          />
+
+          {/* Data particles orbiting when hovered */}
+          {hovered &&
+            [...Array(6)].map((_, i) => {
+              const orbitAngle =
+                (i / 6) * Math.PI * 2 + animationTime.current * 0.5;
               const orbitRadius = 1.2;
               return (
                 <Sphere
                   key={i}
-                  args={[0.08]}
+                  args={[0.06]}
                   position={[
                     Math.cos(orbitAngle) * orbitRadius,
                     Math.sin(orbitAngle * 2) * 0.3,
@@ -175,496 +227,25 @@ const Enhanced3DAgent = ({
                   ]}
                 >
                   <meshStandardMaterial
-                    color="#ffffff"
-                    emissive="#ffffff"
-                    emissiveIntensity={0.8}
+                    color={baseColor}
+                    emissive={baseColor}
+                    emissiveIntensity={0.9}
+                    transparent
+                    opacity={0.7}
                   />
                 </Sphere>
               );
             })}
-          </group>
-        );
-
-      case "content_creator":
-      case "Content Creator":
-        return (
-          <group>
-            {/* Dynamic crystal formation */}
-            <Box ref={meshRef} args={[0.9, 1.6, 0.9]} position={[0, 0, 0]}>
-              <meshStandardMaterial {...commonMaterial} />
-            </Box>
-
-            {/* Rotating crystal segments */}
-            <Box
-              args={[1.6, 0.9, 0.9]}
-              position={[0, 0, 0]}
-              rotation={[0, 0, Math.PI / 4 + time * 0.2]}
-            >
-              <meshStandardMaterial
-                {...commonMaterial}
-                transparent
-                opacity={0.7}
-              />
-            </Box>
-
-            <Box
-              args={[0.9, 0.9, 1.6]}
-              position={[0, 0, 0]}
-              rotation={[Math.PI / 4 + time * 0.3, 0, 0]}
-            >
-              <meshStandardMaterial
-                {...commonMaterial}
-                transparent
-                opacity={0.5}
-              />
-            </Box>
-
-            {/* Creative sparks */}
-            {[...Array(8)].map((_, i) => (
-              <Sphere
-                key={i}
-                args={[0.06]}
-                position={[
-                  Math.cos(time * 2 + i) * 1.8,
-                  Math.sin(time * 1.5 + i) * 0.8,
-                  Math.sin(time * 2 + i) * 1.8,
-                ]}
-              >
-                <meshStandardMaterial
-                  color={
-                    ["#ff6b6b", "#4ecdc4", "#45b7d1", "#96ceb4", "#ffeaa7"][
-                      i % 5
-                    ]
-                  }
-                  emissiveIntensity={1.2}
-                />
-              </Sphere>
-            ))}
-          </group>
-        );
-
-      case "local_services":
-      case "Local Services":
-        return (
-          <group>
-            {/* Multi-tier service tower */}
-            <Cylinder
-              ref={meshRef}
-              args={[0.6, 0.8, 1.6, 12]}
-              position={[0, 0, 0]}
-            >
-              <meshStandardMaterial {...commonMaterial} />
-            </Cylinder>
-
-            <Cylinder args={[0.4, 0.6, 0.8, 10]} position={[0, 1.0, 0]}>
-              <meshStandardMaterial {...commonMaterial} />
-            </Cylinder>
-
-            <Cylinder args={[0.2, 0.4, 0.4, 8]} position={[0, 1.6, 0]}>
-              <meshStandardMaterial {...commonMaterial} />
-            </Cylinder>
-
-            {/* Communication array */}
-            <Torus
-              args={[0.5, 0.06, 8, 16]}
-              position={[0, 2.0, 0]}
-              rotation={[Math.PI / 2, 0, time]}
-            >
-              <meshStandardMaterial
-                {...commonMaterial}
-                emissiveIntensity={0.8}
-              />
-            </Torus>
-
-            {/* Service status lights */}
-            {[...Array(8)].map((_, i) => {
-              const angle = (i / 8) * Math.PI * 2;
-              const blinkOffset = i * 0.5;
-              const isActive = Math.sin(time * 3 + blinkOffset) > 0;
-              return (
-                <Sphere
-                  key={i}
-                  args={[0.06]}
-                  position={[
-                    Math.cos(angle) * 0.7,
-                    -0.4,
-                    Math.sin(angle) * 0.7,
-                  ]}
-                >
-                  <meshStandardMaterial
-                    color={isActive ? "#00ff00" : baseColor}
-                    emissive={isActive ? "#00ff00" : baseColor}
-                    emissiveIntensity={isActive ? 1.5 : 0.3}
-                  />
-                </Sphere>
-              );
-            })}
-          </group>
-        );
-
-      case "tutor_teacher":
-      case "study_buddy":
-      case "Tutor/Teacher":
-      case "Study Buddy":
-        return (
-          <group>
-            {/* Knowledge repository base */}
-            <Box ref={meshRef} args={[1.4, 0.4, 1.1]} position={[0, 0, 0]}>
-              <meshStandardMaterial {...commonMaterial} />
-            </Box>
-
-            {/* Floating knowledge pages */}
-            {[...Array(5)].map((_, i) => (
-              <Box
-                key={i}
-                args={[1.2, 0.08, 0.9]}
-                position={[0, 0.5 + i * 0.25, 0]}
-                rotation={[
-                  0,
-                  Math.sin(time * 0.8 + i) * 0.15,
-                  Math.sin(time * 0.6 + i) * 0.08,
-                ]}
-              >
-                <meshStandardMaterial
-                  {...commonMaterial}
-                  transparent
-                  opacity={0.8 - i * 0.12}
-                />
-              </Box>
-            ))}
-
-            {/* Wisdom symbols */}
-            <Sphere args={[0.08]} position={[1.0, 0.8, 0.4]}>
-              <meshStandardMaterial color="#ffffff" emissiveIntensity={1.0} />
-            </Sphere>
-            <Box
-              args={[0.1, 0.1, 0.1]}
-              position={[-0.9, 0.6, -0.3]}
-              rotation={[Math.PI / 4, Math.PI / 4, 0]}
-            >
-              <meshStandardMaterial color="#ffff00" emissiveIntensity={0.8} />
-            </Box>
-            <Torus
-              args={[0.08, 0.02, 6, 12]}
-              position={[0.7, 1.2, -0.5]}
-              rotation={[Math.PI / 2, time, 0]}
-            >
-              <meshStandardMaterial color="#00ffff" emissiveIntensity={0.9} />
-            </Torus>
-          </group>
-        );
-
-      case "game_agent":
-      case "Game Agent":
-        return (
-          <group>
-            {/* Core gaming polyhedron */}
-            <Box
-              ref={meshRef}
-              args={[1.2, 1.2, 1.2]}
-              position={[0, 0, 0]}
-              rotation={[
-                Math.PI / 4 + time * 0.1,
-                Math.PI / 4 + time * 0.15,
-                time * 0.05,
-              ]}
-            >
-              <meshStandardMaterial {...commonMaterial} />
-            </Box>
-
-            {/* Game element satellites */}
-            {[...Array(6)].map((_, i) => {
-              const gameColors = [
-                "#ff4757",
-                "#2ed573",
-                "#1e90ff",
-                "#ffa502",
-                "#ff6b81",
-                "#a4b0be",
-              ];
-              const orbitAngle = (i / 6) * Math.PI * 2 + time * (0.8 + i * 0.1);
-              const orbitRadius = 1.8;
-              const heightOffset = Math.sin(time * 2 + i) * 0.5;
-
-              return (
-                <group key={i} rotation={[0, orbitAngle, 0]}>
-                  <Sphere
-                    args={[0.15]}
-                    position={[orbitRadius, heightOffset, 0]}
-                  >
-                    <meshStandardMaterial
-                      color={gameColors[i]}
-                      emissive={gameColors[i]}
-                      emissiveIntensity={0.9}
-                    />
-                  </Sphere>
-
-                  {/* Trail effect */}
-                  <Sphere
-                    args={[0.08]}
-                    position={[orbitRadius * 0.8, heightOffset * 0.8, 0]}
-                  >
-                    <meshStandardMaterial
-                      color={gameColors[i]}
-                      transparent
-                      opacity={0.4}
-                      emissiveIntensity={0.5}
-                    />
-                  </Sphere>
-                </group>
-              );
-            })}
-
-            {/* Central energy core */}
-            <Sphere args={[0.4]} position={[0, 0, 0]}>
-              <meshStandardMaterial
-                {...commonMaterial}
-                emissiveIntensity={1.2 + Math.sin(time * 4) * 0.3}
-              />
-            </Sphere>
-          </group>
-        );
-
-      case "payment_terminal":
-      case "trailing_payment_terminal":
-      case "Payment Terminal":
-        return (
-          <group>
-            {/* Payment kiosk structure */}
-            <Box ref={meshRef} args={[0.8, 1.4, 0.6]} position={[0, 0, 0]}>
-              <meshStandardMaterial {...commonMaterial} />
-            </Box>
-
-            {/* Screen */}
-            <Box args={[0.6, 0.4, 0.1]} position={[0, 0.3, 0.35]}>
-              <meshStandardMaterial
-                color="#000000"
-                emissive="#00ff00"
-                emissiveIntensity={0.5}
-              />
-            </Box>
-
-            {/* Payment indicator lights */}
-            {[...Array(4)].map((_, i) => (
-              <Sphere
-                key={i}
-                args={[0.05]}
-                position={[0.3 - i * 0.2, -0.5, 0.35]}
-              >
-                <meshStandardMaterial
-                  color="#00ff00"
-                  emissive="#00ff00"
-                  emissiveIntensity={Math.sin(time * 3 + i) > 0 ? 1.0 : 0.2}
-                />
-              </Sphere>
-            ))}
-          </group>
-        );
-
-      case "bus_stop_agent":
-      case "Bus Stop Agent":
-        return (
-          <group>
-            {/* Bus stop pole */}
-            <Cylinder
-              ref={meshRef}
-              args={[0.1, 0.1, 2.0, 8]}
-              position={[0, 0, 0]}
-            >
-              <meshStandardMaterial {...commonMaterial} />
-            </Cylinder>
-
-            {/* Sign board */}
-            <Box args={[1.2, 0.6, 0.1]} position={[0, 0.8, 0]}>
-              <meshStandardMaterial {...commonMaterial} />
-            </Box>
-
-            {/* Bus arrival indicator */}
-            <Sphere args={[0.1]} position={[0, 0.8, 0.15]}>
-              <meshStandardMaterial
-                color="#ff0000"
-                emissive="#ff0000"
-                emissiveIntensity={Math.sin(time * 4) > 0 ? 1.0 : 0.3}
-              />
-            </Sphere>
-          </group>
-        );
-
-      case "home_security":
-      case "Home Security":
-        return (
-          <group>
-            {/* Security camera dome */}
-            <Sphere ref={meshRef} args={[0.6]} position={[0, 0, 0]}>
-              <meshStandardMaterial {...commonMaterial} />
-            </Sphere>
-
-            {/* Camera lens */}
-            <Cylinder args={[0.2, 0.25, 0.4, 12]} position={[0, 0, 0.5]}>
-              <meshStandardMaterial color="#000000" />
-            </Cylinder>
-
-            {/* Security lights */}
-            {[...Array(6)].map((_, i) => {
-              const angle = (i / 6) * Math.PI * 2;
-              return (
-                <Sphere
-                  key={i}
-                  args={[0.06]}
-                  position={[Math.cos(angle) * 0.7, 0, Math.sin(angle) * 0.7]}
-                >
-                  <meshStandardMaterial
-                    color="#ff0000"
-                    emissive="#ff0000"
-                    emissiveIntensity={Math.sin(time * 2 + i) > 0 ? 0.8 : 0.1}
-                  />
-                </Sphere>
-              );
-            })}
-          </group>
-        );
-
-      case "world_builder_3d":
-      case "World Builder 3D":
-        return (
-          <group>
-            {/* 3D construction blocks */}
-            <Box ref={meshRef} args={[0.8, 0.8, 0.8]} position={[0, 0, 0]}>
-              <meshStandardMaterial {...commonMaterial} />
-            </Box>
-
-            <Box args={[0.6, 0.6, 0.6]} position={[0.7, 0.7, 0.7]}>
-              <meshStandardMaterial
-                {...commonMaterial}
-                transparent
-                opacity={0.8}
-              />
-            </Box>
-
-            <Box args={[0.4, 0.4, 0.4]} position={[-0.6, 0.6, -0.6]}>
-              <meshStandardMaterial
-                {...commonMaterial}
-                transparent
-                opacity={0.6}
-              />
-            </Box>
-
-            {/* Construction grid */}
-            {[...Array(3)].map((_, i) => (
-              <Box
-                key={i}
-                args={[0.05, 2.0, 0.05]}
-                position={[i * 0.5 - 0.5, 0, 0]}
-                rotation={[0, 0, Math.sin(time + i) * 0.1]}
-              >
-                <meshStandardMaterial
-                  color="#ffffff"
-                  transparent
-                  opacity={0.3}
-                />
-              </Box>
-            ))}
-          </group>
-        );
-
-      case "my_ghost":
-      case "My Ghost":
-        return (
-          <group>
-            {/* Ghost body */}
-            <Sphere ref={meshRef} args={[0.7]} position={[0, 0, 0]}>
-              <meshStandardMaterial
-                {...commonMaterial}
-                transparent
-                opacity={0.6}
-              />
-            </Sphere>
-
-            {/* Ghostly tail */}
-            <Sphere args={[0.4]} position={[0, -0.8, 0]}>
-              <meshStandardMaterial
-                {...commonMaterial}
-                transparent
-                opacity={0.4}
-              />
-            </Sphere>
-
-            <Sphere args={[0.2]} position={[0, -1.2, 0]}>
-              <meshStandardMaterial
-                {...commonMaterial}
-                transparent
-                opacity={0.2}
-              />
-            </Sphere>
-
-            {/* Ethereal particles */}
-            {[...Array(10)].map((_, i) => (
-              <Sphere
-                key={i}
-                args={[0.04]}
-                position={[
-                  Math.cos(time * 2 + i) * 1.2,
-                  Math.sin(time * 1.5 + i) * 0.8,
-                  Math.sin(time * 2 + i) * 1.2,
-                ]}
-              >
-                <meshStandardMaterial
-                  color={baseColor}
-                  transparent
-                  opacity={0.8}
-                  emissiveIntensity={0.8}
-                />
-              </Sphere>
-            ))}
-          </group>
-        );
-
-      case "real_estate_broker":
-      case "Real Estate Broker":
-        return (
-          <group>
-            {/* House structure */}
-            <Box ref={meshRef} args={[1.0, 0.8, 1.0]} position={[0, -0.2, 0]}>
-              <meshStandardMaterial {...commonMaterial} />
-            </Box>
-
-            {/* Roof */}
-            <Box
-              args={[1.2, 0.4, 1.2]}
-              position={[0, 0.4, 0]}
-              rotation={[0, Math.PI / 4, 0]}
-            >
-              <meshStandardMaterial {...commonMaterial} />
-            </Box>
-
-            {/* Property markers */}
-            {[...Array(4)].map((_, i) => {
-              const angle = (i / 4) * Math.PI * 2;
-              return (
-                <Cylinder
-                  key={i}
-                  args={[0.05, 0.05, 0.8, 6]}
-                  position={[Math.cos(angle) * 1.5, 0, Math.sin(angle) * 1.5]}
-                >
-                  <meshStandardMaterial
-                    color="#ffff00"
-                    emissive="#ffff00"
-                    emissiveIntensity={0.5}
-                  />
-                </Cylinder>
-              );
-            })}
-          </group>
-        );
-
-      default:
-        return (
-          <Box ref={meshRef} args={[1.0, 1.0, 1.0]} position={[0, 0, 0]}>
-            <meshStandardMaterial {...commonMaterial} />
-          </Box>
-        );
+        </group>
+      );
     }
-  }, [agent.agent_type, hovered, animationTime.current]);
+  }, [
+    agent.agent_type,
+    agent.object_type,
+    agent.name,
+    hovered,
+    animationTime.current,
+  ]);
 
   // Handle click event
   const handleClick = useCallback(

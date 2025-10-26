@@ -16,6 +16,7 @@ import CameraTest from "./components/CameraTest";
 import UnifiedWalletConnect from "./components/UnifiedWalletConnect";
 import AgentFeeValidationDashboard from "./components/AgentFeeValidationDashboard";
 import SimpleTest from "./components/SimpleTest"; // Add simple test component
+import SimpleDebugComponent from "./components/SimpleDebugComponent"; // TEMPORARY DEBUG
 import VirtualTerminal from "./components/VirtualTerminal"; // NEW: Dynamic payment terminal
 import PaymentRedirect from "./components/PaymentRedirect"; // NEW: Payment redirect page
 import PaymentRedirectSimple from "./components/PaymentRedirectSimple"; // Simple test version
@@ -57,6 +58,8 @@ function AppContent() {
       <Routes>
         {/* Debug Route for Simple Test */}
         <Route path="/test" element={<SimpleTest />} />
+        {/* TEMPORARY DEBUG ROUTE */}
+        <Route path="/debug" element={<SimpleDebugComponent />} />
         {/* New Agent Marketplace Route (Cube-Ready) */}
         <Route path="/new-marketplace" element={<AgentMarketplace />} />
         {/* Main Landing Screen Route */}
