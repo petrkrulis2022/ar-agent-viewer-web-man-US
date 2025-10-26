@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear Browser Cache - AR Viewer</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        h1 { text-align: center; margin-bottom: 30px; }
+        .step {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 10px;
+            border-left: 4px solid #4CAF50;
+        }
+        .step-number {
+            display: inline-block;
+            background: #4CAF50;
+            color: white;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 25px;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        .btn {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+        }
+        .warning {
+            background: rgba(255, 193, 7, 0.2);
+            border-left: 4px solid #FFC107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background: rgba(76, 175, 80, 0.2);
+            border-left: 4px solid #4CAF50;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .env-check {
+            font-family: 'Courier New', monospace;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+        .key-display {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        .error {
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 Browser Cache Clearing Tool</h1>
+        
+        <div class="warning">
+            <strong>⚠️ Issue Detected:</strong> Browser is using cached legacy API keys despite server-side updates.
+            <br>The console shows "Legacy API keys are disabled" errors consistently.
+        </div>
+
+        <div class="step">
+            <span class="step-number">1</span>
+            <strong>Check Current Environment Variables</strong>
+            <div class="env-check" id="envCheck">
+                Loading environment variables...
+            </div>
+            <button class="btn" onclick="checkEnvironment()">🔍 Check Environment</button>
+        </div>
+
+        <div class="step">
+            <span class="step-number">2</span>
+            <strong>Clear Browser Storage</strong>
+            <p>Clear all local storage, session storage, and cached data.</p>
+            <button class="btn" onclick="clearBrowserStorage()">🗑️ Clear All Storage</button>
+        </div>
+
+        <div class="step">
+            <span class="step-number">3</span>
+            <strong>Clear Service Worker Cache</strong>
+            <p>Clear any service worker cached API responses.</p>
+            <button class="btn" onclick="clearServiceWorkerCache()">⚙️ Clear SW Cache</button>
+        </div>
+
+        <div class="step">
+            <span class="step-number">4</span>
+            <strong>Test Database Connection</strong>
+            <p>Test if the new API keys work in browser context.</p>
+            <button class="btn" onclick="testDatabaseConnection()">🔗 Test Connection</button>
+            <div id="connectionResult"></div>
+        </div>
+
+        <div class="step">
+            <span class="step-number">5</span>
+            <strong>Force Hard Refresh</strong>
+            <p>Perform a hard refresh to bypass all caches.</p>
+            <button class="btn" onclick="forceHardRefresh()">🔄 Hard Refresh</button>
+        </div>
+
+        <div class="success" style="display: none;" id="successMessage">
+            <strong>✅ Success!</strong> Browser cache cleared and new API keys loaded.
+            <br><a href="http://localhost:5173" style="color: #4CAF50;">Return to AR Viewer</a>
+        </div>
+
+        <div id="output"></div>
+    </div>
+
+    <script>
+        const log = (message, type = 'info') => {
+            const output = document.getElementById('output');
+            const div = document.createElement('div');
+            div.className = type === 'error' ? 'error' : 'key-display';
+            div.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            output.appendChild(div);
+            console.log(message);
+        };
+
+        const checkEnvironment = () => {
+            const envCheck = document.getElementById('envCheck');
+            const env = {
+                VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL || 'Not found',
+                VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY || 'Not found',
+                // Check if keys are the new format
+                isNewFormat: (import.meta.env.VITE_SUPABASE_ANON_KEY || '').startsWith('sb_')
+            };
+
+            envCheck.innerHTML = `
+URL: ${env.VITE_SUPABASE_URL}
+ANON_KEY: ${env.VITE_SUPABASE_ANON_KEY ? env.VITE_SUPABASE_ANON_KEY.substring(0, 20) + '...' : 'Not found'}
+New Format: ${env.isNewFormat ? '✅ YES' : '❌ NO - Still using legacy format!'}
+            `;
+
+            if (!env.isNewFormat) {
+                log('❌ Environment still has legacy API keys!', 'error');
+            } else {
+                log('✅ Environment has new sb_ prefixed API keys');
+            }
+        };
+
+        const clearBrowserStorage = () => {
+            try {
+                // Clear localStorage
+                localStorage.clear();
+                log('✅ localStorage cleared');
+
+                // Clear sessionStorage
+                sessionStorage.clear();
+                log('✅ sessionStorage cleared');
+
+                // Clear IndexedDB
+                if ('indexedDB' in window) {
+                    indexedDB.databases().then(databases => {
+                        databases.forEach(db => {
+                            indexedDB.deleteDatabase(db.name);
+                        });
+                    });
+                    log('✅ IndexedDB cleared');
+                }
+
+                log('✅ All browser storage cleared');
+            } catch (error) {
+                log(`❌ Error clearing storage: ${error.message}`, 'error');
+            }
+        };
+
+        const clearServiceWorkerCache = async () => {
+            try {
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (let registration of registrations) {
+                        await registration.unregister();
+                    }
+                    log('✅ Service workers unregistered');
+                }
+
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(
+                        cacheNames.map(cacheName => caches.delete(cacheName))
+                    );
+                    log('✅ All caches cleared');
+                }
+            } catch (error) {
+                log(`❌ Error clearing service worker cache: ${error.message}`, 'error');
+            }
+        };
+
+        const testDatabaseConnection = async () => {
+            const resultDiv = document.getElementById('connectionResult');
+            resultDiv.innerHTML = '<p>Testing connection...</p>';
+            
+            try {
+                // Test with current environment variables
+                const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+                const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+                if (!supabaseUrl || !supabaseKey) {
+                    throw new Error('Missing Supabase environment variables');
+                }
+
+                log(`Testing with URL: ${supabaseUrl}`);
+                log(`Testing with Key: ${supabaseKey.substring(0, 20)}...`);
+
+                const response = await fetch(`${supabaseUrl}/rest/v1/deployed_objects?select=id&limit=1`, {
+                    headers: {
+                        'apikey': supabaseKey,
+                        'Authorization': `Bearer ${supabaseKey}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    log('✅ Database connection successful!');
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <strong>✅ Connection Successful!</strong>
+                            <br>Status: ${response.status}
+                            <br>Data: ${JSON.stringify(data, null, 2)}
+                        </div>
+                    `;
+                    document.getElementById('successMessage').style.display = 'block';
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+            } catch (error) {
+                log(`❌ Database connection failed: ${error.message}`, 'error');
+                resultDiv.innerHTML = `
+                    <div class="warning">
+                        <strong>❌ Connection Failed!</strong>
+                        <br>Error: ${error.message}
+                    </div>
+                `;
+            }
+        };
+
+        const forceHardRefresh = () => {
+            log('🔄 Performing hard refresh...');
+            // Clear all possible caches before refresh
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => {
+                        caches.delete(name);
+                    });
+                });
+            }
+            
+            // Force reload with cache bypass
+            window.location.reload(true);
+        };
+
+        // Auto-check environment on load
+        window.addEventListener('load', () => {
+            checkEnvironment();
+            log('🚀 Cache clearing tool loaded');
+        });
+    </script>
+</body>
+</html>
