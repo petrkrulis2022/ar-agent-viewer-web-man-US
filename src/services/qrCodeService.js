@@ -102,12 +102,7 @@ export const getActiveQRCodes = async (userLocation, radiusMeters = 100) => {
 
     const { data, error } = await supabase
       .from("ar_qr_codes")
-      .select(
-        `
-        *,
-        agent:agents(id, name, agent_type)
-      `
-      )
+      .select("*")
       .eq("status", QR_CODE_STATUS.ACTIVE)
       .gt("expiration_time", new Date().toISOString());
 

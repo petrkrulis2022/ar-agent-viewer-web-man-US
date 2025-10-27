@@ -14,12 +14,23 @@ import { createVirtualCard, topUpCard } from "../services/revolutCardService";
  * - Use cards for payments
  */
 export function VirtualCardManager({
+  isOpen = false,
   agentId,
   agentName = "AgentSphere Agent",
   paymentAmount = 10.0, // 💰 Dynamic payment amount from e-shop/on-ramp or agent fee
   onClose,
   onPaymentComplete,
 }) {
+  console.log("🎴 VirtualCardManager render - isOpen:", isOpen);
+
+  // Don't render if not open
+  if (!isOpen) {
+    console.log("🎴 VirtualCardManager NOT OPEN - returning null");
+    return null;
+  }
+
+  console.log("🎴 VirtualCardManager IS OPEN - rendering modal");
+
   // Card colors for visual variety (same number, different gradients)
   const CARD_COLORS = [
     { from: "#0075EB", to: "#00D4FF", name: "Ocean Blue" },
@@ -488,13 +499,81 @@ export function VirtualCardManager({
             max-width: 400px;
             margin: 0 auto;
           }
+          
+          .virtual-card-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.75);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            padding: 20px;
+          }
+          
+          .virtual-card-modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+          }
+          
+          .virtual-card-close-button {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.1);
+            border: none;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            z-index: 10001;
+          }
+          
+          .virtual-card-close-button:hover {
+            background: rgba(0, 0, 0, 0.2);
+            transform: scale(1.1);
+          }
         `}
       </style>
 
-      <div className="virtual-card-manager">
-        {view === "selector" && renderCardSelector()}
-        {view === "topup" && renderTopUp()}
-        {view === "payment" && renderPaymentReady()}
+      <div
+        className="virtual-card-modal-overlay"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            onClose?.();
+          }
+        }}
+      >
+        <div className="virtual-card-modal-content">
+          <button
+            className="virtual-card-close-button"
+            onClick={onClose}
+            aria-label="Close"
+          >
+            ✕
+          </button>
+
+          <div className="virtual-card-manager">
+            {view === "selector" && renderCardSelector()}
+            {view === "topup" && renderTopUp()}
+            {view === "payment" && renderPaymentReady()}
+          </div>
+        </div>
       </div>
 
       {/* Revolut Desktop Payment Modal */}

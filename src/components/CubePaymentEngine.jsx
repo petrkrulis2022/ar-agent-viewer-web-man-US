@@ -14,7 +14,6 @@ import QRCode from "react-qr-code";
 import IntermediatePaymentModal from "./IntermediatePaymentModal"; // Transaction validation modal
 import RevolutBankQRModal from "./RevolutBankQRModal"; // Revolut Bank QR modal
 import { VirtualCardManager } from "./VirtualCardManager"; // NEW: Virtual Card Manager with card selector
-import CryptoOnboardingModal from "./CryptoOnboardingModal"; // 🆕 Crypto onboarding for cross-platform payments
 import { usePaymentStatus } from "../hooks/usePaymentStatus"; // Real-time payment status hook
 
 // AgentSphere Payment Configuration Reader
@@ -116,6 +115,12 @@ const PaymentCube = ({
   isVisible = true,
   isInitializing = false,
 }) => {
+  console.log("🎮 PaymentCube RENDERING with:", {
+    actualEnabledMethods,
+    isInitializing,
+    handleFaceClickExists: !!handleFaceClick,
+  });
+
   const meshRef = useRef();
   const [hoveredFace, setHoveredFace] = useState(null);
   const [selectedFace, setSelectedFace] = useState(0);
@@ -1700,8 +1705,21 @@ const CubePaymentEngine = ({
     loadPaymentConfig();
   }, [isOpen, agent?.id]);
 
+  // Debug: Track rendering state
+  useEffect(() => {
+    console.log("🎲 RENDER STATE UPDATE:", {
+      currentView,
+      isLoadingConfig,
+      isInitializing,
+      isOpen,
+      cubeWillRender: currentView === "cube" && !isLoadingConfig,
+    });
+  }, [currentView, isLoadingConfig, isInitializing, isOpen]);
+
   // Handle face selection
   const handleFaceSelected = async (methodKey, methodConfig) => {
+    console.log("🔵 handleFaceSelected ENTERED:", methodKey, methodConfig);
+
     // Prevent auto-selection during initialization
     if (isInitializing) {
       console.log("⏳ Cube initializing, ignoring face selection");
@@ -1712,14 +1730,19 @@ const CubePaymentEngine = ({
     setSelectedMethod({ key: methodKey, config: methodConfig });
 
     if (methodKey === "crypto_qr") {
+      console.log("📍 Routing to: handleCryptoQRSelection");
       await handleCryptoQRSelection();
     } else if (methodKey === "btc_payments") {
+      console.log("📍 Routing to: handleBTCPayments");
       handleBTCPayments();
     } else if (methodKey === "bank_qr") {
+      console.log("📍 Routing to: handleBankQRSelection");
       await handleBankQRSelection();
     } else if (methodKey === "virtual_card") {
+      console.log("📍 Routing to: handleVirtualCardSelection");
       await handleVirtualCardSelection();
     } else {
+      console.log("📍 Showing Coming Soon alert for:", methodKey);
       // Show "Coming Soon" for other methods (voice_pay, sound_pay)
       alert(
         `${methodConfig.text} - Coming Soon!\n\nThis payment method will be available in the next update.\n\nFor now, please use Crypto QR, Bank QR, or Virtual Card payments.`
@@ -1938,7 +1961,9 @@ const CubePaymentEngine = ({
       return;
     }
 
+    console.log("💳💳💳 VIRTUAL CARD SELECTION TRIGGERED!");
     console.log("💳 Opening Virtual Card Manager...");
+    console.log("💳 showVirtualCardModal before:", showVirtualCardModal);
 
     // 💰 Calculate dynamic payment amount
     const amount =
@@ -1960,6 +1985,7 @@ const CubePaymentEngine = ({
 
       // Open the Virtual Card modal with new manager
       setShowVirtualCardModal(true);
+      console.log("💳 showVirtualCardModal set to TRUE");
       setRevolutPaymentStatus("processing");
     } catch (error) {
       console.error("❌ Error opening Virtual Card Manager:", error);
@@ -2251,6 +2277,9 @@ const CubePaymentEngine = ({
 
   // Handle individual face clicks - for button-style interactions
   const handleFaceClick = async (method, faceIndex) => {
+    console.log(`🎯🎯🎯 handleFaceClick CALLED: ${method} (face ${faceIndex})`);
+    console.log(`   - isInitializing: ${isInitializing}`);
+
     // Prevent auto-selection during initialization
     if (isInitializing) {
       console.log(`⏳ Cube initializing, ignoring face click: ${method}`);
@@ -2268,6 +2297,7 @@ const CubePaymentEngine = ({
       return;
     }
 
+    console.log(`➡️ Calling handleFaceSelected for: ${method}`);
     // For other methods, use existing handleFaceSelected logic
     await handleFaceSelected(method, { text: method });
   };
@@ -2339,7 +2369,14 @@ const CubePaymentEngine = ({
           />
 
           {/* Render current view */}
-          {currentView === "cube" && !isLoadingConfig && (
+          {(() => {
+            console.log("🎲 CUBE RENDER CHECK:", {
+              currentView,
+              isLoadingConfig,
+              shouldRender: currentView === "cube" && !isLoadingConfig,
+            });
+            return currentView === "cube" && !isLoadingConfig;
+          })() && (
             <PaymentCube
               agent={agent}
               onFaceSelected={handleFaceSelected}
@@ -2438,9 +2475,15 @@ const CubePaymentEngine = ({
           agentData={agent}
         />
 
-        {/* Crypto Onboarding Modal - Cross-Platform Payments Branch */}
-        {showVirtualCardModal && (
-          <CryptoOnboardingModal
+        {/* Virtual Card Manager - Real Virtual Card Payment System */}
+        {(() => {
+          console.log(
+            "🔍 RENDER CHECK - showVirtualCardModal:",
+            showVirtualCardModal
+          );
+          return showVirtualCardModal;
+        })() && (
+          <VirtualCardManager
             isOpen={showVirtualCardModal}
             onClose={handleVirtualCardClose}
             agentName={agent?.name || "AgentSphere Agent"}
@@ -2451,14 +2494,15 @@ const CubePaymentEngine = ({
               10.0
             }
             agentToken="USDC"
+            agentId={agent?.id}
             onPaymentComplete={(result) => {
-              console.log("✅ Crypto onboarding payment completed:", result);
+              console.log("✅ Virtual card payment completed:", result);
               // Close virtual card modal
               setShowVirtualCardModal(false);
               // Call parent's onPaymentComplete to close cube and return to AR viewer
               if (onPaymentComplete) {
                 onPaymentComplete({
-                  method: "crypto-onramp",
+                  method: "virtual-card",
                   amount: result.amount,
                   token: result.token,
                   wallet: result.wallet,
@@ -2467,8 +2511,8 @@ const CubePaymentEngine = ({
               }
             }}
             onSwitchToCubePay={() => {
-              console.log("🔄 Switching from crypto onboarding to CubePay...");
-              // Close crypto modal
+              console.log("🔄 Switching from virtual card to CubePay...");
+              // Close virtual card modal
               setShowVirtualCardModal(false);
               // Close the entire cube payment engine to return to AR viewer
               // AR viewer will show the transaction result

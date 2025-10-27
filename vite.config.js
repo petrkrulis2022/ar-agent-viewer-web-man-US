@@ -18,7 +18,6 @@ export default defineConfig({
   define: {
     global: "globalThis",
     "process.env": {},
-    Buffer: "Buffer",
   },
   build: {
     rollupOptions: {
@@ -31,7 +30,10 @@ export default defineConfig({
       // Node.js global to browser globalThis
       define: {
         global: "globalThis",
+        Buffer: "Buffer",
       },
+      // Inject Buffer polyfill
+      inject: ["./agentsphere-polyfills.js"],
     },
   },
   server: {
