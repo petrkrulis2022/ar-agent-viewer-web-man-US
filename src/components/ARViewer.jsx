@@ -61,7 +61,15 @@ const ARViewer = () => {
   const [paymentContext, setPaymentContext] = useState(null);
   const [showOnlyTerminals, setShowOnlyTerminals] = useState(false);
 
-  // 🔍 Agent Filtering State - Default to "My Payment Terminals"
+  // � Deployment Mode
+  const [deploymentMode, setDeploymentMode] = useState(false);
+  const [deploymentData, setDeploymentData] = useState(null);
+  const [placementPosition, setPlacementPosition] = useState(null);
+  const [isDeploying, setIsDeploying] = useState(false);
+  const [deploymentError, setDeploymentError] = useState(null);
+  const [deploymentSuccess, setDeploymentSuccess] = useState(false);
+
+  // �🔍 Agent Filtering State - Default to "My Payment Terminals"
   const [agentFilters, setAgentFilters] = useState({
     allAgents: false,
     noAgents: false,
@@ -91,6 +99,7 @@ const ARViewer = () => {
     connectionStatus,
     getNearAgents,
     refreshConnection,
+    deployAgent,
   } = useDatabase();
 
   const isMountedRef = useRef(true);
@@ -99,6 +108,48 @@ const ARViewer = () => {
   useEffect(() => {
     // Check URL parameters for payment data
     const urlParams = new URLSearchParams(window.location.search);
+
+    console.log("🔍 URL Check - Full URL:", window.location.href);
+    console.log("🔍 URL Params:", {
+      placementMode: urlParams.get("placementMode"),
+      deployMode: urlParams.get("deployMode"),
+      agentData: urlParams.get("agentData"),
+      hasPlacementMode: urlParams.get("placementMode") === "true",
+      hasDeployMode: urlParams.get("deployMode") === "true",
+    });
+
+    // 🚀 Check for PLACEMENT MODE (from Port 5178 deployment page)
+    const isPlacementMode = urlParams.get("placementMode") === "true";
+
+    // 🚀 Also check for legacy deployMode parameter
+    const isDeployMode = urlParams.get("deployMode") === "true";
+    const encodedAgentData = urlParams.get("agentData");
+
+    if (isPlacementMode || (isDeployMode && encodedAgentData)) {
+      // If placement mode, enable HMR tap-to-place
+      if (isPlacementMode) {
+        setDeploymentMode(true);
+        console.log(
+          "✅ 🎯 PLACEMENT MODE ACTIVATED - HMR tap-to-place enabled"
+        );
+        console.log("✅ User redirected from Port 5178 deployment page");
+      } else if (encodedAgentData) {
+        try {
+          const agentData = JSON.parse(decodeURIComponent(encodedAgentData));
+          setDeploymentMode(true);
+          setDeploymentData(agentData);
+          console.log("✅ 🚀 Deployment mode ACTIVATED with agent:", agentData);
+          console.log("✅ deploymentMode state set to TRUE");
+        } catch (error) {
+          console.error("❌ Error parsing agent data:", error);
+          setDeploymentError("Invalid agent data");
+        }
+      }
+      return; // Skip payment mode check if in placement/deployment mode
+    }
+
+    console.log("ℹ️ Not in deployment mode, checking payment mode...");
+
     const isPaymentMode = urlParams.get("payment") === "true";
     const encodedData = urlParams.get("data");
 
@@ -488,7 +539,12 @@ const ARViewer = () => {
       // Step 3: Database and objects
       if (isMountedRef.current) {
         await refreshConnection();
-        await loadNearAgents(location);
+        // Skip loading agents in placement-only mode (no deploymentData)
+        if (deploymentData || !deploymentMode) {
+          await loadNearAgents(location);
+        } else {
+          console.log("⏭️ Skipping agent loading - placement-only mode");
+        }
       }
       if (!isMountedRef.current) return;
 
@@ -550,6 +606,110 @@ const ARViewer = () => {
   useEffect(() => {
     console.log("📊 Filter state changed:", agentFilters);
   }, [agentFilters]);
+
+  // 🚀 Handle tap-to-place deployment
+  const handleScreenTap = async (event) => {
+    if (!deploymentMode || !currentLocation) return;
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = ((event.clientX - rect.left) / rect.width) * 100;
+    const y = ((event.clientY - rect.top) / rect.height) * 100;
+
+    setPlacementPosition({ x, y });
+    console.log(
+      `🎯 Placement position set: ${x.toFixed(1)}%, ${y.toFixed(1)}%`
+    );
+  };
+
+  // 🎯 NEW: Handle placement-only mode (from Port 5178 deployment page)
+  const handlePlacementConfirm = () => {
+    if (!currentLocation || !placementPosition) {
+      console.error("❌ Missing location or placement position");
+      return;
+    }
+
+    console.log("✅ Placement confirmed - redirecting back to deployment page");
+    console.log("📍 GPS Coordinates:", {
+      latitude: currentLocation.latitude,
+      longitude: currentLocation.longitude,
+      altitude: currentLocation.altitude,
+      accuracy: currentLocation.accuracy,
+    });
+
+    // Store placement data in session storage for deployment page to retrieve
+    sessionStorage.setItem(
+      "placementData",
+      JSON.stringify({
+        latitude: currentLocation.latitude,
+        longitude: currentLocation.longitude,
+        altitude: currentLocation.altitude || 0,
+        accuracy: currentLocation.accuracy || 0,
+        placement_x: placementPosition.x,
+        placement_y: placementPosition.y,
+        timestamp: new Date().toISOString(),
+      })
+    );
+
+    // Redirect back to Port 5178 deployment page
+    window.location.href = "http://localhost:5178/deploy?placed=true";
+  };
+
+  // 🚀 Deploy agent at current location (legacy - for full deployment mode)
+  const handleDeployAgent = async () => {
+    // If no deployment data, this is placement-only mode
+    if (!deploymentData) {
+      handlePlacementConfirm();
+      return;
+    }
+
+    if (!currentLocation || !placementPosition) return;
+
+    setIsDeploying(true);
+    setDeploymentError(null);
+
+    try {
+      const deployment = {
+        name: deploymentData.name,
+        agent_type: deploymentData.type,
+        description: deploymentData.description,
+        latitude: currentLocation.latitude,
+        longitude: currentLocation.longitude,
+        altitude: currentLocation.altitude || 0,
+        accuracy: currentLocation.accuracy || 0,
+        placement_x: placementPosition.x,
+        placement_y: placementPosition.y,
+        interaction_fee: deploymentData.interactionFee || 0,
+        token: deploymentData.token || "USDC",
+        network: deploymentData.network || "Polygon Amoy",
+        chain_id: deploymentData.chainId || 80002,
+        wallet_address: deploymentData.wallet,
+        deployed_at: new Date().toISOString(),
+      };
+
+      console.log("🚀 Deploying agent:", deployment);
+      const result = await deployAgent(deployment);
+
+      console.log("📦 Deployment result:", result);
+
+      if (result && result.success && result.data) {
+        console.log("✅ Agent deployed successfully:", result.data);
+        setDeploymentSuccess(true);
+        setTimeout(() => {
+          // Return to Port 5178 deployment page after placement
+          window.location.href = "http://localhost:5178/deploy?placed=true";
+        }, 2000);
+      } else {
+        const errorMsg =
+          result?.error?.message || "Deployment failed - no data returned";
+        throw new Error(errorMsg);
+      }
+    } catch (error) {
+      console.error("❌ Deployment error:", error);
+      setDeploymentError(error.message || "Failed to deploy agent");
+    } finally {
+      setIsDeploying(false);
+    }
+  };
 
   // Render initialization screen
   if (!isInitialized) {
@@ -986,6 +1146,100 @@ const ARViewer = () => {
 
             {/* AR View Container */}
             <div className="relative">
+              {/* 🚀 Deployment Mode Overlay */}
+              {deploymentMode && (
+                <>
+                  {console.log(
+                    "✅ RENDERING DEPLOYMENT OVERLAY - deploymentMode:",
+                    deploymentMode,
+                    "deploymentData:",
+                    deploymentData
+                  )}
+                  <div
+                    className="absolute inset-0 z-50"
+                    onClick={handleScreenTap}
+                  >
+                    {/* Tap instruction */}
+                    <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg font-semibold animate-pulse">
+                      📍 Tap anywhere to place {deploymentData?.name || "agent"}
+                    </div>
+
+                    {/* Placement marker */}
+                    {placementPosition && (
+                      <div
+                        className="absolute w-12 h-12 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+                        style={{
+                          left: `${placementPosition.x}%`,
+                          top: `${placementPosition.y}%`,
+                        }}
+                      >
+                        <div className="absolute inset-0 bg-green-500 rounded-full opacity-30 animate-ping"></div>
+                        <div className="absolute inset-0 bg-green-500 rounded-full opacity-50"></div>
+                        <div className="absolute inset-0 flex items-center justify-center text-white text-2xl">
+                          📍
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Deploy button */}
+                    {placementPosition && !deploymentSuccess && (
+                      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeployAgent();
+                          }}
+                          disabled={isDeploying}
+                          className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                        >
+                          {isDeploying ? (
+                            <>
+                              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                              <span>
+                                {deploymentData
+                                  ? "Deploying..."
+                                  : "Confirming..."}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <span>🎯</span>
+                              <span>
+                                {deploymentData
+                                  ? "Deploy Agent Here"
+                                  : "Confirm Placement"}
+                              </span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Success message */}
+                    {deploymentSuccess && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/80">
+                        <div className="bg-green-500 text-white px-12 py-8 rounded-2xl shadow-2xl text-center">
+                          <div className="text-6xl mb-4">✅</div>
+                          <div className="text-2xl font-bold">
+                            Agent Deployed!
+                          </div>
+                          <div className="text-sm mt-2">
+                            Returning to dashboard...
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Error message */}
+                    {deploymentError && (
+                      <div className="absolute top-20 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg">
+                        ❌ {deploymentError}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
               {viewMode === "2d" ? (
                 /* Traditional 2D Camera View */
                 <CameraView

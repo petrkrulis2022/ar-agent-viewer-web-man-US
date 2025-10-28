@@ -817,6 +817,113 @@ export const useDatabase = () => {
     }
   }, []);
 
+  // Deploy agent to database
+  const deployAgent = useCallback(async (agentData) => {
+    try {
+      if (isMountedRef.current) {
+        setState((prev) => ({ ...prev, isLoading: true, error: null }));
+      }
+
+      console.log("🚀 Deploying agent to database:", agentData);
+      console.log("📊 Agent deployment data breakdown:", {
+        name: agentData.name,
+        type: agentData.type,
+        latitude: agentData.latitude,
+        longitude: agentData.longitude,
+        network: agentData.network,
+        chainId: agentData.chainId,
+        interactionFee: agentData.interactionFee,
+        token: agentData.token,
+      });
+
+      // Insert into deployed_objects table (same as AgentSphere)
+      const deploymentData = {
+        user_id: agentData.wallet || "anonymous",
+        name: agentData.name,
+        description:
+          agentData.description || `A ${agentData.type} agent deployed via AR`,
+        object_type: "agent",
+        agent_type: agentData.type || "intelligent_assistant",
+        location_type: "outdoor",
+
+        // GPS coordinates
+        latitude: agentData.latitude,
+        longitude: agentData.longitude,
+        altitude: agentData.altitude || 0,
+        accuracy: 10.0,
+
+        // Network and payment data (matching DeployObject.tsx structure)
+        deployment_network_name: agentData.network || "Ethereum Sepolia",
+        deployment_chain_id: agentData.chainId || 11155111,
+        network: agentData.network || "Ethereum Sepolia",
+        chain_id: agentData.chainId || 11155111,
+
+        // Interaction fee (matching DeployObject.tsx field names)
+        interaction_fee_amount: parseFloat(agentData.interactionFee || 0),
+        interaction_fee_token: agentData.token || "USDC",
+        interaction_fee_usdfc: parseFloat(agentData.interactionFee || 0),
+        currency_type: agentData.token || "USDC",
+
+        // Wallet addresses
+        owner_wallet: agentData.wallet || null,
+        deployer_address: agentData.wallet || null,
+        wallet_address: agentData.wallet || null,
+
+        // Status and metadata
+        is_active: true,
+        range_meters: 100,
+        deployed_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        deployment_status: "active",
+
+        // Chat features
+        chat_enabled: true,
+        voice_enabled: false,
+        defi_enabled: false,
+      };
+
+      console.log("📝 Final deployment data:", deploymentData);
+
+      const { data, error } = await supabase
+        .from("deployed_objects")
+        .insert([deploymentData])
+        .select()
+        .single();
+
+      if (error) {
+        console.error("❌ Deployment error:", error);
+        throw error;
+      }
+
+      console.log("✅ Agent deployed successfully to deployed_objects:", data);
+
+      if (isMountedRef.current) {
+        setState((prev) => ({
+          ...prev,
+          isLoading: false,
+          lastSync: Date.now(),
+        }));
+      }
+
+      return { success: true, data: data };
+    } catch (error) {
+      const errorInfo = {
+        code: "DEPLOYMENT_ERROR",
+        message: error.message || "Failed to deploy agent",
+        details: error,
+      };
+
+      console.error("❌ Agent deployment failed:", errorInfo);
+
+      if (isMountedRef.current) {
+        setState((prev) => ({ ...prev, isLoading: false, error: errorInfo }));
+      }
+
+      return { success: false, error: errorInfo };
+    }
+  }, []);
+
   // Initialize connection on mount
   useEffect(() => {
     isMountedRef.current = true;
@@ -834,5 +941,6 @@ export const useDatabase = () => {
     getCurrentLocation,
     refreshConnection,
     clearError,
+    deployAgent,
   };
 };

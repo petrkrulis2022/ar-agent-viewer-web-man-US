@@ -20,6 +20,9 @@ import SimpleDebugComponent from "./components/SimpleDebugComponent"; // TEMPORA
 import VirtualTerminal from "./components/VirtualTerminal"; // NEW: Dynamic payment terminal
 import PaymentRedirect from "./components/PaymentRedirect"; // NEW: Payment redirect page
 import PaymentRedirectSimple from "./components/PaymentRedirectSimple"; // Simple test version
+import ARDeployMode from "./components/ARDeployMode"; // NEW: AR deployment mode
+import ARDeployTest from "./pages/ARDeployTest"; // TEST: AR deployment test page
+import ARPlacementHMR from "./pages/ARPlacementHMR"; // NEW: HMR Placement Mode
 import ThirdWebProviderWrapper from "./providers/ThirdWebProvider";
 import NotificationProvider, {
   useNotifications,
@@ -72,6 +75,15 @@ function AppContent() {
             />
           }
         />
+
+        {/* AR Deploy Mode - Detect URL params */}
+        <Route path="/ar-deploy" element={<ARDeployMode />} />
+
+        {/* AR Deploy Test - Simple test page */}
+        <Route path="/ar-deploy-test" element={<ARDeployTest />} />
+
+        {/* HMR Placement Mode - Tap to place agents */}
+        <Route path="/hmr" element={<ARPlacementHMR />} />
 
         {/* Simple Cube Test Route */}
         <Route path="/test-cube" element={<SimpleCubeTest />} />
