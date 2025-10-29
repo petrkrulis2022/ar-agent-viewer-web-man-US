@@ -61,6 +61,9 @@ const ARViewer = () => {
   const [paymentContext, setPaymentContext] = useState(null);
   const [showOnlyTerminals, setShowOnlyTerminals] = useState(false);
 
+  // 🌐 Network Filter State
+  const [networkFilter, setNetworkFilter] = useState("all");
+
   // 🔍 Agent Filtering State - Default to "My Payment Terminals"
   const [agentFilters, setAgentFilters] = useState({
     allAgents: false,
@@ -243,8 +246,11 @@ const ARViewer = () => {
         );
       }
 
-      // 🎯 Filter agents if payment terminal mode is active
+      // 🎯 OLD Payment Terminal Mode filter - DISABLED
+      // Now using the agentFilters system instead (lines 485-545)
       let filteredObjects = objects || [];
+      // Legacy showOnlyTerminals mode is deprecated - use agentFilters.myPaymentTerminals instead
+      /*
       if (showOnlyTerminals && walletConnection.address) {
         console.log("🔒 Payment Terminal Mode: Filtering agents...");
         console.log("👤 Connected wallet:", walletConnection.address);
@@ -254,12 +260,17 @@ const ARViewer = () => {
           const isPaymentTerminal = agentType === "Payment Terminal";
           const isTrailingTerminal = agentType === "Trailing Payment Terminal";
 
-          // Check if agent belongs to current user
+          // ✅ Check multiple wallet fields for both EVM and Solana
+          const agentWallet =
+            agent.wallet_address ||
+            agent.owner_wallet ||
+            agent.deployer_address;
+          const connectedWallet = walletConnection.address;
+
           const isOwnedByUser =
-            agent.wallet_address &&
-            walletConnection.address &&
-            agent.wallet_address.toLowerCase() ===
-              walletConnection.address.toLowerCase();
+            agentWallet &&
+            connectedWallet &&
+            agentWallet.toLowerCase() === connectedWallet.toLowerCase();
 
           const shouldShow =
             (isPaymentTerminal || isTrailingTerminal) && isOwnedByUser;
@@ -268,7 +279,8 @@ const ARViewer = () => {
             console.log("✅ Showing terminal:", {
               name: agent.name,
               type: agentType,
-              wallet: agent.wallet_address,
+              wallet: agentWallet,
+              matched: connectedWallet,
             });
           }
 
@@ -279,6 +291,10 @@ const ARViewer = () => {
           `🎯 Filtered to ${filteredObjects.length} payment terminals`
         );
       }
+      */
+
+      // 🌐 Network Filter moved to getFilteredAgents() function
+      // This ensures it works together with agent type/ownership filters
 
       setNearAgents(filteredObjects || []);
       console.log(
@@ -367,102 +383,189 @@ const ARViewer = () => {
       return [];
     }
 
-    // If "All Agents" is selected, return all
-    if (filters.allAgents) {
-      return nearAgents;
+    // If "All Agents" is selected, return all (but still apply network filter)
+    let agentsToFilter = nearAgents;
+
+    if (!filters.allAgents) {
+      // Get connected wallet address from EVM, Solana, or Hedera
+      const userWallet = (
+        walletConnection?.evm?.address ||
+        walletConnection?.solana?.address ||
+        walletConnection?.hedera?.address ||
+        walletConnection?.address
+      ) // Fallback for old structure
+        ?.toLowerCase();
+
+      // Debug logging
+      console.log("🔍 Filter Debug:", {
+        userWallet,
+        walletConnection,
+        totalAgents: nearAgents.length,
+        filters,
+        sampleAgent: nearAgents[0]
+          ? {
+              name: nearAgents[0].name,
+              agent_wallet: nearAgents[0].agent_wallet_address,
+              owner_wallet: nearAgents[0].owner_wallet,
+              type: nearAgents[0].agent_type,
+            }
+          : null,
+      });
+
+      agentsToFilter = nearAgents.filter((agent) => {
+        // ✅ Check ALL possible wallet fields for both EVM and Solana
+        const agentWalletRaw =
+          agent.agent_wallet_address ||
+          agent.owner_wallet ||
+          agent.wallet_address ||
+          agent.deployer_address;
+
+        // Normalize agent type - replace underscores with spaces
+        const agentType = (agent.agent_type || agent.object_type || "")
+          .toLowerCase()
+          .replace(/_/g, " ");
+
+        // ⚠️ IMPORTANT: Solana addresses are case-sensitive (base58)
+        // Only lowercase for EVM addresses (0x...)
+        const agentWallet = agentWalletRaw?.startsWith("0x")
+          ? agentWalletRaw.toLowerCase()
+          : agentWalletRaw;
+
+        const userWalletNormalized = userWallet?.startsWith("0x")
+          ? userWallet.toLowerCase()
+          : userWallet;
+
+        // Check if it's user's agent
+        const isMyAgent =
+          userWalletNormalized && agentWallet === userWalletNormalized;
+
+        // Debug log for ownership filters
+        if (filters.myAgents || filters.allNonMyAgents) {
+          console.log(
+            `🔍 Agent: ${agent.name}, AgentWallet: ${agentWallet}, UserWallet: ${userWalletNormalized}, IsMyAgent: ${isMyAgent}, Type: ${agentType}`
+          );
+        }
+
+        // User-based filters
+        if (filters.myAgents && !isMyAgent) return false;
+        if (filters.allNonMyAgents && isMyAgent) return false;
+
+        // Payment terminal filters
+        const isPaymentTerminal = agentType === "payment terminal";
+        const isTrailingPaymentTerminal =
+          agentType === "trailing payment terminal";
+        const isAnyPaymentTerminal =
+          isPaymentTerminal || isTrailingPaymentTerminal;
+
+        if (filters.myPaymentTerminals) {
+          return isMyAgent && isAnyPaymentTerminal;
+        }
+
+        if (filters.allPaymentTerminals) {
+          return !isMyAgent && isAnyPaymentTerminal;
+        }
+
+        // Individual type filters
+        const typeFilters = [
+          { key: "intelligentAssistant", value: "intelligent assistant" },
+          { key: "localServices", value: "local services" },
+          { key: "paymentTerminal", value: "payment terminal" },
+          { key: "gameAgent", value: "game agent" },
+          { key: "worldBuilder3D", value: "3d world builder" },
+          { key: "homeSecurity", value: "home security" },
+          { key: "contentCreator", value: "content creator" },
+          { key: "realEstateBroker", value: "real estate broker" },
+          { key: "busStopAgent", value: "bus stop agent" },
+          {
+            key: "trailingPaymentTerminal",
+            value: "trailing payment terminal",
+          },
+          { key: "myGhost", value: "my ghost" },
+        ];
+
+        // Check if any type filter is active
+        const hasActiveTypeFilter = typeFilters.some((f) => filters[f.key]);
+
+        if (!hasActiveTypeFilter) {
+          // No type filters active - show all (respecting user filters)
+          return true;
+        }
+
+        // Check if agent matches any active type filter
+        return typeFilters.some((f) => filters[f.key] && agentType === f.value);
+      });
     }
 
-    // Get connected wallet address from EVM, Solana, or Hedera
-    const userWallet = (
-      walletConnection?.evm?.address ||
-      walletConnection?.solana?.address ||
-      walletConnection?.hedera?.address ||
-      walletConnection?.address
-    ) // Fallback for old structure
-      ?.toLowerCase();
+    // 🌐 Apply Network Filter (after agent type/ownership filters)
+    if (networkFilter !== "all") {
+      console.log("🌐 Applying network filter:", networkFilter);
+      const beforeNetworkFilter = agentsToFilter.length;
 
-    // Debug logging
-    console.log("🔍 Filter Debug:", {
-      userWallet,
-      walletConnection,
-      totalAgents: nearAgents.length,
-      filters,
-      sampleAgent: nearAgents[0]
-        ? {
-            name: nearAgents[0].name,
-            agent_wallet: nearAgents[0].agent_wallet_address,
-            owner_wallet: nearAgents[0].owner_wallet,
-            type: nearAgents[0].agent_type,
+      agentsToFilter = agentsToFilter.filter((agent) => {
+        // Get chain ID from multiple possible fields
+        const chainId =
+          agent.deployment_chain_id ||
+          agent.chain_id ||
+          agent.payment_config?.chainId;
+
+        // For Solana (null chain_id), check deployment_network_name
+        if (networkFilter === "solana-devnet") {
+          const networkName =
+            agent.deployment_network_name ||
+            agent.payment_config?.network_info?.name ||
+            "";
+          const isSolana =
+            networkName.toLowerCase().includes("solana") &&
+            networkName.toLowerCase().includes("devnet");
+
+          if (isSolana) {
+            console.log("✅ Solana Devnet match:", {
+              name: agent.name,
+              network: networkName,
+            });
           }
-        : null,
-    });
+          return isSolana;
+        }
 
-    return nearAgents.filter((agent) => {
-      // Use agent_wallet_address (or owner_wallet as fallback) - these are the populated fields
-      const agentWallet = (
-        agent.agent_wallet_address || agent.owner_wallet
-      )?.toLowerCase();
+        // For Hedera (chain ID 296), also check network name as fallback
+        if (networkFilter === "296") {
+          const networkName =
+            agent.deployment_network_name ||
+            agent.payment_config?.network_info?.name ||
+            "";
+          const isHedera =
+            chainId === 296 || networkName.toLowerCase().includes("hedera");
 
-      // Normalize agent type - replace underscores with spaces
-      const agentType = (agent.agent_type || agent.object_type || "")
-        .toLowerCase()
-        .replace(/_/g, " ");
+          if (isHedera) {
+            console.log("✅ Hedera Testnet match:", {
+              name: agent.name,
+              chainId,
+              network: networkName,
+            });
+          }
+          return isHedera;
+        }
 
-      // Check if it's user's agent
-      const isMyAgent = userWallet && agentWallet === userWallet;
+        // For EVM networks, compare chain IDs
+        const matchesFilter = chainId && chainId.toString() === networkFilter;
 
-      // Debug log for each agent
-      if (filters.myAgents) {
-        console.log(
-          `Agent: ${agent.name}, AgentWallet: ${agentWallet}, UserWallet: ${userWallet}, IsMyAgent: ${isMyAgent}`
-        );
-      }
+        if (matchesFilter) {
+          console.log("✅ EVM Network match:", {
+            name: agent.name,
+            chainId,
+            filter: networkFilter,
+          });
+        }
 
-      // User-based filters
-      if (filters.myAgents && !isMyAgent) return false;
-      if (filters.allNonMyAgents && isMyAgent) return false;
+        return matchesFilter;
+      });
 
-      // Payment terminal filters
-      const isPaymentTerminal = agentType === "payment terminal";
-      const isTrailingPaymentTerminal =
-        agentType === "trailing payment terminal";
-      const isAnyPaymentTerminal =
-        isPaymentTerminal || isTrailingPaymentTerminal;
+      console.log(
+        `🌐 Network filtered: ${beforeNetworkFilter} → ${agentsToFilter.length} agents`
+      );
+    }
 
-      if (filters.myPaymentTerminals) {
-        return isMyAgent && isAnyPaymentTerminal;
-      }
-
-      if (filters.allPaymentTerminals) {
-        return !isMyAgent && isAnyPaymentTerminal;
-      }
-
-      // Individual type filters
-      const typeFilters = [
-        { key: "intelligentAssistant", value: "intelligent assistant" },
-        { key: "localServices", value: "local services" },
-        { key: "paymentTerminal", value: "payment terminal" },
-        { key: "gameAgent", value: "game agent" },
-        { key: "worldBuilder3D", value: "3d world builder" },
-        { key: "homeSecurity", value: "home security" },
-        { key: "contentCreator", value: "content creator" },
-        { key: "realEstateBroker", value: "real estate broker" },
-        { key: "busStopAgent", value: "bus stop agent" },
-        { key: "trailingPaymentTerminal", value: "trailing payment terminal" },
-        { key: "myGhost", value: "my ghost" },
-      ];
-
-      // Check if any type filter is active
-      const hasActiveTypeFilter = typeFilters.some((f) => filters[f.key]);
-
-      if (!hasActiveTypeFilter) {
-        // No type filters active - show all (respecting user filters)
-        return true;
-      }
-
-      // Check if agent matches any active type filter
-      return typeFilters.some((f) => filters[f.key] && agentType === f.value);
-    });
+    return agentsToFilter;
   };
 
   // Full initialization sequence
@@ -936,6 +1039,39 @@ const ARViewer = () => {
                         <span className="text-xs text-white">
                           All payment terminals
                         </span>
+                      </label>
+                    </div>
+
+                    {/* 🌐 Network Filter */}
+                    <div className="pt-2 border-t border-purple-500/20">
+                      <label className="flex flex-col space-y-1.5">
+                        <span className="text-xs text-purple-200 font-medium">
+                          🌐 Filter by Network
+                        </span>
+                        <select
+                          value={networkFilter}
+                          onChange={(e) => setNetworkFilter(e.target.value)}
+                          className="w-full px-2 py-1.5 text-xs bg-purple-900/30 border border-purple-500/30 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                        >
+                          <option value="all">All Networks</option>
+                          <optgroup label="🔮 Non-EVM Testnets">
+                            <option value="solana-devnet">Solana Devnet</option>
+                            <option value="296">Hedera Testnet (296)</option>
+                          </optgroup>
+                          <optgroup label="⛓️ EVM Testnets">
+                            <option value="11155111">
+                              Ethereum Sepolia (11155111)
+                            </option>
+                            <option value="11155420">
+                              Optimism Sepolia (11155420)
+                            </option>
+                            <option value="84532">Base Sepolia (84532)</option>
+                            <option value="421614">
+                              Arbitrum Sepolia (421614)
+                            </option>
+                            <option value="80002">Polygon Amoy (80002)</option>
+                          </optgroup>
+                        </select>
                       </label>
                     </div>
 

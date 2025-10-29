@@ -173,8 +173,21 @@ const getNetworkDisplay = (agent) => {
   // Don't trust: agent?.deployment_network_name || agent?.network
   let network = "Unknown Network";
 
-  // Use the chainId already declared above
-  if (chainId) {
+  // ✅ NEW: Check for Solana or other non-EVM networks first
+  if (
+    agent?.deployment_network_name &&
+    agent?.deployment_network_name !== "Unknown Network"
+  ) {
+    network = agent.deployment_network_name;
+    console.log("✅ Using deployment_network_name:", network);
+  }
+  // Try payment_config.network_info.name as secondary source
+  else if (agent?.payment_config?.network_info?.name) {
+    network = agent.payment_config.network_info.name;
+    console.log("✅ Using payment_config.network_info.name:", network);
+  }
+  // Use the chainId for EVM networks
+  else if (chainId) {
     const networkInfo = getNetworkInfo(chainId);
     network = networkInfo?.name || "Unknown Network";
     console.log(
@@ -298,6 +311,21 @@ const getTokenContractDisplay = (agent) => {
         source: "fallback chain_id/deployment_chain_id",
       }
     );
+  }
+
+  // ✅ NEW: Check for token_address in database first (for Solana and other non-EVM)
+  if (agent?.token_address && agent.token_address.length > 10) {
+    const display = `${agent.token_address.substring(
+      0,
+      8
+    )}...${agent.token_address.substring(agent.token_address.length - 8)}`;
+    console.log("✅ Using agent.token_address:", {
+      display,
+      fullAddress: agent.token_address,
+      agent: agent?.name,
+      source: "database token_address field",
+    });
+    return display;
   }
 
   if (!chainId) {
