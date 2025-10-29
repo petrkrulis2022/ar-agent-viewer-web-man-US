@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { Canvas } from "@react-three/fiber";
+import { useGLTF } from "@react-three/drei";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -13,6 +15,91 @@ import { Camera, MapPin, ArrowLeft, Target } from "lucide-react";
 import { useDatabase } from "../hooks/useDatabase";
 import CameraView from "../components/CameraView";
 import rtkLocationService from "../services/rtkLocation";
+
+// Preload 3D models
+useGLTF.preload("/models/terminals/human_head.glb");
+useGLTF.preload("/models/terminals/pax-a920_highpoly.glb");
+
+// 3D Human Head Model Component
+const HumanHead3D = ({ color, position, scale = 1 }) => {
+  const { scene } = useGLTF("/models/terminals/human_head.glb");
+  const groupRef = useRef();
+
+  // Animate the head
+  useEffect(() => {
+    let animationId;
+    let time = 0;
+
+    const animate = () => {
+      time += 0.01;
+      if (groupRef.current) {
+        // Gentle floating animation
+        groupRef.current.position.y = position[1] + Math.sin(time) * 0.1;
+        // Slow rotation
+        groupRef.current.rotation.y += 0.005;
+      }
+      animationId = requestAnimationFrame(animate);
+    };
+
+    animate();
+    return () => cancelAnimationFrame(animationId);
+  }, [position]);
+
+  return (
+    <group ref={groupRef} position={position} scale={scale}>
+      <primitive object={scene.clone()} />
+      {/* Add glow effect */}
+      <pointLight color={color} intensity={2} distance={3} />
+    </group>
+  );
+};
+
+// 3D Payment Terminal Model Component
+const PaymentTerminal3D = ({ position, scale = 1, rotation = [0, 0, 0] }) => {
+  const { scene } = useGLTF("/models/terminals/pax-a920_highpoly.glb");
+  const groupRef = useRef();
+
+  // Gentle idle animation
+  useEffect(() => {
+    let animationId;
+    let time = 0;
+
+    const animate = () => {
+      time += 0.01;
+      if (groupRef.current) {
+        // Very subtle floating
+        groupRef.current.position.y = position[1] + Math.sin(time * 0.5) * 0.05;
+      }
+      animationId = requestAnimationFrame(animate);
+    };
+
+    animate();
+    return () => cancelAnimationFrame(animationId);
+  }, [position]);
+
+  return (
+    <group ref={groupRef} position={position} rotation={rotation} scale={scale}>
+      <primitive object={scene.clone()} />
+      {/* Subtle lighting for the terminal */}
+      <pointLight color="#4ade80" intensity={1.5} distance={2} />
+    </group>
+  );
+};
+
+// Dummy agents with 3D heads and terminals to display in AR space
+const DUMMY_AGENTS = [
+  {
+    id: "agent-1",
+    name: "Study Helper Bot",
+    x: 30, // % from left
+    y: 45, // % from top
+    color: "#22c55e", // green
+    emoji: "📚",
+    headPosition: [0, 0.5, -4], // 3D position for head (centered)
+    leftHandTerminalPosition: [-1.2, -0.3, -3.8], // Terminal in left hand
+    rightHandTerminalPosition: [1.2, -0.3, -3.8], // Terminal in right hand
+  },
+];
 
 /**
  * AR Placement HMR Page
@@ -177,120 +264,169 @@ const ARPlacementHMR = () => {
 
   // Main HMR placement view
   return (
-    <div className="relative min-h-screen bg-black overflow-hidden">
-      {/* Camera Background */}
-      <div className="absolute inset-0">
-        <CameraView isActive={cameraActive} />
-      </div>
+    <>
+      <style>{`
+        @keyframes float-0 {
+          0%, 100% { transform: translate(-50%, -50%) translateY(0px); }
+          50% { transform: translate(-50%, -50%) translateY(-15px); }
+        }
+        @keyframes float-1 {
+          0%, 100% { transform: translate(-50%, -50%) translateY(0px); }
+          50% { transform: translate(-50%, -50%) translateY(-12px); }
+        }
+        @keyframes scan {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+      `}</style>
 
-      {/* Header */}
-      <div className="absolute top-0 left-0 right-0 z-30 bg-gradient-to-b from-black/80 to-transparent p-4">
-        <div className="flex items-center justify-between">
-          <Button
-            onClick={handleCancel}
-            variant="ghost"
-            className="text-white hover:bg-white/10"
+      <div className="relative min-h-screen bg-black overflow-hidden">
+        {/* Camera Background */}
+        <div className="absolute inset-0">
+          <CameraView isActive={cameraActive} />
+        </div>
+        {/* 3D Canvas Layer for Agent Heads & Terminals - Behind UI but above camera */}
+        <div className="absolute inset-0 z-10 pointer-events-none">
+          <Canvas
+            camera={{ position: [0, 0, 5], fov: 50 }}
+            style={{ background: "transparent" }}
           >
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            Cancel
-          </Button>
-          <Badge className="bg-blue-500/90 text-white">🎯 Placement Mode</Badge>
-        </div>
-      </div>
+            <ambientLight intensity={0.5} />
+            <directionalLight position={[5, 5, 5]} intensity={1} />
+            <directionalLight position={[-5, 3, -5]} intensity={0.5} />
 
-      {/* Location Status Badge */}
-      {currentLocation && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-30">
-          <Badge
-            className={rtkStatus.isRTKEnhanced ? "bg-green-500" : "bg-blue-500"}
-          >
-            📍 GPS Active {rtkStatus.isRTKEnhanced && "• RTK Enhanced"}
-          </Badge>
+            {DUMMY_AGENTS.map((agent) => (
+              <React.Fragment key={agent.id}>
+                {/* Human Head */}
+                <HumanHead3D
+                  color={agent.color}
+                  position={agent.headPosition}
+                  scale={0.6}
+                />
+                {/* Payment Terminal - Left Hand */}
+                <PaymentTerminal3D
+                  position={agent.leftHandTerminalPosition}
+                  rotation={[0.3, 0, 0.2]} // Tilted up to face camera
+                  scale={0.7}
+                />
+                {/* Payment Terminal - Right Hand - Upright, screen facing camera */}
+                <PaymentTerminal3D
+                  position={agent.rightHandTerminalPosition}
+                  rotation={[0, 0, 0]} // Upright position, screen forward
+                  scale={0.7}
+                />
+              </React.Fragment>
+            ))}
+          </Canvas>
         </div>
-      )}
 
-      {/* Error Message */}
-      {locationError && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-30 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg">
-          ⚠️ {locationError}
-        </div>
-      )}
-
-      {/* Crosshair & Instructions (before tap) */}
-      {!placementPosition && (
-        <div className="absolute inset-0 z-20 pointer-events-none">
-          {/* Crosshair */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-            <Target className="w-16 h-16 text-blue-400 animate-pulse drop-shadow-lg" />
+        {/* Header */}
+        <div className="absolute top-0 left-0 right-0 z-30 bg-gradient-to-b from-black/80 to-transparent p-4">
+          <div className="flex items-center justify-between">
+            <Button
+              onClick={handleCancel}
+              variant="ghost"
+              className="text-white hover:bg-white/10"
+            >
+              <ArrowLeft className="w-5 h-5 mr-2" />
+              Cancel
+            </Button>
+            <Badge className="bg-blue-500/90 text-white">
+              🎯 Placement Mode
+            </Badge>
           </div>
-
-          {/* Instruction */}
-          <div className="absolute bottom-32 left-1/2 -translate-x-1/2 bg-blue-500/90 backdrop-blur-sm px-6 py-3 rounded-full shadow-lg">
-            <p className="text-white font-semibold text-center">
-              👆 Tap anywhere to place agent
-            </p>
+        </div>
+        {/* Location Status Badge */}
+        {currentLocation && (
+          <div className="absolute top-20 left-1/2 -translate-x-1/2 z-30">
+            <Badge
+              className={
+                rtkStatus.isRTKEnhanced ? "bg-green-500" : "bg-blue-500"
+              }
+            >
+              📍 GPS Active {rtkStatus.isRTKEnhanced && "• RTK Enhanced"}
+            </Badge>
           </div>
+        )}
+        {/* Error Message */}
+        {locationError && (
+          <div className="absolute top-20 left-1/2 -translate-x-1/2 z-30 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg">
+            ⚠️ {locationError}
+          </div>
+        )}
+        {/* Crosshair & Instructions (before tap) */}
+        {!placementPosition && (
+          <div className="absolute inset-0 z-20 pointer-events-none">
+            {/* Crosshair */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+              <Target className="w-16 h-16 text-blue-400 animate-pulse drop-shadow-lg" />
+            </div>
 
-          {/* Tap overlay (clickable) */}
+            {/* Instruction */}
+            <div className="absolute bottom-32 left-1/2 -translate-x-1/2 bg-blue-500/90 backdrop-blur-sm px-6 py-3 rounded-full shadow-lg">
+              <p className="text-white font-semibold text-center">
+                👆 Tap anywhere to place agent
+              </p>
+            </div>
+
+            {/* Tap overlay (clickable) */}
+            <div
+              className="absolute inset-0 pointer-events-auto cursor-crosshair"
+              onClick={handleScreenTap}
+            />
+          </div>
+        )}
+        {/* Placement Marker (after tap) */}
+        {placementPosition && (
           <div
-            className="absolute inset-0 pointer-events-auto cursor-crosshair"
-            onClick={handleScreenTap}
-          />
-        </div>
-      )}
-
-      {/* Placement Marker (after tap) */}
-      {placementPosition && (
-        <div
-          className="absolute w-12 h-12 -translate-x-1/2 -translate-y-1/2 z-25 pointer-events-none"
-          style={{
-            left: `${placementPosition.x}%`,
-            top: `${placementPosition.y}%`,
-          }}
-        >
-          <div className="absolute inset-0 bg-green-500 rounded-full opacity-30 animate-ping"></div>
-          <div className="absolute inset-0 bg-green-500 rounded-full opacity-50"></div>
-          <div className="absolute inset-0 flex items-center justify-center text-white text-2xl">
-            📍
-          </div>
-        </div>
-      )}
-
-      {/* Confirm Button (after tap) */}
-      {placementPosition && (
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30 flex space-x-4">
-          <Button
-            onClick={handleCancel}
-            variant="outline"
-            className="bg-white/10 text-white border-white/30 hover:bg-white/20"
+            className="absolute w-12 h-12 -translate-x-1/2 -translate-y-1/2 z-25 pointer-events-none"
+            style={{
+              left: `${placementPosition.x}%`,
+              top: `${placementPosition.y}%`,
+            }}
           >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleConfirmPlacement}
-            className="bg-green-600 hover:bg-green-700 text-white px-8 py-6 text-lg font-bold shadow-2xl"
-          >
-            <span className="mr-2">🎯</span>
-            Confirm Placement
-          </Button>
-        </div>
-      )}
-
-      {/* GPS Info (bottom) */}
-      {currentLocation && placementPosition && (
-        <div className="absolute bottom-28 left-1/2 -translate-x-1/2 z-30 bg-black/80 backdrop-blur-sm px-4 py-2 rounded-lg">
-          <div className="text-xs text-white/80 font-mono">
-            📍 {currentLocation.latitude.toFixed(6)},{" "}
-            {currentLocation.longitude.toFixed(6)}
-            <br />±
-            {rtkStatus.isRTKEnhanced
-              ? "0.05"
-              : currentLocation.accuracy?.toFixed(1) || "10"}
-            m
+            <div className="absolute inset-0 bg-green-500 rounded-full opacity-30 animate-ping"></div>
+            <div className="absolute inset-0 bg-green-500 rounded-full opacity-50"></div>
+            <div className="absolute inset-0 flex items-center justify-center text-white text-2xl">
+              📍
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+        {/* Confirm Button (after tap) */}
+        {placementPosition && (
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30 flex space-x-4">
+            <Button
+              onClick={handleCancel}
+              variant="outline"
+              className="bg-white/10 text-white border-white/30 hover:bg-white/20"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmPlacement}
+              className="bg-green-600 hover:bg-green-700 text-white px-8 py-6 text-lg font-bold shadow-2xl"
+            >
+              <span className="mr-2">🎯</span>
+              Confirm Placement
+            </Button>
+          </div>
+        )}
+        {/* GPS Info (bottom) */}
+        {currentLocation && placementPosition && (
+          <div className="absolute bottom-28 left-1/2 -translate-x-1/2 z-30 bg-black/80 backdrop-blur-sm px-4 py-2 rounded-lg">
+            <div className="text-xs text-white/80 font-mono">
+              📍 {currentLocation.latitude.toFixed(6)},{" "}
+              {currentLocation.longitude.toFixed(6)}
+              <br />±
+              {rtkStatus.isRTKEnhanced
+                ? "0.05"
+                : currentLocation.accuracy?.toFixed(1) || "10"}
+              m
+            </div>
+          </div>
+        )}
+      </div>
+    </>
   );
 };
 
