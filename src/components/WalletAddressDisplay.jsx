@@ -9,10 +9,20 @@ const WalletAddressDisplay = () => {
   const [currentNetwork, setCurrentNetwork] = useState(null);
   const [isWalletConnected, setIsWalletConnected] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [solanaWallet, setSolanaWallet] = useState(null);
+  const [isSolanaConnected, setIsSolanaConnected] = useState(false);
 
   useEffect(() => {
     initializeWalletState();
     setupWalletListeners();
+    checkSolanaWallet(); // Check for Solana wallet connection
+
+    // Poll for Solana wallet changes
+    const solanaInterval = setInterval(() => {
+      checkSolanaWallet();
+    }, 1000);
+
+    return () => clearInterval(solanaInterval);
   }, []);
 
   const initializeWalletState = async () => {
@@ -64,6 +74,29 @@ const WalletAddressDisplay = () => {
       setCurrentNetwork(network);
     } catch (error) {
       console.error("Failed to detect network:", error);
+    }
+  };
+
+  // Check Solana Phantom wallet connection
+  const checkSolanaWallet = async () => {
+    try {
+      // Check if Phantom wallet is installed and connected
+      if (window.solana && window.solana.isPhantom) {
+        const isConnected = window.solana.isConnected;
+
+        if (isConnected && window.solana.publicKey) {
+          setIsSolanaConnected(true);
+          setSolanaWallet({
+            address: window.solana.publicKey.toString(),
+            network: "Solana Devnet", // You can detect this from your app context
+          });
+        } else {
+          setIsSolanaConnected(false);
+          setSolanaWallet(null);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to check Solana wallet:", error);
     }
   };
 
@@ -141,6 +174,48 @@ const WalletAddressDisplay = () => {
             <Wallet className="w-3 h-3" />
             <span className="text-sm font-mono">
               {formatWalletAddress(walletAddress)}
+            </span>
+            {copied ? (
+              <CheckCircle className="w-3 h-3 text-green-400" />
+            ) : (
+              <Copy className="w-3 h-3" />
+            )}
+          </div>
+        </Badge>
+      </div>
+    );
+  }
+
+  // If Solana wallet is connected, show Solana network + wallet address
+  if (isSolanaConnected && solanaWallet) {
+    return (
+      <div className="flex items-center space-x-3">
+        {/* Solana Network Indicator */}
+        <Badge className="bg-purple-500/20 text-purple-400 border-purple-400/30 px-3 py-1">
+          <div className="flex items-center space-x-1">
+            <div className="w-2 h-2 rounded-full bg-purple-400 animate-pulse"></div>
+            <span className="text-sm font-medium">{solanaWallet.network}</span>
+          </div>
+        </Badge>
+
+        {/* Solana Wallet Address Display */}
+        <Badge className="bg-gray-500/20 text-gray-300 border-gray-400/30 px-3 py-1 cursor-pointer hover:bg-gray-500/30 transition-colors">
+          <div
+            className="flex items-center space-x-2"
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(solanaWallet.address);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              } catch (error) {
+                console.error("Failed to copy address:", error);
+              }
+            }}
+            title="Click to copy full address"
+          >
+            <Wallet className="w-3 h-3" />
+            <span className="text-sm font-mono">
+              {formatWalletAddress(solanaWallet.address)}
             </span>
             {copied ? (
               <CheckCircle className="w-3 h-3 text-green-400" />
