@@ -757,6 +757,13 @@ const CubePaymentEngine = ({
     }
   };
 
+  // Helper function to detect if address is Solana format
+  const isSolanaAddress = (address) => {
+    if (!address) return false;
+    // Use solanaPaymentService for proper validation
+    return solanaPaymentService.isValidSolanaAddress(address);
+  };
+
   // Handle Crypto QR selection - integrate with existing system
   const handleCryptoQRSelection = async () => {
     setIsGenerating(true);
@@ -775,15 +782,60 @@ const CubePaymentEngine = ({
         console.log("💼 Using configured wallet address:", walletAddress);
       }
 
-      // Use existing Morph payment service (primary blockchain)
-      const morphPayment = await morphPaymentService.generateMorphAgentPayment(
-        agent,
-        paymentAmount || agent?.interaction_fee || 1
-      );
-      const qrPaymentData =
-        morphPaymentService.generateMorphPaymentQRData(morphPayment);
+      const amount = paymentAmount || agent?.interaction_fee || 1;
+      let qrPaymentData;
 
-      console.log("✅ QR data generated:", qrPaymentData);
+      // Detect if this is a Solana agent
+      const isSolana = isSolanaAddress(walletAddress);
+      console.log("🔍 Blockchain detection:", isSolana ? "Solana" : "EVM");
+
+      if (isSolana) {
+        console.log("🌟 Generating Solana payment QR...");
+        console.log("- Agent wallet:", walletAddress);
+        console.log("- Token address:", agent?.token_address || "None (SOL)");
+        console.log("- Amount:", amount);
+
+        // Determine payment type based on token_address
+        // Check if it's USDC on Devnet (the only SPL token we currently support)
+        const USDC_DEVNET_MINT = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
+        const isUSDC = agent?.token_address === USDC_DEVNET_MINT;
+        const paymentType = isUSDC ? "USDC" : "SOL";
+        const network = isUSDC ? "DEVNET" : "TESTNET";
+
+        console.log("- Payment type:", paymentType);
+        console.log("- Network:", network);
+        console.log("- Is USDC:", isUSDC);
+
+        // Switch to appropriate Solana network
+        solanaPaymentService.switchSolanaNetwork(network);
+
+        // Generate Solana payment data
+        const solanaPayment = {
+          recipient: walletAddress,
+          amount: amount,
+          memo: `Payment to AR Agent: ${agent?.name || agent?.title || `Agent-${agent?.id}`} (ID: ${agent?.id})`,
+          tokenMint: isUSDC ? agent.token_address : null,
+          network: network,
+        };
+
+        console.log("📊 Solana payment data:", solanaPayment);
+
+        // Generate Solana Pay QR data
+        qrPaymentData = solanaPaymentService.generateSolanaPaymentQRData(solanaPayment);
+
+        console.log("✅ Solana QR data generated:", qrPaymentData);
+      } else {
+        console.log("⚡ Generating EVM payment QR...");
+
+        // Use existing Morph payment service (primary blockchain for EVM)
+        const morphPayment = await morphPaymentService.generateMorphAgentPayment(
+          agent,
+          amount
+        );
+        qrPaymentData = morphPaymentService.generateMorphPaymentQRData(morphPayment);
+
+        console.log("✅ EVM QR data generated:", qrPaymentData);
+      }
 
       setQrData(qrPaymentData);
       setCurrentView("qr");
