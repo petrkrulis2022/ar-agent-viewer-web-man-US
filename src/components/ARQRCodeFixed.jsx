@@ -130,6 +130,8 @@ const FloatingQRCode = ({
 
     event.stopPropagation();
     console.log("📱 AR QR Code clicked for payment processing");
+    console.log("🔍 QR Data:", qrData);
+    console.log("🔍 QR Object:", qrObject);
 
     setIsScanning(true);
 

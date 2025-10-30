@@ -31,7 +31,7 @@ export class PaymentProcessor {
       );
 
       // 3. Check wallet connection
-      await this.ensureWalletConnection();
+      await this.ensureWalletConnection(paymentDetails.protocol);
 
       // 4. Switch to correct network if needed (only for Ethereum payments)
       if (paymentDetails.protocol === "ethereum" && paymentDetails.chainId) {
@@ -181,34 +181,82 @@ export class PaymentProcessor {
     return parsedData;
   }
 
-  // Ensure wallet is connected
-  async ensureWalletConnection() {
-    if (!window.ethereum) {
-      throw new Error(
-        "MetaMask not found. Please install MetaMask to continue."
-      );
-    }
+  // Ensure wallet is connected (protocol-aware)
+  async ensureWalletConnection(protocol = "ethereum") {
+    console.log(`🔌 Ensuring ${protocol} wallet connection...`);
 
-    try {
-      // Request account access
-      const accounts = await window.ethereum.request({
-        method: "eth_requestAccounts",
-      });
-
-      if (!accounts || accounts.length === 0) {
+    if (protocol === "solana") {
+      // Check for Solana wallet (Phantom, Solflare, etc.)
+      if (!window.solana) {
         throw new Error(
-          "No wallet accounts found. Please connect your wallet."
+          "Solana wallet not found. Please install Phantom or another Solana wallet to continue."
         );
       }
 
-      this.walletConnected = true;
-      console.log("✅ Wallet connected:", accounts[0]);
-      return accounts[0];
-    } catch (error) {
-      if (error.code === 4001) {
-        throw new Error("Wallet connection was rejected by user");
+      try {
+        // Check if already connected first to avoid unnecessary popups
+        if (window.solana.isConnected && window.solana.publicKey) {
+          console.log(
+            "✅ Solana wallet already connected:",
+            window.solana.publicKey.toString()
+          );
+          this.walletConnected = true;
+          return window.solana.publicKey.toString();
+        }
+
+        // Connect to Solana wallet only if not already connected
+        console.log("🔗 Connecting to Solana wallet...");
+        const response = await window.solana.connect({ onlyIfTrusted: true });
+
+        if (!response.publicKey) {
+          throw new Error(
+            "No Solana wallet accounts found. Please connect your wallet."
+          );
+        }
+
+        this.walletConnected = true;
+        console.log(
+          "✅ Solana wallet connected:",
+          response.publicKey.toString()
+        );
+        return response.publicKey.toString();
+      } catch (error) {
+        if (error.code === 4001 || error.message?.includes("User rejected")) {
+          throw new Error("Solana wallet connection was rejected by user");
+        }
+        throw new Error(`Solana wallet connection failed: ${error.message}`);
       }
-      throw new Error(`Wallet connection failed: ${error.message}`);
+    } else if (protocol === "ethereum") {
+      // Check for Ethereum wallet (MetaMask, etc.)
+      if (!window.ethereum) {
+        throw new Error(
+          "MetaMask not found. Please install MetaMask to continue."
+        );
+      }
+
+      try {
+        // Request account access
+        const accounts = await window.ethereum.request({
+          method: "eth_requestAccounts",
+        });
+
+        if (!accounts || accounts.length === 0) {
+          throw new Error(
+            "No wallet accounts found. Please connect your wallet."
+          );
+        }
+
+        this.walletConnected = true;
+        console.log("✅ Ethereum wallet connected:", accounts[0]);
+        return accounts[0];
+      } catch (error) {
+        if (error.code === 4001) {
+          throw new Error("Wallet connection was rejected by user");
+        }
+        throw new Error(`Wallet connection failed: ${error.message}`);
+      }
+    } else {
+      throw new Error(`Unsupported protocol: ${protocol}`);
     }
   }
 
@@ -592,6 +640,8 @@ export class PaymentProcessor {
       message = "Network error - please check connection";
     } else if (error.message.includes("MetaMask")) {
       message = "Please install MetaMask to continue";
+    } else if (error.message.includes("Solana wallet") || error.message.includes("Phantom")) {
+      message = error.message; // Use the specific Solana error message
     }
 
     if (window.showNotification) {
