@@ -204,9 +204,16 @@ export class PaymentProcessor {
           return window.solana.publicKey.toString();
         }
 
-        // Connect to Solana wallet only if not already connected
-        console.log("🔗 Connecting to Solana wallet...");
-        const response = await window.solana.connect({ onlyIfTrusted: true });
+        // Try to connect silently first (if previously authorized)
+        console.log("🔗 Attempting silent Solana wallet connection...");
+        let response;
+        try {
+          response = await window.solana.connect({ onlyIfTrusted: true });
+        } catch (silentError) {
+          // If silent connection fails, request user authorization
+          console.log("🔗 Silent connection failed, requesting user authorization...");
+          response = await window.solana.connect();
+        }
 
         if (!response.publicKey) {
           throw new Error(
