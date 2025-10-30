@@ -791,13 +791,29 @@ const CubePaymentEngine = ({
       console.log("- Token address:", tokenAddress);
       console.log("- Amount:", amount);
 
+      // Constants for chain type detection
+      const CHAIN_TYPES = {
+        SOLANA: ['SVM', 'solana', 'Solana'],
+        EVM: ['EVM', 'ethereum', 'Ethereum'],
+      };
+
       // Detect if this is a Solana agent
-      // Solana addresses are typically 32-44 characters (Base58 encoded)
-      // Ethereum addresses start with 0x and are 42 characters
-      const isSolanaAddress = walletAddress && !walletAddress.startsWith("0x") && walletAddress.length >= 32;
-      const isSolanaChainType = chainType === "SVM" || chainType === "solana";
+      // Primary detection: chain type (most reliable)
+      // Secondary: wallet address format as fallback
+      const chainTypeUpper = chainType?.toUpperCase();
+      const isSolanaChainType = chainType && (
+        CHAIN_TYPES.SOLANA.some(type => type.toUpperCase() === chainTypeUpper)
+      );
       
-      const isSolana = isSolanaAddress || isSolanaChainType;
+      // Solana address validation: Base58 encoded, typically 32-44 characters, no 0x prefix
+      // This is a simple heuristic - the presence of chain_type should be authoritative
+      const isSolanaAddress = walletAddress && 
+        !walletAddress.startsWith("0x") && 
+        walletAddress.length >= 32 && 
+        walletAddress.length <= 44 &&
+        /^[1-9A-HJ-NP-Za-km-z]+$/.test(walletAddress); // Base58 alphabet
+      
+      const isSolana = isSolanaChainType || isSolanaAddress;
 
       console.log("🔍 Blockchain detection:");
       console.log("- Is Solana address format:", isSolanaAddress);
@@ -810,8 +826,17 @@ const CubePaymentEngine = ({
         // Use Solana payment service
         console.log("🌟 Generating Solana Pay URI with token:", tokenAddress || "SOL");
         
-        // Determine network - override to devnet if token address is present (USDC is on devnet)
-        const network = tokenAddress ? "DEVNET" : "TESTNET";
+        // Determine network based on agent configuration or default
+        // Note: USDC on Solana Devnet uses address 4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU
+        let network = "TESTNET"; // Default for SOL payments
+        
+        if (tokenAddress) {
+          // If token address is the known USDC Devnet address, use DEVNET
+          const USDC_DEVNET = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
+          network = tokenAddress === USDC_DEVNET ? "DEVNET" : "TESTNET";
+        }
+        
+        console.log("- Using network:", network);
         
         // Switch to correct Solana network
         solanaPaymentService.switchSolanaNetwork(network);
