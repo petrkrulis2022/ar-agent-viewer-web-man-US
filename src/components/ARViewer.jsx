@@ -147,6 +147,64 @@ const ARViewer = () => {
     }
   }, []);
 
+  // 🔍 Check for existing wallet connections on mount
+  useEffect(() => {
+    const checkExistingWalletConnections = async () => {
+      console.log("🔍 Checking for existing wallet connections...");
+
+      const connections = {};
+
+      // Check Solana/Phantom wallet
+      if (window.solana && window.solana.isPhantom) {
+        try {
+          const response = await window.solana.connect({ onlyIfTrusted: true });
+          if (response.publicKey) {
+            connections.solana = {
+              isConnected: true,
+              address: response.publicKey.toString(),
+              network: "devnet", // Or detect from connection
+            };
+            console.log(
+              "✅ Found existing Solana connection:",
+              response.publicKey.toString()
+            );
+          }
+        } catch (error) {
+          console.log("ℹ️ No existing Solana connection");
+        }
+      }
+
+      // Check EVM/MetaMask wallet
+      if (window.ethereum) {
+        try {
+          const accounts = await window.ethereum.request({
+            method: "eth_accounts",
+          });
+          if (accounts && accounts.length > 0) {
+            connections.evm = {
+              isConnected: true,
+              address: accounts[0],
+            };
+            console.log("✅ Found existing EVM connection:", accounts[0]);
+          }
+        } catch (error) {
+          console.log("ℹ️ No existing EVM connection");
+        }
+      }
+
+      // Update wallet connection state if any connections found
+      if (Object.keys(connections).length > 0) {
+        setWalletConnection({
+          ...connections,
+          hasAnyConnection: true,
+        });
+        console.log("✅ Wallet connections initialized:", connections);
+      }
+    };
+
+    checkExistingWalletConnections();
+  }, []);
+
   // Initialize RTK-enhanced location services
   const initializeLocation = async () => {
     try {
@@ -387,19 +445,30 @@ const ARViewer = () => {
     let agentsToFilter = nearAgents;
 
     if (!filters.allAgents) {
+      // Debug: Log the full walletConnection structure
+      console.log(
+        "🔍 WalletConnection Structure:",
+        JSON.stringify(walletConnection, null, 2)
+      );
+
       // Get connected wallet address from EVM, Solana, or Hedera
-      const userWallet = (
+      const userWalletRaw =
         walletConnection?.evm?.address ||
         walletConnection?.solana?.address ||
         walletConnection?.hedera?.address ||
-        walletConnection?.address
-      ) // Fallback for old structure
-        ?.toLowerCase();
+        walletConnection?.address; // Fallback for old structure
+
+      // ⚠️ IMPORTANT: Don't lowercase Solana/Hedera addresses (case-sensitive)
+      // Only lowercase EVM addresses (0x...)
+      const userWallet = userWalletRaw?.startsWith("0x")
+        ? userWalletRaw.toLowerCase()
+        : userWalletRaw;
 
       // Debug logging
       console.log("🔍 Filter Debug:", {
         userWallet,
-        walletConnection,
+        userWalletRaw,
+        walletConnectionKeys: Object.keys(walletConnection || {}),
         totalAgents: nearAgents.length,
         filters,
         sampleAgent: nearAgents[0]
@@ -407,10 +476,22 @@ const ARViewer = () => {
               name: nearAgents[0].name,
               agent_wallet: nearAgents[0].agent_wallet_address,
               owner_wallet: nearAgents[0].owner_wallet,
+              wallet_address: nearAgents[0].wallet_address,
+              deployer_address: nearAgents[0].deployer_address,
               type: nearAgents[0].agent_type,
+              object_type: nearAgents[0].object_type,
             }
           : null,
       });
+
+      console.log(
+        "📊 All nearAgents:",
+        nearAgents.map((a) => ({
+          name: a.name,
+          owner_wallet: a.owner_wallet,
+          type: a.agent_type || a.object_type,
+        }))
+      );
 
       agentsToFilter = nearAgents.filter((agent) => {
         // ✅ Check ALL possible wallet fields for both EVM and Solana
