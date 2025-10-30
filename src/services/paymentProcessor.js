@@ -30,8 +30,8 @@ export class PaymentProcessor {
         qrData.payment_uri || qrData.data
       );
 
-      // 3. Check wallet connection
-      await this.ensureWalletConnection();
+      // 3. Check wallet connection (protocol-specific)
+      await this.ensureWalletConnection(paymentDetails.protocol);
 
       // 4. Switch to correct network if needed (only for Ethereum payments)
       if (paymentDetails.protocol === "ethereum" && paymentDetails.chainId) {
@@ -181,34 +181,109 @@ export class PaymentProcessor {
     return parsedData;
   }
 
-  // Ensure wallet is connected
-  async ensureWalletConnection() {
-    if (!window.ethereum) {
-      throw new Error(
-        "MetaMask not found. Please install MetaMask to continue."
-      );
-    }
+  // Ensure wallet is connected (protocol-specific)
+  async ensureWalletConnection(protocol = "ethereum") {
+    console.log(`🔌 Ensuring ${protocol} wallet connection...`);
 
-    try {
-      // Request account access
-      const accounts = await window.ethereum.request({
-        method: "eth_requestAccounts",
-      });
+    if (protocol === "solana") {
+      // Prioritize Phantom wallet over Brave's built-in wallet
+      const wallet = window.phantom?.solana || window.solana;
 
-      if (!accounts || accounts.length === 0) {
+      if (!wallet) {
         throw new Error(
-          "No wallet accounts found. Please connect your wallet."
+          "Solana wallet not found. Please install Phantom or Solflare wallet to continue."
         );
       }
 
-      this.walletConnected = true;
-      console.log("✅ Wallet connected:", accounts[0]);
-      return accounts[0];
-    } catch (error) {
-      if (error.code === 4001) {
-        throw new Error("Wallet connection was rejected by user");
+      console.log(
+        "🔍 Detected Solana wallet:",
+        wallet.isPhantom ? "Phantom" : "Other Solana wallet"
+      );
+
+      try {
+        // Check if already connected first
+        if (wallet.isConnected && wallet.publicKey) {
+          console.log(
+            "✅ Solana wallet already connected:",
+            wallet.publicKey.toString()
+          );
+          this.walletConnected = true;
+          return wallet.publicKey.toString();
+        }
+
+        // Try silent connection first
+        console.log("🔄 Attempting silent Solana wallet connection...");
+        let response;
+        try {
+          response = await wallet.connect({ onlyIfTrusted: true });
+        } catch (silentError) {
+          // Silent connection failed, request explicit user authorization
+          console.log(
+            "⚠️ Silent connection failed, requesting user authorization..."
+          );
+          response = await wallet.connect();
+        }
+
+        if (!response.publicKey) {
+          throw new Error(
+            "No Solana wallet accounts found. Please connect your wallet."
+          );
+        }
+
+        this.walletConnected = true;
+        console.log(
+          "✅ Solana wallet connected:",
+          response.publicKey.toString()
+        );
+        return response.publicKey.toString();
+      } catch (error) {
+        console.error("❌ Solana wallet connection error:", error);
+
+        if (error.code === 4001) {
+          throw new Error("Solana wallet connection was rejected by user");
+        }
+
+        // Check for common Phantom errors
+        if (error.message && error.message.includes("at least one account")) {
+          throw new Error(
+            "Please unlock your Phantom wallet and make sure you have at least one Solana account created."
+          );
+        }
+
+        throw new Error(`Solana wallet connection failed: ${error.message}`);
       }
-      throw new Error(`Wallet connection failed: ${error.message}`);
+    } else if (protocol === "ethereum") {
+    } else if (protocol === "ethereum") {
+      // Check for Ethereum wallet (MetaMask, etc.)
+      if (!window.ethereum) {
+        throw new Error(
+          "MetaMask not found. Please install MetaMask to continue."
+        );
+      }
+
+      try {
+        // Request account access
+        const accounts = await window.ethereum.request({
+          method: "eth_requestAccounts",
+        });
+
+        if (!accounts || accounts.length === 0) {
+          throw new Error(
+            "No wallet accounts found. Please connect your wallet."
+          );
+        }
+
+        this.walletConnected = true;
+        console.log("✅ Ethereum wallet connected:", accounts[0]);
+        return accounts[0];
+      } catch (error) {
+        if (error.code === 4001) {
+          throw new Error("Wallet connection was rejected by user");
+        }
+        throw new Error(`Wallet connection failed: ${error.message}`);
+      }
+    } else {
+      throw new Error(`Unsupported protocol: ${protocol}`);
     }
   }
 
@@ -336,14 +411,21 @@ export class PaymentProcessor {
     console.log("🌟 Executing REAL Solana transaction:", paymentDetails);
 
     try {
+      // Prioritize Phantom wallet over Brave's built-in wallet
+      const wallet = window.phantom?.solana || window.solana;
+
       // Check if Solana wallet is available and connected
-      if (!window.solana || !window.solana.isConnected) {
+      if (!wallet || !wallet.isConnected) {
         throw new Error(
           "Solana wallet not connected. Please connect your Phantom or Solflare wallet."
         );
       }
 
       console.log("🔗 Solana payment processing:");
+      console.log(
+        "- Wallet:",
+        wallet.isPhantom ? "Phantom" : "Other Solana wallet"
+      );
       console.log("- Recipient:", paymentDetails.recipient);
       console.log("- Amount:", paymentDetails.amount);
       console.log("- Token:", paymentDetails.tokenAddress || "SOL");
@@ -363,7 +445,7 @@ export class PaymentProcessor {
         "confirmed"
       );
 
-      const fromPubkey = new PublicKey(window.solana.publicKey.toString());
+      const fromPubkey = new PublicKey(wallet.publicKey.toString());
       const toPubkey = new PublicKey(paymentDetails.recipient);
 
       let transaction;
@@ -434,9 +516,7 @@ export class PaymentProcessor {
 
       // Sign and send transaction
       console.log("🔐 Requesting wallet signature...");
-      const signedTransaction = await window.solana.signTransaction(
-        transaction
-      );
+      const signedTransaction = await wallet.signTransaction(transaction);
 
       console.log("📡 Broadcasting transaction...");
       const signature = await connection.sendRawTransaction(

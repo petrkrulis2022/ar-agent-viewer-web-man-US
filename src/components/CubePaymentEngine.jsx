@@ -777,8 +777,32 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
 
       setUserNetwork(currentUserNetwork);
 
-      // Check for cross-chain opportunities
-      if (currentUserNetwork && dynamicQRService.getCCIPService) {
+      // Check if agent is on Solana - skip cross-chain detection for Solana
+      const agentIsSolana =
+        agent?.network === "Solana Devnet" ||
+        agent?.deployment_network_name === "Solana Devnet" ||
+        agent?.chain_id === "devnet" ||
+        agent?.chain_id === "solana-devnet" ||
+        (typeof agent?.chain_id === "string" &&
+          agent?.chain_id.toLowerCase().includes("solana"));
+
+      const isSolanaWallet =
+        typeof window !== "undefined" && window.solana?.isConnected;
+
+      console.log("🔍 Agent/Wallet Detection in init:", {
+        agentIsSolana,
+        isSolanaWallet,
+        agentNetwork: agent?.network,
+        agentChainId: agent?.chain_id,
+      });
+
+      // Skip cross-chain logic entirely for Solana
+      if (agentIsSolana || isSolanaWallet) {
+        console.log("🌟 Solana detected → Skipping EVM cross-chain logic");
+        setShowCrossChainUI(false);
+        setPaymentMode("same-chain");
+      } else if (currentUserNetwork && dynamicQRService.getCCIPService) {
+        // Check for cross-chain opportunities (EVM only)
         try {
           const ccipService = dynamicQRService.getCCIPService();
           const crossChainDetection =
@@ -1043,6 +1067,19 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
       } else {
         // Already parsed transaction data
         transactionData = currentQRData;
+      }
+
+      // 🌟 CRITICAL FIX: Override chainId for Solana agents
+      const agentIsSolana =
+        agent?.network === "Solana Devnet" ||
+        agent?.deployment_network_name === "Solana Devnet" ||
+        (typeof agent?.chain_id === "string" &&
+          agent?.chain_id.toLowerCase().includes("solana"));
+
+      if (agentIsSolana && transactionData) {
+        console.log("🔧 Overriding chainId for Solana agent");
+        transactionData.chainId = "devnet";
+        transactionData.chainType = "SVM";
       }
 
       console.log("📤 Transaction data:", transactionData);
@@ -1765,13 +1802,30 @@ const CubePaymentEngine = ({
       console.log("📊 Agent data for QR generation:", agent);
 
       // STEP 1: Detect network configuration for cross-chain vs same-chain
-      const userNetwork = window.ethereum?.chainId
-        ? parseInt(window.ethereum.chainId, 16)
-        : null;
+      // Check if user is on Solana or EVM wallet
+      const isSolanaWallet = window.solana?.isConnected;
+      const isEVMWallet = window.ethereum && !isSolanaWallet;
+
+      const userNetwork =
+        isEVMWallet && window.ethereum?.chainId
+          ? parseInt(window.ethereum.chainId, 16)
+          : null;
 
       const agentNetwork = agent?.network_id || agent?.chain_id;
 
+      // Detect if agent is on Solana
+      const agentIsSolana =
+        agent?.network === "Solana Devnet" ||
+        agent?.deployment_network_name === "Solana Devnet" ||
+        agentNetwork === "devnet" ||
+        agentNetwork === "solana-devnet" ||
+        (typeof agentNetwork === "string" &&
+          agentNetwork.toLowerCase().includes("solana"));
+
       console.log("🔍 DETAILED Network Detection:");
+      console.log("  - isSolanaWallet:", isSolanaWallet);
+      console.log("  - isEVMWallet:", isEVMWallet);
+      console.log("  - agentIsSolana:", agentIsSolana);
       console.log(
         "  - window.ethereum.chainId (raw):",
         window.ethereum?.chainId
@@ -1785,61 +1839,83 @@ const CubePaymentEngine = ({
       console.log("🌐 Network Detection:", {
         userNetwork,
         agentNetwork,
+        isSolanaWallet,
+        agentIsSolana,
         needsCrossChain:
           userNetwork && agentNetwork && userNetwork !== agentNetwork,
       });
 
-      // VALIDATION: Check if user is on a supported network
-      const SUPPORTED_TESTNETS = [
-        11155111, 421614, 84532, 11155420, 80002, 43113,
-      ]; // Sepolia, Arb, Base, OP, Polygon, Avalanche
-      const MAINNET_CHAINS = [1, 137, 42161, 8453, 10, 43114]; // ETH, Polygon, Arb, Base, OP, Avalanche mainnets
+      // VALIDATION: Check if user is on a supported network (ONLY FOR EVM)
+      // Skip network validation for Solana wallets
+      if (isEVMWallet && !agentIsSolana) {
+        const SUPPORTED_TESTNETS = [
+          11155111, 421614, 84532, 11155420, 80002, 43113,
+        ]; // Sepolia, Arb, Base, OP, Polygon, Avalanche
+        const MAINNET_CHAINS = [1, 137, 42161, 8453, 10, 43114]; // ETH, Polygon, Arb, Base, OP, Avalanche mainnets
 
-      if (userNetwork && MAINNET_CHAINS.includes(userNetwork)) {
-        console.error("❌ User is on MAINNET but agent requires TESTNET");
-        alert(
-          `⚠️ Network Mismatch\n\n` +
-            `You're connected to a MAINNET network.\n` +
-            `This agent requires a TESTNET connection.\n\n` +
-            `Please switch to one of these testnets:\n` +
-            `• Sepolia (11155111)\n` +
-            `• Base Sepolia (84532)\n` +
-            `• Arbitrum Sepolia (421614)\n` +
-            `• OP Sepolia (11155420)\n\n` +
-            `Then try again.`
-        );
-        setIsGenerating(false);
-        return;
-      }
+        if (userNetwork && MAINNET_CHAINS.includes(userNetwork)) {
+          console.error("❌ User is on MAINNET but agent requires TESTNET");
+          alert(
+            `⚠️ Network Mismatch\n\n` +
+              `You're connected to a MAINNET network.\n` +
+              `This agent requires a TESTNET connection.\n\n` +
+              `Please switch to one of these testnets:\n` +
+              `• Sepolia (11155111)\n` +
+              `• Base Sepolia (84532)\n` +
+              `• Arbitrum Sepolia (421614)\n` +
+              `• OP Sepolia (11155420)\n\n` +
+              `Then try again.`
+          );
+          setIsGenerating(false);
+          return;
+        }
 
-      if (
-        userNetwork &&
-        !SUPPORTED_TESTNETS.includes(userNetwork) &&
-        !MAINNET_CHAINS.includes(userNetwork)
-      ) {
-        console.error("❌ User network not supported:", userNetwork);
-        alert(
-          `⚠️ Unsupported Network\n\n` +
-            `Your current network (${userNetwork}) is not supported.\n\n` +
-            `Please switch to one of these testnets:\n` +
-            `• Sepolia (11155111)\n` +
-            `• Base Sepolia (84532)\n` +
-            `• Arbitrum Sepolia (421614)\n` +
-            `• OP Sepolia (11155420)`
-        );
-        setIsGenerating(false);
-        return;
-      }
+        if (
+          userNetwork &&
+          !SUPPORTED_TESTNETS.includes(userNetwork) &&
+          !MAINNET_CHAINS.includes(userNetwork)
+        ) {
+          console.error("❌ User network not supported:", userNetwork);
+          alert(
+            `⚠️ Unsupported Network\n\n` +
+              `Your current network (${userNetwork}) is not supported.\n\n` +
+              `Please switch to one of these testnets:\n` +
+              `• Sepolia (11155111)\n` +
+              `• Base Sepolia (84532)\n` +
+              `• Arbitrum Sepolia (421614)\n` +
+              `• OP Sepolia (11155420)`
+          );
+          setIsGenerating(false);
+          return;
+        }
+      } // End of EVM-only validation block
 
       // STEP 2: Route to appropriate flow
-      if (userNetwork && agentNetwork && userNetwork !== agentNetwork) {
-        // 🌉 CROSS-CHAIN: Show intermediate modal first
+      // For Solana wallets, always use direct QR generation (no cross-chain)
+      if (isSolanaWallet && agentIsSolana) {
+        console.log(
+          "🌟 Solana-to-Solana detected → Direct Solana QR generation"
+        );
+
+        const result = await dynamicQRService.generateDynamicQR(
+          agent,
+          paymentAmount ||
+            agent?.interaction_fee_amount ||
+            agent?.interaction_fee ||
+            1
+        );
+
+        console.log("✅ Solana QR generated:", result);
+        setQrData(result.paymentUri);
+        setCurrentView("qr");
+      } else if (userNetwork && agentNetwork && userNetwork !== agentNetwork) {
+        // 🌉 CROSS-CHAIN (EVM only): Show intermediate modal first
         console.log("🌉 Cross-chain detected → Triggering intermediate modal");
         await handleCrossChainMode();
         return; // Exit here - modal will handle QR generation after confirmation
       } else {
-        // 📱 SAME-CHAIN: Direct QR generation
-        console.log("📱 Same-chain detected → Direct QR generation");
+        // 📱 SAME-CHAIN (EVM): Direct QR generation
+        console.log("📱 Same-chain EVM detected → Direct QR generation");
 
         const result = await dynamicQRService.generateDynamicQR(
           agent,

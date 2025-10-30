@@ -416,7 +416,68 @@ class DynamicQRService {
         throw new Error("No wallet address found for QR generation");
       }
 
-      // 🎯 DUAL QR LOGIC: Detect user's current network and compare with agent's network
+      // � SOLANA DETECTION: Check if agent is on Solana network
+      const agentIsSolana =
+        agentData.network === "Solana Devnet" ||
+        agentData.deployment_network_name === "Solana Devnet" ||
+        agentChainId === "devnet" ||
+        agentChainId === "solana-devnet" ||
+        (typeof agentChainId === "string" &&
+          agentChainId.toLowerCase().includes("solana"));
+
+      const isSolanaWallet =
+        typeof window !== "undefined" && window.solana?.isConnected;
+
+      console.log("🔍 Wallet/Network Detection:", {
+        agentIsSolana,
+        isSolanaWallet,
+        agentChainId,
+        agentNetwork: agentData.network,
+        walletAddress,
+      });
+
+      // 🌟 If agent is on Solana, use Solana Pay format
+      if (agentIsSolana) {
+        console.log("🌟 Solana network detected → Generating Solana Pay QR");
+
+        // Create Solana Pay URI format
+        let solanaPayUri = `solana:${walletAddress}?amount=${feeAmount}&label=${encodeURIComponent(
+          agentData.name || "AgentSphere Payment"
+        )}&message=${encodeURIComponent(
+          `Payment for ${agentData.name || "agent"}`
+        )}`;
+
+        // Include SPL token if specified
+        if (agentData.token_address && feeToken === "USDC") {
+          solanaPayUri += `&spl-token=${agentData.token_address}`;
+        }
+
+        console.log("✅ Solana Pay URI generated:", solanaPayUri);
+
+        return {
+          success: true,
+          qrData: solanaPayUri,
+          paymentUri: solanaPayUri,
+          transactionData: {
+            to: walletAddress,
+            amount: feeAmount,
+            token: feeToken,
+            tokenAddress: agentData.token_address,
+            chainId: "devnet",
+            chainType: "SVM",
+            protocol: "solana",
+          },
+          networkInfo: { name: "Solana Devnet", type: "SVM" },
+          chainType: "SVM",
+          amount: feeAmount,
+          token: feeToken,
+          recipient: walletAddress,
+          optimizedFor: "Phantom",
+          isCrossChain: false,
+        };
+      }
+
+      // �🎯 DUAL QR LOGIC: Detect user's current network and compare with agent's network (EVM ONLY)
       let userChainId = null;
       if (typeof window !== "undefined" && window.ethereum) {
         try {
@@ -681,9 +742,14 @@ class DynamicQRService {
   async handleQRClick(agentData, qrData) {
     try {
       console.log("🔥 QR Code clicked! Attempting transaction...");
+      console.log("🔍 QR Data received:", qrData);
+      console.log("🔍 Chain ID:", qrData.chainId);
+      console.log("🔍 Chain Type from data:", qrData.chainType);
 
       const chainType =
         qrData.chainType || this.detectChainType(qrData.chainId);
+
+      console.log("🔍 Detected Chain Type:", chainType);
 
       if (chainType === "EVM") {
         return await this.handleEVMTransaction(qrData);
@@ -801,14 +867,24 @@ class DynamicQRService {
   }
 
   async handleSolanaTransaction(qrData) {
-    if (typeof window === "undefined" || (!window.solana && !window.phantom)) {
+    console.log("🌟 Executing REAL Solana transaction:", qrData);
+
+    // Prioritize Phantom wallet over Brave's built-in wallet
+    const wallet =
+      (typeof window !== "undefined" && window.phantom?.solana) ||
+      window.solana;
+
+    if (typeof window === "undefined" || !wallet) {
       throw new Error(
         "Solana wallet not detected. Please install Phantom or another Solana wallet."
       );
     }
 
     // Try to connect to Solana wallet (Phantom, Solflare, etc.)
-    const wallet = window.phantom?.solana || window.solana;
+    console.log(
+      "🔍 Using wallet:",
+      wallet.isPhantom ? "Phantom" : "Other Solana wallet"
+    );
 
     if (!wallet.isConnected) {
       await wallet.connect();
@@ -816,16 +892,29 @@ class DynamicQRService {
 
     console.log("👤 Connected Solana account:", wallet.publicKey.toString());
 
-    // For now, return a placeholder response
-    // Full Solana transaction implementation would require additional dependencies
-    console.log("🔧 Solana transaction data:", qrData);
+    // Import payment processor to handle the actual transaction
+    const { default: paymentProcessor } = await import("./paymentProcessor.js");
 
-    return {
-      success: true,
-      message: "Solana transaction initiated. Please complete in your wallet.",
-      chainType: "SVM",
-      note: "Full Solana transaction support requires additional implementation",
+    // Create payment URI in Solana Pay format
+    const paymentUri = `solana:${qrData.to}?amount=${qrData.amount}&label=AgentSphere%20Payment`;
+
+    const paymentData = {
+      payment_uri: paymentUri,
+      data: paymentUri,
+      qrObject: {
+        amount: qrData.amount,
+        agent: { name: qrData.agentName || "Agent" },
+      },
     };
+
+    console.log("💳 Processing Solana payment:", paymentData);
+
+    // Use payment processor to execute the transaction
+    const result = await paymentProcessor.processQRPayment(paymentData);
+
+    console.log("✅ Solana transaction result:", result);
+
+    return result;
   }
 
   // Balance fetching methods (keeping original functionality)
