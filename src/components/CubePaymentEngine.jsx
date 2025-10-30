@@ -760,8 +760,8 @@ const CubePaymentEngine = ({
   // Helper function to detect if address is Solana format
   const isSolanaAddress = (address) => {
     if (!address) return false;
-    // Solana addresses are base58 encoded, 32-44 chars, no 0x prefix
-    return !address.startsWith("0x") && address.length >= 32 && address.length <= 44;
+    // Use solanaPaymentService for proper validation
+    return solanaPaymentService.isValidSolanaAddress(address);
   };
 
   // Handle Crypto QR selection - integrate with existing system
@@ -796,11 +796,15 @@ const CubePaymentEngine = ({
         console.log("- Amount:", amount);
 
         // Determine payment type based on token_address
-        const paymentType = agent?.token_address ? "USDC" : "SOL";
-        const network = agent?.token_address ? "DEVNET" : "TESTNET";
+        // Check if it's USDC on Devnet (the only SPL token we currently support)
+        const USDC_DEVNET_MINT = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
+        const isUSDC = agent?.token_address === USDC_DEVNET_MINT;
+        const paymentType = isUSDC ? "USDC" : "SOL";
+        const network = isUSDC ? "DEVNET" : "TESTNET";
 
         console.log("- Payment type:", paymentType);
         console.log("- Network:", network);
+        console.log("- Is USDC:", isUSDC);
 
         // Switch to appropriate Solana network
         solanaPaymentService.switchSolanaNetwork(network);
@@ -810,7 +814,7 @@ const CubePaymentEngine = ({
           recipient: walletAddress,
           amount: amount,
           memo: `Payment to AR Agent: ${agent?.name || agent?.title || `Agent-${agent?.id}`} (ID: ${agent?.id})`,
-          tokenMint: agent?.token_address || null,
+          tokenMint: isUSDC ? agent.token_address : null,
           network: network,
         };
 
