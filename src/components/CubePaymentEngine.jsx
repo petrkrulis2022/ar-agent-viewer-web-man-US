@@ -24,7 +24,7 @@ const getAgentPaymentConfig = async (agentId) => {
     const { data, error } = await supabase
       .from("deployed_objects")
       .select(
-        "payment_methods, payment_config, agent_wallet_address, payment_recipient_address"
+        "payment_methods, payment_config, agent_wallet_address, payment_recipient_address, chain_id, token_address, chain_type"
       )
       .eq("id", agentId)
       .single();
@@ -85,6 +85,9 @@ const getAgentPaymentConfig = async (agentId) => {
         paymentConfig: data.payment_config || {},
         walletAddress: data.agent_wallet_address,
         recipientAddress: data.payment_recipient_address,
+        chainId: data.chain_id,
+        tokenAddress: data.token_address,
+        chainType: data.chain_type,
       },
     };
   } catch (error) {
@@ -775,13 +778,94 @@ const CubePaymentEngine = ({
         console.log("💼 Using configured wallet address:", walletAddress);
       }
 
-      // Use existing Morph payment service (primary blockchain)
-      const morphPayment = await morphPaymentService.generateMorphAgentPayment(
-        agent,
-        paymentAmount || agent?.interaction_fee || 1
+      // Get chain configuration
+      const chainType = agentPaymentConfig?.config?.chainType || agent?.chain_type;
+      const chainId = agentPaymentConfig?.config?.chainId || agent?.chain_id;
+      const tokenAddress = agentPaymentConfig?.config?.tokenAddress || agent?.token_address;
+      const amount = paymentAmount || agent?.interaction_fee || 1;
+
+      console.log("🔍 Agent blockchain details:");
+      console.log("- Wallet address:", walletAddress);
+      console.log("- Chain type:", chainType);
+      console.log("- Chain ID:", chainId);
+      console.log("- Token address:", tokenAddress);
+      console.log("- Amount:", amount);
+
+      // Constants for chain type detection
+      const CHAIN_TYPES = {
+        SOLANA: ['SVM', 'solana', 'Solana'],
+        EVM: ['EVM', 'ethereum', 'Ethereum'],
+      };
+
+      // Detect if this is a Solana agent
+      // Primary detection: chain type (most reliable)
+      // Secondary: wallet address format as fallback
+      const chainTypeUpper = chainType?.toUpperCase();
+      const isSolanaChainType = chainType && (
+        CHAIN_TYPES.SOLANA.some(type => type.toUpperCase() === chainTypeUpper)
       );
-      const qrPaymentData =
-        morphPaymentService.generateMorphPaymentQRData(morphPayment);
+      
+      // Solana address validation: Base58 encoded, typically 32-44 characters, no 0x prefix
+      // This is a simple heuristic - the presence of chain_type should be authoritative
+      const isSolanaAddress = walletAddress && 
+        !walletAddress.startsWith("0x") && 
+        walletAddress.length >= 32 && 
+        walletAddress.length <= 44 &&
+        /^[1-9A-HJ-NP-Za-km-z]+$/.test(walletAddress); // Base58 alphabet
+      
+      const isSolana = isSolanaChainType || isSolanaAddress;
+
+      console.log("🔍 Blockchain detection:");
+      console.log("- Is Solana address format:", isSolanaAddress);
+      console.log("- Is Solana chain type:", isSolanaChainType);
+      console.log("- Final decision: Using", isSolana ? "SOLANA" : "EVM", "payment service");
+
+      let qrPaymentData;
+
+      if (isSolana) {
+        // Use Solana payment service
+        console.log("🌟 Generating Solana Pay URI with token:", tokenAddress || "SOL");
+        
+        // Determine network based on agent configuration or default
+        // Note: USDC on Solana Devnet uses address 4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU
+        let network = "TESTNET"; // Default for SOL payments
+        
+        if (tokenAddress) {
+          // If token address is the known USDC Devnet address, use DEVNET
+          const USDC_DEVNET = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
+          network = tokenAddress === USDC_DEVNET ? "DEVNET" : "TESTNET";
+        }
+        
+        console.log("- Using network:", network);
+        
+        // Switch to correct Solana network
+        solanaPaymentService.switchSolanaNetwork(network);
+        
+        const paymentInfo = {
+          recipient: walletAddress,
+          amount: amount,
+          memo: `Payment to AR Agent: ${agent?.name || agent?.id}`,
+          tokenMint: tokenAddress || null,
+          network: network,
+        };
+
+        console.log("📱 Solana payment info:", paymentInfo);
+        
+        qrPaymentData = solanaPaymentService.generateSolanaPaymentQRData(paymentInfo);
+        
+        console.log("✅ Solana Pay URI generated:", qrPaymentData);
+      } else {
+        // Use existing Morph payment service (EVM-based)
+        console.log("🔷 Generating EVM payment URI (Morph/Ethereum)");
+        
+        const morphPayment = await morphPaymentService.generateMorphAgentPayment(
+          agent,
+          amount
+        );
+        qrPaymentData = morphPaymentService.generateMorphPaymentQRData(morphPayment);
+        
+        console.log("✅ EVM payment URI generated:", qrPaymentData);
+      }
 
       console.log("✅ QR data generated:", qrPaymentData);
 
