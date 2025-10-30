@@ -209,9 +209,13 @@ export class PaymentProcessor {
         let response;
         try {
           response = await window.solana.connect({ onlyIfTrusted: true });
+          console.log("✅ Silent connection successful");
         } catch (silentError) {
+          // Log why silent connection failed
+          console.log("ℹ️ Silent connection failed:", silentError.message || silentError.code);
+          
           // If silent connection fails, request user authorization
-          console.log("🔗 Silent connection failed, requesting user authorization...");
+          console.log("🔗 Requesting user authorization...");
           response = await window.solana.connect();
         }
 
