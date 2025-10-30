@@ -757,6 +757,13 @@ const CubePaymentEngine = ({
     }
   };
 
+  // Helper function to detect if address is Solana format
+  const isSolanaAddress = (address) => {
+    if (!address) return false;
+    // Solana addresses are base58 encoded, 32-44 chars, no 0x prefix
+    return !address.startsWith("0x") && address.length >= 32 && address.length <= 44;
+  };
+
   // Handle Crypto QR selection - integrate with existing system
   const handleCryptoQRSelection = async () => {
     setIsGenerating(true);
@@ -775,15 +782,56 @@ const CubePaymentEngine = ({
         console.log("💼 Using configured wallet address:", walletAddress);
       }
 
-      // Use existing Morph payment service (primary blockchain)
-      const morphPayment = await morphPaymentService.generateMorphAgentPayment(
-        agent,
-        paymentAmount || agent?.interaction_fee || 1
-      );
-      const qrPaymentData =
-        morphPaymentService.generateMorphPaymentQRData(morphPayment);
+      const amount = paymentAmount || agent?.interaction_fee || 1;
+      let qrPaymentData;
 
-      console.log("✅ QR data generated:", qrPaymentData);
+      // Detect if this is a Solana agent
+      const isSolana = isSolanaAddress(walletAddress);
+      console.log("🔍 Blockchain detection:", isSolana ? "Solana" : "EVM");
+
+      if (isSolana) {
+        console.log("🌟 Generating Solana payment QR...");
+        console.log("- Agent wallet:", walletAddress);
+        console.log("- Token address:", agent?.token_address || "None (SOL)");
+        console.log("- Amount:", amount);
+
+        // Determine payment type based on token_address
+        const paymentType = agent?.token_address ? "USDC" : "SOL";
+        const network = agent?.token_address ? "DEVNET" : "TESTNET";
+
+        console.log("- Payment type:", paymentType);
+        console.log("- Network:", network);
+
+        // Switch to appropriate Solana network
+        solanaPaymentService.switchSolanaNetwork(network);
+
+        // Generate Solana payment data
+        const solanaPayment = {
+          recipient: walletAddress,
+          amount: amount,
+          memo: `Payment to AR Agent: ${agent?.name || agent?.title || `Agent-${agent?.id}`} (ID: ${agent?.id})`,
+          tokenMint: agent?.token_address || null,
+          network: network,
+        };
+
+        console.log("📊 Solana payment data:", solanaPayment);
+
+        // Generate Solana Pay QR data
+        qrPaymentData = solanaPaymentService.generateSolanaPaymentQRData(solanaPayment);
+
+        console.log("✅ Solana QR data generated:", qrPaymentData);
+      } else {
+        console.log("⚡ Generating EVM payment QR...");
+
+        // Use existing Morph payment service (primary blockchain for EVM)
+        const morphPayment = await morphPaymentService.generateMorphAgentPayment(
+          agent,
+          amount
+        );
+        qrPaymentData = morphPaymentService.generateMorphPaymentQRData(morphPayment);
+
+        console.log("✅ EVM QR data generated:", qrPaymentData);
+      }
 
       setQrData(qrPaymentData);
       setCurrentView("qr");
