@@ -2575,6 +2575,18 @@ const CubePaymentEngine = ({
               console.log("✅ Virtual card payment completed:", result);
               // Close virtual card modal
               setShowVirtualCardModal(false);
+
+              // If closeAgentModal flag is set, close everything and return to AR viewer
+              if (result.closeAgentModal) {
+                console.log(
+                  "🔄 Closing cube payment engine and returning to AR viewer"
+                );
+                // Close the cube entirely
+                if (onClose) {
+                  onClose();
+                }
+              }
+
               // Call parent's onPaymentComplete to close cube and return to AR viewer
               if (onPaymentComplete) {
                 onPaymentComplete({
@@ -2583,6 +2595,7 @@ const CubePaymentEngine = ({
                   token: result.token,
                   wallet: result.wallet,
                   status: "completed",
+                  closeAgentModal: result.closeAgentModal, // Pass the flag up
                 });
               }
             }}

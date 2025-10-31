@@ -116,6 +116,14 @@ const AR3DScene = ({
         paymentContext.redirectUrl
       );
       window.location.href = `${paymentContext.redirectUrl}&status=success&payment_method=${paymentData.method}&amount=${paymentData.amount}`;
+    } else if (paymentData?.closeAgentModal) {
+      // 🔄 If closeAgentModal flag is set, don't reopen the agent modal
+      // This prevents showing the same agent again after payment
+      console.log(
+        "🔄 Payment complete, returning to AR viewer without agent modal"
+      );
+      setShowAgentModal(false);
+      setSelectedAgent(null); // Clear selected agent
     } else {
       setShowAgentModal(true); // Return to agent modal
     }

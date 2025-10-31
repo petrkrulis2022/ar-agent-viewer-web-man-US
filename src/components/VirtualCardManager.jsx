@@ -1,6 +1,7 @@
 // src/components/VirtualCardManager.jsx
 import React, { useState, useEffect } from "react";
 import { RevolutPaymentModal } from "./RevolutPaymentModal/RevolutPaymentModal";
+import { RevolutLoginFlow } from "./RevolutLoginFlow/RevolutLoginFlow";
 import { createVirtualCard, topUpCard } from "../services/revolutCardService";
 
 /**
@@ -47,6 +48,7 @@ export function VirtualCardManager({
   const [topUpAmount, setTopUpAmount] = useState("25");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showLoginFlow, setShowLoginFlow] = useState(false);
   const [showRevolutModal, setShowRevolutModal] = useState(false);
 
   // Load existing cards from localStorage
@@ -81,7 +83,8 @@ export function VirtualCardManager({
       currency: "USD",
       source: "Dynamic from e-shop/on-ramp or agent fee",
     });
-    setShowRevolutModal(true);
+    // Show login flow first, then payment modal
+    setShowLoginFlow(true);
   };
 
   // Handle "Create New Card" button
@@ -165,20 +168,32 @@ export function VirtualCardManager({
       currency: "USD",
       source: "Dynamic from e-shop/on-ramp or agent fee",
     });
+    // Show login flow first, then payment modal
+    setShowLoginFlow(true);
+  };
+
+  // Handle login flow completion
+  const handleLoginComplete = () => {
+    console.log("✅ Login flow completed, showing payment modal");
+    setShowLoginFlow(false);
     setShowRevolutModal(true);
   };
 
   // Handle payment confirmation
   const handlePaymentConfirm = async () => {
+    console.log(
+      "✅ Payment confirmed, closing all modals and returning to AR viewer"
+    );
     setShowRevolutModal(false);
 
-    // Close all modals and return to AR viewer
+    // Close all modals and return to AR viewer (without agent modal open)
     setTimeout(() => {
       onPaymentComplete?.({
         success: true,
         amount: paymentAmount, // 💰 Use dynamic payment amount
         currency: "USD",
         card: selectedCard || newCard,
+        closeAgentModal: true, // Signal to close the agent modal and show all agents
       });
     }, 500);
   };
@@ -575,6 +590,15 @@ export function VirtualCardManager({
           </div>
         </div>
       </div>
+
+      {/* Revolut Login Flow */}
+      {showLoginFlow && (
+        <RevolutLoginFlow
+          onLoginComplete={handleLoginComplete}
+          userEmail="p***@proton.me"
+          userName="Peter Krulis"
+        />
+      )}
 
       {/* Revolut Desktop Payment Modal */}
       {showRevolutModal && (

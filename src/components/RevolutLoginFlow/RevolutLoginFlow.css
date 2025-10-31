@@ -1,0 +1,436 @@
+/* RevolutLoginFlow.css */
+
+.revolut-login-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20000;
+  animation: fadeIn 0.3s ease;
+}
+
+.revolut-login-overlay.logo-overlay {
+  background: #000000;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.revolut-login-modal {
+  background: #1a1d29;
+  border-radius: 24px;
+  padding: 40px;
+  max-width: 440px;
+  width: 90%;
+  position: relative;
+  animation: slideUp 0.4s ease;
+  color: white;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Continue As Screen */
+.continue-as-modal {
+  text-align: center;
+}
+
+.login-title {
+  font-size: 28px;
+  font-weight: 600;
+  margin-bottom: 40px;
+  color: white;
+}
+
+.user-select-button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 30px;
+}
+
+.user-select-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.user-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin-right: 16px;
+}
+
+.user-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.user-info {
+  flex: 1;
+  text-align: left;
+}
+
+.user-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: white;
+  margin-bottom: 4px;
+}
+
+.user-email {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.arrow-icon {
+  font-size: 28px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.not-you-button {
+  background: transparent;
+  border: none;
+  color: #0075eb;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 12px;
+  transition: all 0.2s ease;
+}
+
+.not-you-button:hover {
+  color: #00d4ff;
+  text-decoration: underline;
+}
+
+/* Password Screen */
+.password-modal {
+  text-align: center;
+}
+
+.back-button {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 28px;
+  cursor: pointer;
+  padding: 8px;
+  transition: all 0.2s ease;
+}
+
+.back-button:hover {
+  color: #00d4ff;
+  transform: translateX(-4px);
+}
+
+.password-input-container {
+  position: relative;
+  margin: 30px 0;
+}
+
+.password-input {
+  width: 100%;
+  padding: 18px 50px 18px 18px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  font-size: 18px;
+  color: white;
+  outline: none;
+  transition: all 0.3s ease;
+  letter-spacing: 2px;
+}
+
+.password-input:focus {
+  border-color: #0075eb;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.password-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.show-password-button {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  padding: 8px;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.show-password-button:hover {
+  opacity: 1;
+}
+
+.forgot-password-link {
+  background: transparent;
+  border: none;
+  color: #0075eb;
+  font-size: 14px;
+  cursor: pointer;
+  margin-bottom: 30px;
+  padding: 8px;
+  transition: all 0.2s ease;
+}
+
+.forgot-password-link:hover {
+  color: #00d4ff;
+  text-decoration: underline;
+}
+
+.continue-button {
+  width: 100%;
+  padding: 18px;
+  background: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1d29;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.continue-button:hover:not(:disabled) {
+  background: #f0f0f0;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(255, 255, 255, 0.2);
+}
+
+.continue-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Email Check Screen */
+.email-check-modal {
+  max-width: 480px;
+  text-align: center;
+  padding: 48px 40px;
+}
+
+.close-button {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 8px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.close-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.open-email-button {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: transparent;
+  border: none;
+  color: #0075eb;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 10px 16px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.open-email-button:hover {
+  background: rgba(0, 117, 235, 0.1);
+  color: #00d4ff;
+}
+
+.email-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: white;
+}
+
+.email-message {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.6;
+  margin-bottom: 30px;
+}
+
+.choose-another-method {
+  background: transparent;
+  border: none;
+  color: #0075eb;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 10px;
+  margin-bottom: 30px;
+  transition: all 0.2s ease;
+}
+
+.choose-another-method:hover {
+  color: #00d4ff;
+  text-decoration: underline;
+}
+
+.email-illustration {
+  margin: 40px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.resend-email {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 30px;
+}
+
+/* Email Confirmed Screen */
+.email-confirmed-modal {
+  max-width: 400px;
+  text-align: center;
+  background: #2d3142;
+  padding: 50px 40px;
+}
+
+.choose-another-method-top {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: transparent;
+  border: none;
+  color: #0075eb;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 10px;
+  transition: all 0.2s ease;
+}
+
+.choose-another-method-top:hover {
+  color: #00d4ff;
+  text-decoration: underline;
+}
+
+.confirmation-content {
+  margin-top: 40px;
+}
+
+.check-icon {
+  width: 80px;
+  height: 80px;
+  background: rgba(16, 185, 129, 0.15);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  color: #10b981;
+  margin: 0 auto 30px;
+  animation: scaleIn 0.5s ease;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.confirmed-title {
+  font-size: 26px;
+  font-weight: 600;
+  color: white;
+  margin-bottom: 15px;
+}
+
+.confirmed-message {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.5;
+}
+
+/* Logo Loading Screen */
+.revolut-logo-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: logoFadeIn 0.8s ease;
+}
+
+@keyframes logoFadeIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.revolut-shield-logo {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
