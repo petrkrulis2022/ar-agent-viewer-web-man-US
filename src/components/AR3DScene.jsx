@@ -33,6 +33,7 @@ const AR3DScene = ({
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [showAgentModal, setShowAgentModal] = useState(false);
   const [showCubePayment, setShowCubePayment] = useState(false);
+  const [paidAgents, setPaidAgents] = useState(new Set()); // 🔓 Track which agents have been paid for
 
   // QR Scanner states
   const [showQRScanner, setShowQRScanner] = useState(false);
@@ -109,7 +110,11 @@ const AR3DScene = ({
     );
     setShowCubePayment(false);
 
-    // 💳 If in payment mode, redirect back to merchant
+    // � Mark this agent as paid - unlock interactions
+    setPaidAgents((prev) => new Set(prev).add(agent.id));
+    console.log("🔓 Agent unlocked for interactions:", agent.name, agent.id);
+
+    // �💳 If in payment mode, redirect back to merchant
     if (isPaymentMode && paymentContext?.redirectUrl) {
       console.log(
         "🔄 Redirecting back to merchant:",
@@ -125,7 +130,7 @@ const AR3DScene = ({
       setShowAgentModal(false);
       setSelectedAgent(null); // Clear selected agent
     } else {
-      setShowAgentModal(true); // Return to agent modal
+      setShowAgentModal(true); // Return to agent modal with unlocked interactions
     }
   };
 
@@ -531,6 +536,7 @@ const AR3DScene = ({
         onClose={closeModals}
         onPayment={handlePaymentRequest}
         onQRScan={handleQRScanRequest}
+        isPaid={selectedAgent ? paidAgents.has(selectedAgent.id) : false} // 🔓 Pass paid status
         paymentAmount={
           // 💰 ONLY pass dynamic amount to Payment Terminals, NOT regular agents
           (() => {

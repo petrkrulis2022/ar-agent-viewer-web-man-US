@@ -43,6 +43,7 @@ const CameraView = ({
   const [showAgentModal, setShowAgentModal] = useState(false);
   const [showCubePayment, setShowCubePayment] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false); // Legacy payment modal - being phased out
+  const [paidAgents, setPaidAgents] = useState(new Set()); // 🔓 Track which agents have been paid for
 
   // QR Scanner states
   const [showQRScanner, setShowQRScanner] = useState(false);
@@ -469,7 +470,12 @@ const CameraView = ({
       paymentData
     );
     setShowCubePayment(false);
-    setShowAgentModal(true); // Return to agent modal
+
+    // 🔓 Mark this agent as paid - unlock interactions
+    setPaidAgents((prev) => new Set(prev).add(agent.id));
+    console.log("🔓 Agent unlocked for interactions:", agent.name, agent.id);
+
+    setShowAgentModal(true); // Return to agent modal with unlocked interactions
 
     // Restart camera after payment
     if (!isStreaming) {
@@ -860,6 +866,7 @@ const CameraView = ({
         onClose={closeModals}
         onPayment={handlePaymentRequest}
         onQRScan={handleQRScanRequest}
+        isPaid={selectedAgent ? paidAgents.has(selectedAgent.id) : false} // 🔓 Pass paid status
       />
 
       {/* Payment QR Modal - Legacy (being phased out) */}

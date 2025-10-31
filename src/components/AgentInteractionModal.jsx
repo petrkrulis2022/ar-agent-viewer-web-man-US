@@ -363,6 +363,7 @@ const AgentInteractionModal = ({
   onPayment,
   onQRScan = null,
   paymentAmount = null, // 💰 Dynamic payment amount from e-shop/on-ramp
+  isPaid = false, // 🔓 Whether user has paid for this agent (controlled by parent)
 }) => {
   const [activeTab, setActiveTab] = useState("chat");
   const [messages, setMessages] = useState([]);
@@ -370,7 +371,27 @@ const AgentInteractionModal = ({
   const [isTyping, setIsTyping] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isVideoCall, setIsVideoCall] = useState(false);
+  const [showPaymentRequired, setShowPaymentRequired] = useState(false); // Show payment required message
   const messagesEndRef = useRef(null);
+
+  // Reset payment required message when agent changes or paid status changes
+  useEffect(() => {
+    if (agent) {
+      setShowPaymentRequired(false);
+
+      // If just got paid, show success message
+      if (isPaid) {
+        const unlockMessage = {
+          id: Date.now(),
+          type: "agent",
+          content:
+            "🔓 Payment received! All interactions are now unlocked. Feel free to chat, call, or video chat with me anytime!",
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, unlockMessage]);
+      }
+    }
+  }, [agent?.id, isPaid]);
 
   // Initialize conversation when agent changes
   useEffect(() => {
@@ -466,6 +487,33 @@ const AgentInteractionModal = ({
     }
   };
 
+  // 🔓 Handle locked interaction click - show payment requirement message
+  const handleLockedInteractionClick = (interactionType) => {
+    console.log(`🔒 Locked interaction clicked: ${interactionType}`);
+
+    // Add agent message requiring payment
+    const paymentRequiredMessage = {
+      id: Date.now(),
+      type: "agent",
+      content: `I require a fee for my services before we can ${
+        interactionType === "chat"
+          ? "chat"
+          : interactionType === "voice"
+          ? "start a voice call"
+          : "start a video call"
+      }. Please proceed to the Payment tab to unlock all interactions.`,
+      timestamp: new Date(),
+    };
+
+    setMessages((prev) => [...prev, paymentRequiredMessage]);
+    setShowPaymentRequired(true);
+
+    // Auto-hide the message after 5 seconds
+    setTimeout(() => {
+      setShowPaymentRequired(false);
+    }, 5000);
+  };
+
   // Handle QR scan request
   const handleQRScan = () => {
     if (onQRScan) {
@@ -525,24 +573,59 @@ const AgentInteractionModal = ({
 
         <div className="flex border-b border-slate-700">
           {[
-            { id: "chat", label: "Chat", icon: MessageCircle },
-            { id: "voice", label: "Voice", icon: Mic },
-            { id: "video", label: "Video", icon: Video },
-            { id: "payment", label: "Payment", icon: Wallet },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 flex items-center justify-center space-x-2 p-3 transition-colors ${
-                activeTab === tab.id
-                  ? "bg-purple-500/30 text-white border-b-2 border-purple-400"
-                  : "text-slate-400 hover:bg-slate-800 hover:text-white"
-              }`}
-            >
-              <tab.icon className="w-4 h-4" />
-              <span className="text-sm font-medium">{tab.label}</span>
-            </button>
-          ))}
+            {
+              id: "chat",
+              label: "Chat",
+              icon: MessageCircle,
+              requiresPayment: true,
+            },
+            { id: "voice", label: "Voice", icon: Mic, requiresPayment: true },
+            { id: "video", label: "Video", icon: Video, requiresPayment: true },
+            {
+              id: "payment",
+              label: "Payment",
+              icon: Wallet,
+              requiresPayment: false,
+            },
+          ].map((tab) => {
+            const isLocked = tab.requiresPayment && !isPaid;
+
+            return (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  if (isLocked) {
+                    // 🔒 Show payment required message instead of switching tab
+                    handleLockedInteractionClick(tab.id);
+                    setActiveTab("payment"); // Auto-switch to payment tab
+                  } else {
+                    setActiveTab(tab.id);
+                  }
+                }}
+                className={`flex-1 flex items-center justify-center space-x-2 p-3 transition-colors relative ${
+                  activeTab === tab.id
+                    ? "bg-purple-500/30 text-white border-b-2 border-purple-400"
+                    : isLocked
+                    ? "text-slate-500 hover:bg-slate-800/50 hover:text-slate-400 cursor-not-allowed"
+                    : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                }`}
+              >
+                <tab.icon
+                  className={`w-4 h-4 ${isLocked ? "opacity-50" : ""}`}
+                />
+                <span
+                  className={`text-sm font-medium ${
+                    isLocked ? "opacity-50" : ""
+                  }`}
+                >
+                  {tab.label}
+                </span>
+                {isLocked && (
+                  <span className="absolute top-1 right-1 text-xs">🔒</span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
         <CardContent className="p-0 h-96 overflow-hidden">
