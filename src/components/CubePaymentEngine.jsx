@@ -799,7 +799,11 @@ const CubePaymentEngine = ({
       }
 
       // Detect agent's deployment network
-      // Check multiple possible field names in order of preference
+      // Check multiple possible field names in order of preference:
+      // 1. deployment_chain_id - Primary field from AgentSphere deployment
+      // 2. chain_id - Legacy field from older agent records
+      // 3. network_id - Alternative field name used in some configurations
+      // 4. payment_config.chainId - Nested field in payment configuration
       const agentNetwork =
         agent?.deployment_chain_id ||
         agent?.chain_id ||
@@ -809,13 +813,12 @@ const CubePaymentEngine = ({
       const agentNetworkNum = agentNetwork ? parseInt(agentNetwork, 10) : null;
 
       // Log network detection results
-      console.log("═══════════════════════════════════════════════════");
-      console.log("🔍 NETWORK DETECTION RESULTS:");
-      console.log("  User Network (parsed):", userNetwork);
-      console.log("  Agent Network (raw):", agentNetwork);
-      console.log("  Agent Network (parsed):", agentNetworkNum);
-      console.log("  Is EVM Wallet:", isEVMWallet);
-      console.log("═══════════════════════════════════════════════════");
+      console.group("🔍 NETWORK DETECTION RESULTS");
+      console.log("User Network (parsed):", userNetwork);
+      console.log("Agent Network (raw):", agentNetwork);
+      console.log("Agent Network (parsed):", agentNetworkNum);
+      console.log("Is EVM Wallet:", isEVMWallet);
+      console.groupEnd();
 
       // Use wallet address from AgentSphere config if available
       const walletAddress =
