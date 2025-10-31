@@ -764,6 +764,46 @@ const CubePaymentEngine = ({
     try {
       console.log("🔄 Generating crypto QR payment...");
 
+      // ═══════════════════════════════════════════════════
+      // 🔍 NETWORK DETECTION - Detect user and agent networks
+      // ═══════════════════════════════════════════════════
+
+      let userNetwork = null;
+      let isEVMWallet = false;
+
+      // Detect user's connected network from MetaMask/EVM wallet
+      if (typeof window !== "undefined" && window.ethereum) {
+        try {
+          const chainIdHex = await window.ethereum.request({
+            method: "eth_chainId",
+          });
+          userNetwork = parseInt(chainIdHex, 16);
+          isEVMWallet = true;
+          console.log("🔗 User connected to EVM network (chain ID):", userNetwork);
+        } catch (error) {
+          console.warn("⚠️ Could not detect user network:", error);
+        }
+      }
+
+      // Detect agent's deployment network
+      // Check multiple possible field names in order of preference
+      const agentNetwork =
+        agent?.deployment_chain_id ||
+        agent?.chain_id ||
+        agent?.network_id ||
+        agent?.payment_config?.chainId;
+
+      const agentNetworkNum = agentNetwork ? parseInt(agentNetwork) : null;
+
+      // Log network detection results
+      console.log("═══════════════════════════════════════════════════");
+      console.log("🔍 NETWORK DETECTION RESULTS:");
+      console.log("  User Network (parsed):", userNetwork);
+      console.log("  Agent Network (raw):", agentNetwork);
+      console.log("  Agent Network (parsed):", agentNetworkNum);
+      console.log("  Is EVM Wallet:", isEVMWallet);
+      console.log("═══════════════════════════════════════════════════");
+
       // Use wallet address from AgentSphere config if available
       const walletAddress =
         agentPaymentConfig?.config?.walletAddress ||
@@ -775,13 +815,92 @@ const CubePaymentEngine = ({
         console.log("💼 Using configured wallet address:", walletAddress);
       }
 
-      // Use existing Morph payment service (primary blockchain)
-      const morphPayment = await morphPaymentService.generateMorphAgentPayment(
-        agent,
-        paymentAmount || agent?.interaction_fee || 1
-      );
-      const qrPaymentData =
-        morphPaymentService.generateMorphPaymentQRData(morphPayment);
+      // ═══════════════════════════════════════════════════
+      // 📱 ROUTING LOGIC - Choose payment service based on network
+      // ═══════════════════════════════════════════════════
+
+      let qrPaymentData;
+
+      // Check if we can determine both networks and they are valid
+      const isValidUserNetwork = userNetwork !== null && !isNaN(userNetwork);
+      const isValidAgentNetwork =
+        agentNetworkNum !== null && !isNaN(agentNetworkNum);
+
+      if (isValidUserNetwork && isValidAgentNetwork && isEVMWallet) {
+        // Both networks detected - check if they match
+        if (userNetwork === agentNetworkNum) {
+          // ✅ SAME-CHAIN PAYMENT
+          console.log(
+            "📱 Same-chain EVM detected → Direct QR generation for chain",
+            userNetwork
+          );
+
+          // Route to appropriate payment service based on chain ID
+          if (userNetwork === 296) {
+            // Hedera Testnet
+            console.log("🟣 Using Hedera payment service for chain 296");
+            const hederaPayment =
+              await hederaWalletService.generateHederaAgentPayment(
+                agent,
+                paymentAmount || agent?.interaction_fee || 1
+              );
+            qrPaymentData =
+              hederaWalletService.generateHederaPaymentQRData(hederaPayment);
+          } else if (userNetwork === 2810) {
+            // Morph Holesky
+            console.log("🔵 Using Morph payment service for chain 2810");
+            const morphPayment =
+              await morphPaymentService.generateMorphAgentPayment(
+                agent,
+                paymentAmount || agent?.interaction_fee || 1
+              );
+            qrPaymentData =
+              morphPaymentService.generateMorphPaymentQRData(morphPayment);
+          } else {
+            // Other EVM networks - fallback to Morph
+            console.log(
+              "🔵 Using Morph payment service for chain",
+              userNetwork
+            );
+            const morphPayment =
+              await morphPaymentService.generateMorphAgentPayment(
+                agent,
+                paymentAmount || agent?.interaction_fee || 1
+              );
+            qrPaymentData =
+              morphPaymentService.generateMorphPaymentQRData(morphPayment);
+          }
+        } else {
+          // ❌ CROSS-CHAIN PAYMENT
+          console.log(
+            "🌉 Cross-chain payment detected:",
+            userNetwork,
+            "→",
+            agentNetworkNum
+          );
+          throw new Error(
+            `Cross-chain payments not supported. Please switch your wallet to chain ${agentNetworkNum} (agent's network).`
+          );
+        }
+      } else {
+        // Cannot determine networks - use default Morph payment
+        console.log(
+          "⚠️ Network detection incomplete, using default Morph payment"
+        );
+        console.log(
+          "  Valid user network:",
+          isValidUserNetwork,
+          "Valid agent network:",
+          isValidAgentNetwork
+        );
+
+        const morphPayment = await morphPaymentService.generateMorphAgentPayment(
+          agent,
+          paymentAmount || agent?.interaction_fee || 1
+        );
+        qrPaymentData =
+          morphPaymentService.generateMorphPaymentQRData(morphPayment);
+      }
 
       console.log("✅ QR data generated:", qrPaymentData);
 
@@ -789,7 +908,9 @@ const CubePaymentEngine = ({
       setCurrentView("qr");
     } catch (error) {
       console.error("❌ Error generating QR:", error);
-      alert("Error generating payment QR. Please try again.");
+      alert(
+        error.message || "Error generating payment QR. Please try again."
+      );
     } finally {
       setIsGenerating(false);
     }
