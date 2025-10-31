@@ -764,6 +764,46 @@ const CubePaymentEngine = ({
     try {
       console.log("🔄 Generating crypto QR payment...");
 
+      // ═══════════════════════════════════════════════
+      // 🔍 NETWORK DETECTION - Prevent false cross-chain routing
+      // ═══════════════════════════════════════════════
+
+      // Get user's current network from MetaMask
+      let userNetwork = null;
+      if (typeof window !== "undefined" && window.ethereum) {
+        try {
+          const chainIdHex = await window.ethereum.request({
+            method: "eth_chainId",
+          });
+          userNetwork = parseInt(chainIdHex, 16);
+        } catch (error) {
+          console.warn("⚠️ Could not detect user network:", error);
+        }
+      }
+
+      // Get agent's deployment network - check fields in priority order
+      const agentNetworkRaw =
+        agent?.deployment_chain_id ||
+        agent?.chain_id ||
+        agent?.network_id ||
+        agent?.payment_config?.chainId;
+
+      // Parse agent network with defensive checks
+      const agentNetwork =
+        agentNetworkRaw !== null && agentNetworkRaw !== undefined
+          ? parseInt(agentNetworkRaw)
+          : null;
+      const isValidAgentNetwork =
+        agentNetwork !== null && !isNaN(agentNetwork);
+
+      console.log("═══════════════════════════════════════════════");
+      console.log("🔍 NETWORK DETECTION");
+      console.log("User Network (parsed):", userNetwork ?? "Not connected");
+      console.log("Agent Network (raw):", agentNetworkRaw ?? "Not specified");
+      console.log("Agent Network (parsed):", agentNetwork ?? "Not specified");
+      console.log("Is Valid Agent Network:", isValidAgentNetwork);
+      console.log("═══════════════════════════════════════════════");
+
       // Use wallet address from AgentSphere config if available
       const walletAddress =
         agentPaymentConfig?.config?.walletAddress ||
@@ -775,13 +815,57 @@ const CubePaymentEngine = ({
         console.log("💼 Using configured wallet address:", walletAddress);
       }
 
-      // Use existing Morph payment service (primary blockchain)
-      const morphPayment = await morphPaymentService.generateMorphAgentPayment(
-        agent,
-        paymentAmount || agent?.interaction_fee || 1
-      );
-      const qrPaymentData =
-        morphPaymentService.generateMorphPaymentQRData(morphPayment);
+      const amount = paymentAmount || agent?.interaction_fee || 1;
+      let qrPaymentData;
+
+      // ═══════════════════════════════════════════════
+      // 🎯 SAME-CHAIN PAYMENT ROUTING
+      // ═══════════════════════════════════════════════
+
+      // Check if user and agent are on the same network
+      const isSameChain =
+        userNetwork !== null &&
+        isValidAgentNetwork &&
+        userNetwork === agentNetwork;
+
+      if (isSameChain) {
+        console.log("📱 Same-chain detected → Direct payment routing");
+
+        // Route to appropriate payment service based on network
+        if (userNetwork === 296) {
+          // Hedera Testnet
+          console.log("🟣 Hedera Testnet → Using hederaWalletService");
+          const hederaPayment =
+            await hederaWalletService.generateHederaAgentPayment(agent, amount);
+          qrPaymentData =
+            hederaWalletService.generateHederaPaymentQRData(hederaPayment);
+        } else if (userNetwork === 2810) {
+          // Morph Holesky
+          console.log("🔷 Morph Holesky → Using morphPaymentService");
+          const morphPayment =
+            await morphPaymentService.generateMorphAgentPayment(agent, amount);
+          qrPaymentData =
+            morphPaymentService.generateMorphPaymentQRData(morphPayment);
+        } else {
+          // Other EVM networks - default to Morph service for now
+          console.log(
+            `🔵 Network ${userNetwork} → Using morphPaymentService (default)`
+          );
+          const morphPayment =
+            await morphPaymentService.generateMorphAgentPayment(agent, amount);
+          qrPaymentData =
+            morphPaymentService.generateMorphPaymentQRData(morphPayment);
+        }
+      } else {
+        // Default to Morph payment service if no network detection or cross-chain
+        console.log(
+          "🔄 No same-chain match → Using morphPaymentService (default)"
+        );
+        const morphPayment =
+          await morphPaymentService.generateMorphAgentPayment(agent, amount);
+        qrPaymentData =
+          morphPaymentService.generateMorphPaymentQRData(morphPayment);
+      }
 
       console.log("✅ QR data generated:", qrPaymentData);
 
