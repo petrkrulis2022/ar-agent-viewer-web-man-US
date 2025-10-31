@@ -48,7 +48,7 @@ const EVM_TESTNETS = {
   296: {
     // Hedera Testnet
     name: "Hedera Testnet",
-    usdc_contract: "0x0000000000000000000000000000000000000000", // TODO: Add Hedera USDC contract when available
+    usdc_contract: "0x0000000000000000000000000000000000068c0A", // Hedera USDC (Note: No public faucet - use HBAR for testing)
     rpc_url: "testnet.hashio.io/api",
     currency_symbol: "HBAR",
   },
