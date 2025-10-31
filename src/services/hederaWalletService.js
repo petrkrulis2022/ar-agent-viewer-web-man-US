@@ -182,6 +182,63 @@ export class HederaWalletService {
       throw error;
     }
   }
+
+  /**
+   * Execute HBAR payment directly via MetaMask
+   * @param {string} recipientAddress - Recipient wallet address
+   * @param {number} hbarAmount - Amount of HBAR to send
+   * @returns {Promise<string>} Transaction hash
+   */
+  async executeHBARPayment(recipientAddress, hbarAmount) {
+    try {
+      // Verify we're on Hedera Testnet
+      const isHedera = await this.isConnectedToHederaTestnet();
+      if (!isHedera) {
+        throw new Error(
+          "Please switch to Hedera Testnet to complete this payment"
+        );
+      }
+
+      // Get connected wallet
+      const fromAddress = await this.getConnectedWalletAddress();
+      if (!fromAddress) {
+        throw new Error("No wallet connected");
+      }
+
+      // Convert HBAR to Wei (18 decimals)
+      const amountInWei =
+        "0x" +
+        (
+          BigInt(Math.floor(hbarAmount * 1000000)) * BigInt(1000000000000)
+        ).toString(16);
+
+      console.log("💸 Executing HBAR payment:", {
+        from: fromAddress,
+        to: recipientAddress,
+        amount: hbarAmount,
+        amountInWei,
+      });
+
+      // Send native HBAR transaction
+      const txHash = await window.ethereum.request({
+        method: "eth_sendTransaction",
+        params: [
+          {
+            from: fromAddress,
+            to: recipientAddress,
+            value: amountInWei,
+            chainId: HederaTestnet.chainId,
+          },
+        ],
+      });
+
+      console.log("✅ HBAR payment transaction sent:", txHash);
+      return txHash;
+    } catch (error) {
+      console.error("❌ HBAR payment failed:", error);
+      throw error;
+    }
+  }
 }
 
 // Export singleton instance
