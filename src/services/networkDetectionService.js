@@ -81,6 +81,19 @@ export const SUPPORTED_EVM_NETWORKS = {
     color: "#8247E5",
     isSupported: true,
   },
+  HEDERA_TESTNET: {
+    chainId: 296,
+    name: "Hedera Testnet",
+    shortName: "Hedera",
+    rpcUrl: "https://testnet.hashio.io/api",
+    nativeCurrency: "HBAR",
+    currency: "HBAR",
+    blockExplorer: "https://hashscan.io/testnet",
+    usdcAddress: "0x0000000000000000000000000000000000000000", // TODO: Add USDC contract when available
+    icon: "/icons/hedera.svg",
+    color: "#00D4AA",
+    isSupported: true,
+  },
 };
 
 // Non-EVM Networks
