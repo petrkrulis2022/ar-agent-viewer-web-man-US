@@ -28,12 +28,14 @@ We are using **HBAR (Hedera's native currency)** for all agent payments on Heder
 ### Technical Implementation
 
 **Payment Method**: Native HBAR Transfer
+
 - Uses `eth_sendTransaction` (not ERC20 token contract)
 - No `approve()` step required
 - Direct wallet-to-wallet transfer
 - 18 decimal precision (same as ETH)
 
 **Service**: `hederaWalletService.js`
+
 - `getHBARBalance(address)` - Fetch HBAR balance
 - `executeHBARPayment(recipient, amount)` - Send HBAR payment
 - `generateHederaPaymentQRData()` - Create EIP-681 payment QR code
@@ -42,22 +44,24 @@ We are using **HBAR (Hedera's native currency)** for all agent payments on Heder
 
 Based on current HBAR price (~$0.05-0.10 USD):
 
-| Agent Tier | HBAR Amount | USD Equivalent |
-|-----------|-------------|----------------|
-| Small Agent | 5 HBAR | ~$0.25-0.50 |
-| Medium Agent | 10 HBAR | ~$0.50-1.00 |
-| Large Agent | 20 HBAR | ~$1.00-2.00 |
-| Premium Agent | 50 HBAR | ~$2.50-5.00 |
+| Agent Tier    | HBAR Amount | USD Equivalent |
+| ------------- | ----------- | -------------- |
+| Small Agent   | 5 HBAR      | ~$0.25-0.50    |
+| Medium Agent  | 10 HBAR     | ~$0.50-1.00    |
+| Large Agent   | 20 HBAR     | ~$1.00-2.00    |
+| Premium Agent | 50 HBAR     | ~$2.50-5.00    |
 
 ## Getting Testnet HBAR
 
 ### Option 1: Hedera Portal Faucet (Recommended)
+
 1. Visit: https://portal.hedera.com/faucet
 2. Connect your wallet or paste address
 3. Receive 10,000 testnet HBAR (free)
 4. Faucet resets daily
 
 ### Option 2: Hedera Discord
+
 1. Join: https://hedera.com/discord
 2. Go to #testnet-faucet channel
 3. Request HBAR with your wallet address
@@ -65,7 +69,9 @@ Based on current HBAR price (~$0.05-0.10 USD):
 ## Configuration Files
 
 ### Network Detection
+
 **File**: `src/services/networkDetectionService.js`
+
 ```javascript
 HEDERA_TESTNET: {
   chainId: 296,
@@ -82,15 +88,19 @@ HEDERA_TESTNET: {
 ```
 
 ### Payment Engine
+
 **File**: `src/components/CubePaymentEngine.jsx`
+
 ```javascript
 supportedNetworks = {
   296: { name: "Hedera Testnet", color: "#00D4AA", symbol: "HBAR" },
-}
+};
 ```
 
 ### EVM Network Service
+
 **File**: `src/services/evmNetworkService.js`
+
 ```javascript
 296: {
   name: "Hedera Testnet",
@@ -105,7 +115,7 @@ supportedNetworks = {
 ### Sending HBAR Payment
 
 ```javascript
-import { hederaWalletService } from './services/hederaWalletService';
+import { hederaWalletService } from "./services/hederaWalletService";
 
 // Send 10 HBAR to agent deployer
 const txHash = await hederaWalletService.executeHBARPayment(
@@ -113,7 +123,7 @@ const txHash = await hederaWalletService.executeHBARPayment(
   10 // HBAR amount
 );
 
-console.log('Payment successful:', txHash);
+console.log("Payment successful:", txHash);
 ```
 
 ### Checking HBAR Balance
@@ -148,18 +158,21 @@ const qrData = hederaWalletService.generateHederaPaymentQRData(paymentData);
 ## Future Plans
 
 ### Phase 1: HBAR Payments (Current)
+
 - ✅ Native HBAR transfers
 - ✅ MetaMask integration
 - ✅ QR code payments
 - ✅ Balance display
 
 ### Phase 2: Custom Token (Planned)
+
 - Create AgentSphere token on Hedera Token Service (HTS)
 - Deploy "AGSP" fungible token
 - Use for premium agents and features
 - Airdrop to early users
 
 ### Phase 3: Mainnet Migration
+
 - Deploy to Hedera Mainnet
 - Use real HBAR for payments
 - Integrate USDC when available
@@ -188,6 +201,7 @@ const qrData = hederaWalletService.generateHederaPaymentQRData(paymentData);
 ## Support
 
 For issues or questions:
+
 1. Check Hedera docs: https://docs.hedera.com/
 2. Ask in Discord: https://hedera.com/discord
 3. Check HashScan for transaction status: https://hashscan.io/testnet
