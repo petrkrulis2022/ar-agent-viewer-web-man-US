@@ -985,6 +985,14 @@ class DynamicQRService {
       throw new Error("MetaMask not available");
     }
 
+    // 🔍 DEBUG: Log incoming chainId
+    console.log(
+      "🔍 fetchEVMUSDCBalance called with chainId:",
+      chainId,
+      "Type:",
+      typeof chainId
+    );
+
     const networkInfo = this.getNetworkInfo(chainId);
 
     // 🔧 HEDERA SPECIAL CASE: Use native HBAR balance instead of USDC

@@ -690,7 +690,7 @@ const PaymentCube = ({
 };
 
 // QR Code Display Component (replaces cube when crypto QR is selected)
-const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
+const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3], transactionHash }) => {
   const [selectedNetwork, setSelectedNetwork] = useState("11155111"); // Default to Ethereum Sepolia
   const [isGeneratingQR, setIsGeneratingQR] = useState(false);
   const [currentQRData, setCurrentQRData] = useState(qrData);
@@ -1580,7 +1580,34 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
               fontWeight: "bold",
             }}
           >
-            {paymentMode === "cross-chain" ? (
+            {transactionHash ? (
+              <>
+                ✅ HBAR PAYMENT SUCCESSFUL!
+                <br />
+                <a
+                  href={`https://hashscan.io/testnet/transaction/${transactionHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    color: "#00D4AA",
+                    textDecoration: "underline",
+                    cursor: "pointer",
+                    fontSize: "11px",
+                    marginTop: "8px",
+                    display: "inline-block",
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                >
+                  🔗 View on HashScan
+                </a>
+                <br />
+                <span style={{ fontSize: "9px", color: "#666", marginTop: "4px", display: "block" }}>
+                  TX: {transactionHash.slice(0, 10)}...{transactionHash.slice(-8)}
+                </span>
+              </>
+            ) : paymentMode === "cross-chain" ? (
               <>
                 🌉 CROSS-CHAIN PAYMENT
                 <br />
@@ -1677,6 +1704,7 @@ const CubePaymentEngine = ({
   const [currentView, setCurrentView] = useState("cube"); // 'cube' or 'qr'
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [qrData, setQrData] = useState(null);
+  const [transactionHash, setTransactionHash] = useState(null); // For Hedera transaction links
   const [isGenerating, setIsGenerating] = useState(false);
   const [agentPaymentConfig, setAgentPaymentConfig] = useState(null);
   const [actualEnabledMethods, setActualEnabledMethods] =
@@ -1978,6 +2006,78 @@ const CubePaymentEngine = ({
         // 📱 SAME-CHAIN (EVM): Direct QR generation
         console.log("📱 Same-chain EVM detected → Direct QR generation");
         console.log(`  - Both user and agent on chain ${userNetwork}`);
+
+        // 🔧 HEDERA SPECIAL CASE: Direct MetaMask payment instead of QR
+        if (agentNetworkNum === 296 || userNetwork === 296) {
+          console.log("🟢 Hedera detected → Triggering direct HBAR payment");
+
+          try {
+            const amount =
+              paymentAmount ||
+              agent?.interaction_fee_amount ||
+              agent?.interaction_fee ||
+              5;
+            console.log(`💰 Payment amount: ${amount} HBAR`);
+
+            // Get agent wallet address - check ALL possible fields
+            const walletAddress =
+              agent?.agent_wallet_address ||
+              agent?.wallet_address ||
+              agent?.owner_wallet ||
+              agent?.deployer_address ||
+              agent?.payment_config?.walletAddress;
+
+            console.log("🔍 Agent wallet fields:", {
+              agent_wallet_address: agent?.agent_wallet_address,
+              wallet_address: agent?.wallet_address,
+              owner_wallet: agent?.owner_wallet,
+              deployer_address: agent?.deployer_address,
+              payment_config_wallet: agent?.payment_config?.walletAddress,
+              selected: walletAddress,
+            });
+
+            if (!walletAddress) {
+              throw new Error(
+                "Agent wallet address not found. Please ensure the agent has a valid wallet address configured."
+              );
+            }
+
+            console.log(`📍 Sending ${amount} HBAR to ${walletAddress}`);
+
+            // Direct HBAR transfer via MetaMask
+            const amountInWei =
+              "0x" +
+              Math.floor(parseFloat(amount) * Math.pow(10, 18)).toString(16);
+
+            const txHash = await window.ethereum.request({
+              method: "eth_sendTransaction",
+              params: [
+                {
+                  from: window.ethereum.selectedAddress,
+                  to: walletAddress,
+                  value: amountInWei,
+                  gas: "0x5208", // 21000 gas for simple transfer
+                },
+              ],
+            });
+
+            console.log("✅ HBAR payment sent! Transaction hash:", txHash);
+            
+            // Generate a dummy QR code for visual consistency
+            const dummyQR = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=HEDERA-TX-${txHash}`;
+            
+            // Store transaction info for display
+            setQrData(dummyQR);
+            setTransactionHash(txHash);
+            setCurrentView("qr");
+            return;
+          } catch (error) {
+            console.error("❌ HBAR payment failed:", error);
+            alert(`❌ Payment Failed\n\n${error.message}\n\nPlease try again.`);
+            setIsGenerating(false);
+            return;
+          }
+        }
 
         const result = await dynamicQRService.generateDynamicQR(
           agent,
@@ -2533,6 +2633,7 @@ const CubePaymentEngine = ({
               agent={agent}
               onBack={handleBackToCube}
               position={[0, 0, -3]}
+              transactionHash={transactionHash}
             />
           )}
 
