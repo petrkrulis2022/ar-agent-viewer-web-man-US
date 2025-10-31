@@ -690,7 +690,13 @@ const PaymentCube = ({
 };
 
 // QR Code Display Component (replaces cube when crypto QR is selected)
-const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3], transactionHash }) => {
+const ARQRDisplay = ({
+  qrData,
+  onBack,
+  agent,
+  position = [0, 0, -3],
+  transactionHash,
+}) => {
   const [selectedNetwork, setSelectedNetwork] = useState("11155111"); // Default to Ethereum Sepolia
   const [isGeneratingQR, setIsGeneratingQR] = useState(false);
   const [currentQRData, setCurrentQRData] = useState(qrData);
@@ -1603,8 +1609,16 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3], transaction
                   🔗 View on HashScan
                 </a>
                 <br />
-                <span style={{ fontSize: "9px", color: "#666", marginTop: "4px", display: "block" }}>
-                  TX: {transactionHash.slice(0, 10)}...{transactionHash.slice(-8)}
+                <span
+                  style={{
+                    fontSize: "9px",
+                    color: "#666",
+                    marginTop: "4px",
+                    display: "block",
+                  }}
+                >
+                  TX: {transactionHash.slice(0, 10)}...
+                  {transactionHash.slice(-8)}
                 </span>
               </>
             ) : paymentMode === "cross-chain" ? (
@@ -2062,10 +2076,10 @@ const CubePaymentEngine = ({
             });
 
             console.log("✅ HBAR payment sent! Transaction hash:", txHash);
-            
+
             // Generate a dummy QR code for visual consistency
             const dummyQR = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=HEDERA-TX-${txHash}`;
-            
+
             // Store transaction info for display
             setQrData(dummyQR);
             setTransactionHash(txHash);
