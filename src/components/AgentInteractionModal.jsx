@@ -38,6 +38,8 @@ const networkToChainId = {
   "arbitrum-sepolia": 421614,
   "optimism-sepolia": 11155420,
   "base-sepolia": 84532,
+  "Hedera Testnet": 296, // ✅ Hedera Testnet support
+  "hedera-testnet": 296, // ✅ Hedera Testnet (lowercase variant)
   "solana-devnet": "devnet", // Special case for Solana
 };
 
@@ -72,7 +74,7 @@ const getServiceFeeDisplay = (agent, paymentAmount = null) => {
 
   // 🔧 CRITICAL: Use EXACT same priority as database schema (NO fee_usdc/fee_usdt)
   let fee = 1; // fallback
-  let token = "USDC";
+  let token = "USDC"; // default
   let source = "fallback";
 
   // PRIORITY 1: interaction_fee_amount (authoritative field for new deployments)
@@ -83,7 +85,18 @@ const getServiceFeeDisplay = (agent, paymentAmount = null) => {
     agent?.interaction_fee_amount > 0
   ) {
     fee = parseFloat(agent.interaction_fee_amount);
-    token = agent?.interaction_fee_token || "USDC";
+    // Determine token based on network if not explicitly set
+    if (agent?.interaction_fee_token) {
+      token = agent.interaction_fee_token;
+    } else {
+      // Auto-detect token from network name
+      const networkName = agent?.deployment_network_name || agent?.network;
+      if (networkName && networkName.toLowerCase().includes("hedera")) {
+        token = "HBAR";
+      } else {
+        token = "USDC";
+      }
+    }
     source = "interaction_fee_amount";
   }
   // PRIORITY 2: interaction_fee_usdfc (legacy field)

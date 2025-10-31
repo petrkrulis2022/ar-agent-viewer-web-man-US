@@ -1819,7 +1819,23 @@ const CubePaymentEngine = ({
           ? parseInt(window.ethereum.chainId, 16)
           : null;
 
-      const agentNetwork = agent?.network_id || agent?.chain_id;
+      // Get agent network - check multiple possible fields (same as ARViewer.jsx)
+      const agentNetwork =
+        agent?.deployment_chain_id ||
+        agent?.chain_id ||
+        agent?.network_id ||
+        agent?.payment_config?.chainId;
+
+      // 🔧 CRITICAL FIX: Override chain ID if network name indicates Hedera but database has wrong value
+      let agentNetworkNum = agentNetwork ? parseInt(agentNetwork) : null;
+      const networkName = agent?.deployment_network_name || agent?.network;
+      if (networkName && networkName.toLowerCase().includes("hedera")) {
+        // Database has wrong chain_id, override with correct Hedera chain ID
+        console.log(
+          "🔧 Hedera network detected from name - overriding chain ID to 296"
+        );
+        agentNetworkNum = 296;
+      }
 
       // Detect if agent is on Solana
       const agentIsSolana =
@@ -1830,27 +1846,35 @@ const CubePaymentEngine = ({
         (typeof agentNetwork === "string" &&
           agentNetwork.toLowerCase().includes("solana"));
 
-      console.log("🔍 DETAILED Network Detection:");
-      console.log("  - isSolanaWallet:", isSolanaWallet);
-      console.log("  - isEVMWallet:", isEVMWallet);
-      console.log("  - agentIsSolana:", agentIsSolana);
-      console.log(
-        "  - window.ethereum.chainId (raw):",
-        window.ethereum?.chainId
-      );
-      console.log("  - userNetwork (parsed):", userNetwork);
-      console.log("  - Base Sepolia should be: 84532");
-      console.log("  - agentNetwork:", agentNetwork);
-      console.log("  - agent?.network_id:", agent?.network_id);
-      console.log("  - agent?.chain_id:", agent?.chain_id);
+      // 🔄 CACHE BUSTER v2024-10-31-19:15 - HEDERA FIX
+      console.log("═══════════════════════════════════════════════");
+      console.log("🔍 NETWORK DETECTION [v19:20]");
+      console.log("═══════════════════════════════════════════════");
+      console.table({
+        "User Network (parsed)": userNetwork,
+        "Agent Network (raw)": agentNetwork,
+        "Agent Network (parsed)": agentNetworkNum,
+        "Is Solana Wallet": isSolanaWallet,
+        "Is EVM Wallet": isEVMWallet,
+        "Agent is Solana": agentIsSolana,
+      });
+      console.log("Agent Fields:");
+      console.table({
+        deployment_chain_id: agent?.deployment_chain_id,
+        chain_id: agent?.chain_id,
+        network_id: agent?.network_id,
+        "payment_config.chainId": agent?.payment_config?.chainId,
+      });
+      console.log("═══════════════════════════════════════════════");
 
       console.log("🌐 Network Detection:", {
         userNetwork,
         agentNetwork,
+        agentNetworkNum,
         isSolanaWallet,
         agentIsSolana,
         needsCrossChain:
-          userNetwork && agentNetwork && userNetwork !== agentNetwork,
+          userNetwork && agentNetworkNum && userNetwork !== agentNetworkNum,
       });
 
       // VALIDATION: Check if user is on a supported network (ONLY FOR EVM)
@@ -1901,6 +1925,26 @@ const CubePaymentEngine = ({
       } // End of EVM-only validation block
 
       // STEP 2: Route to appropriate flow
+      console.log("🚦 ROUTING DECISION:");
+      console.log(
+        `  - userNetwork: ${userNetwork} (type: ${typeof userNetwork})`
+      );
+      console.log(
+        `  - agentNetworkNum: ${agentNetworkNum} (type: ${typeof agentNetworkNum})`
+      );
+      console.log(
+        `  - Is agentNetworkNum valid? ${
+          agentNetworkNum !== null && !isNaN(agentNetworkNum)
+        }`
+      );
+      console.log(
+        `  - Comparison result: ${userNetwork} !== ${agentNetworkNum} = ${
+          userNetwork !== agentNetworkNum
+        }`
+      );
+      console.log(`  - isSolanaWallet: ${isSolanaWallet}`);
+      console.log(`  - agentIsSolana: ${agentIsSolana}`);
+
       // For Solana wallets, always use direct QR generation (no cross-chain)
       if (isSolanaWallet && agentIsSolana) {
         console.log(
@@ -1918,14 +1962,22 @@ const CubePaymentEngine = ({
         console.log("✅ Solana QR generated:", result);
         setQrData(result.paymentUri);
         setCurrentView("qr");
-      } else if (userNetwork && agentNetwork && userNetwork !== agentNetwork) {
+      } else if (
+        userNetwork &&
+        agentNetworkNum &&
+        userNetwork !== agentNetworkNum
+      ) {
         // 🌉 CROSS-CHAIN (EVM only): Show intermediate modal first
         console.log("🌉 Cross-chain detected → Triggering intermediate modal");
+        console.log(
+          `  - User on chain ${userNetwork}, agent on chain ${agentNetworkNum}`
+        );
         await handleCrossChainMode();
         return; // Exit here - modal will handle QR generation after confirmation
       } else {
         // 📱 SAME-CHAIN (EVM): Direct QR generation
         console.log("📱 Same-chain EVM detected → Direct QR generation");
+        console.log(`  - Both user and agent on chain ${userNetwork}`);
 
         const result = await dynamicQRService.generateDynamicQR(
           agent,
@@ -2234,7 +2286,8 @@ const CubePaymentEngine = ({
       ? parseInt(window.ethereum.chainId, 16)
       : null;
 
-    const agentNetwork = agent?.network_id || agent?.chain_id;
+    const agentNetworkRaw = agent?.network_id || agent?.chain_id;
+    const agentNetwork = agentNetworkRaw ? parseInt(agentNetworkRaw) : null;
 
     if (!userNetwork || !agentNetwork) {
       throw new Error("Network information not available");
@@ -2579,7 +2632,14 @@ const CubePaymentEngine = ({
               agent?.interaction_fee ||
               10.0
             }
-            agentToken="USDC"
+            agentToken={
+              supportedNetworks[
+                agent?.deployment_chain_id ||
+                  agent?.chain_id ||
+                  agent?.network_id ||
+                  selectedNetwork
+              ]?.symbol || "USDC"
+            }
             agentId={agent?.id}
             onPaymentComplete={(result) => {
               console.log("✅ Virtual card payment completed:", result);

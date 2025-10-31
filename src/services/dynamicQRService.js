@@ -60,6 +60,17 @@ class DynamicQRService {
       usdcAddresses: Object.keys(this.usdcTokenAddresses).length,
       networks: Object.keys(this.supportedNetworks).length,
     });
+
+    // 🔧 Add Hedera Testnet support (not in CCIP config, uses native HBAR)
+    this.supportedNetworks[296] = {
+      name: "Hedera Testnet",
+      symbol: "HBAR",
+      type: "EVM",
+      rpc: "https://testnet.hashio.io/api",
+      chainSelector: null, // Not part of CCIP
+      router: null, // Not part of CCIP
+    };
+    console.log("✅ Added Hedera Testnet (296) support with native HBAR");
   }
 
   // Network utility methods
@@ -408,9 +419,24 @@ class DynamicQRService {
 
       const feeToken =
         agentData.interaction_fee_token || agentData.fee_token || "USDC";
-      const agentChainId = String(
-        agentData.chain_id || agentData.network_id || 11155111
+
+      // Get agent chain ID - check deployment_chain_id first
+      let agentChainId = String(
+        agentData.deployment_chain_id ||
+          agentData.chain_id ||
+          agentData.network_id ||
+          11155111
       );
+
+      // 🔧 CRITICAL FIX: Override chain ID if network name indicates Hedera but database has wrong value
+      const networkName =
+        agentData.deployment_network_name || agentData.network;
+      if (networkName && networkName.toLowerCase().includes("hedera")) {
+        console.log(
+          "🔧 Hedera network detected from name - overriding chain ID to 296"
+        );
+        agentChainId = "296";
+      }
 
       if (!walletAddress) {
         throw new Error("No wallet address found for QR generation");
@@ -621,6 +647,16 @@ class DynamicQRService {
           paymentUri = `ethereum:${tokenAddress}@${targetNetwork}/transfer?address=${walletAddress}&uint256=${amountInDecimals}`;
           console.log(
             `📱 Generated EIP-681 for ERC-20 on chain ${targetNetwork}: ${paymentUri}`
+          );
+        } else if (targetNetwork === 296) {
+          // 🔧 HEDERA SPECIAL CASE: Native HBAR transfer (no token contract)
+          console.log("🔧 Hedera native HBAR payment detected");
+          const amountInWei = Math.floor(
+            parseFloat(feeAmount) * Math.pow(10, 18)
+          ); // HBAR has 18 decimals
+          paymentUri = `ethereum:${walletAddress}@${targetNetwork}?value=${amountInWei}`;
+          console.log(
+            `📱 Generated EIP-681 for native HBAR on chain ${targetNetwork}: ${paymentUri}`
           );
         } else {
           // CRITICAL FIX: Never generate direct ETH transfers for AR payments
@@ -950,6 +986,26 @@ class DynamicQRService {
     }
 
     const networkInfo = this.getNetworkInfo(chainId);
+
+    // 🔧 HEDERA SPECIAL CASE: Use native HBAR balance instead of USDC
+    // Convert to number for comparison since chainId might be string or number
+    if (parseInt(chainId) === 296 || chainId === 296 || chainId === "296") {
+      console.log("🔧 Fetching native HBAR balance for Hedera");
+      try {
+        const balanceHex = await window.ethereum.request({
+          method: "eth_getBalance",
+          params: [walletAddress, "latest"],
+        });
+        const balanceWei = parseInt(balanceHex, 16);
+        const balanceHBAR = balanceWei / Math.pow(10, 18); // HBAR has 18 decimals
+        console.log(`✅ HBAR Balance: ${balanceHBAR.toFixed(4)} HBAR`);
+        return balanceHBAR.toFixed(2);
+      } catch (error) {
+        console.error("❌ Error fetching HBAR balance:", error);
+        throw new Error(`Failed to fetch HBAR balance: ${error.message}`);
+      }
+    }
+
     if (!networkInfo || !networkInfo.usdcAddress) {
       throw new Error(`USDC not supported on chain ${chainId}`);
     }
