@@ -709,7 +709,16 @@ const ARQRDisplay = ({
   const [crossChainOptions, setCrossChainOptions] = useState([]);
   const [showCrossChainUI, setShowCrossChainUI] = useState(false);
   const [crossChainFeeEstimate, setCrossChainFeeEstimate] = useState(null);
-  const [paymentMode, setPaymentMode] = useState("same-chain"); // 'same-chain', 'cross-chain', 'switch-network'  // Network configuration for dropdown
+  const [paymentMode, setPaymentMode] = useState("same-chain"); // 'same-chain', 'cross-chain', 'switch-network'  
+  
+  // Update currentQRData when qrData prop changes (for Hedera transactions)
+  useEffect(() => {
+    if (qrData) {
+      setCurrentQRData(qrData);
+    }
+  }, [qrData]);
+
+  // Network configuration for dropdown
   const supportedNetworks = {
     11155111: { name: "Ethereum Sepolia", color: "#627EEA", symbol: "USDC" },
     421614: { name: "Arbitrum Sepolia", color: "#28A0F0", symbol: "USDC" },
@@ -1485,7 +1494,7 @@ const ARQRDisplay = ({
           ) : currentQRData ? (
             <div onClick={handleQRClick}>
               {typeof currentQRData === "string" &&
-              currentQRData.startsWith("data:image") ? (
+              (currentQRData.startsWith("data:image") || currentQRData.startsWith("http")) ? (
                 <img
                   src={currentQRData}
                   alt="Payment QR Code"
