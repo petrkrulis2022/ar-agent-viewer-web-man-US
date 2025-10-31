@@ -1803,8 +1803,9 @@ const CubePaymentEngine = ({
 
       // STEP 1: Detect network configuration for cross-chain vs same-chain
       // Check if user is on Solana or EVM wallet
-      const isSolanaWallet = window.solana?.isConnected;
-      const isEVMWallet = window.ethereum && !isSolanaWallet;
+      // CRITICAL FIX: Check if Ethereum wallet is ACTIVELY being used (has chainId set)
+      const isEVMWallet = window.ethereum && window.ethereum.chainId;
+      const isSolanaWallet = !isEVMWallet && window.solana?.isConnected;
 
       const userNetwork =
         isEVMWallet && window.ethereum?.chainId
