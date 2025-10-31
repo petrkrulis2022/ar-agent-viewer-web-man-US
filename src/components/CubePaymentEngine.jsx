@@ -711,6 +711,7 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
     11155420: { name: "OP Sepolia", color: "#FF0420", symbol: "USDC" },
     43113: { name: "Avalanche Fuji", color: "#E84142", symbol: "USDC" },
     80002: { name: "Polygon Amoy", color: "#8247E5", symbol: "USDC" },
+    296: { name: "Hedera Testnet", color: "#00D4AA", symbol: "HBAR" },
     "solana-devnet": {
       name: "Solana Devnet",
       color: "#9945FF",
@@ -746,6 +747,9 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
         agentName.includes("fuji")
       ) {
         detectedNetwork = "43113"; // Avalanche Fuji
+      } else if (agentName.includes("hedera")) {
+        detectedNetwork = "296"; // Hedera Testnet
+        console.log("🌐 Detected Hedera Testnet network for agent:", agent.name);
       } else if (agentName.includes("solana")) {
         detectedNetwork = "solana-devnet"; // Solana Devnet
       }

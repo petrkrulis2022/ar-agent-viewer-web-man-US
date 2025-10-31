@@ -45,6 +45,13 @@ const EVM_TESTNETS = {
     rpc_url: "rpc-amoy.polygon.technology",
     currency_symbol: "MATIC",
   },
+  296: {
+    // Hedera Testnet
+    name: "Hedera Testnet",
+    usdc_contract: "0x0000000000000000000000000000000000000000", // TODO: Add Hedera USDC contract when available
+    rpc_url: "testnet.hashio.io/api",
+    currency_symbol: "HBAR",
+  },
 };
 
 /**
