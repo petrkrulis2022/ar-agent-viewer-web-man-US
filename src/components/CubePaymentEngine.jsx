@@ -1857,8 +1857,8 @@ const CubePaymentEngine = ({
       // Skip network validation for Solana wallets
       if (isEVMWallet && !agentIsSolana) {
         const SUPPORTED_TESTNETS = [
-          11155111, 421614, 84532, 11155420, 80002, 43113,
-        ]; // Sepolia, Arb, Base, OP, Polygon, Avalanche
+          11155111, 421614, 84532, 11155420, 80002, 43113, 296,
+        ]; // Sepolia, Arb, Base, OP, Polygon, Avalanche, Hedera
         const MAINNET_CHAINS = [1, 137, 42161, 8453, 10, 43114]; // ETH, Polygon, Arb, Base, OP, Avalanche mainnets
 
         if (userNetwork && MAINNET_CHAINS.includes(userNetwork)) {
@@ -1871,7 +1871,8 @@ const CubePaymentEngine = ({
               `• Sepolia (11155111)\n` +
               `• Base Sepolia (84532)\n` +
               `• Arbitrum Sepolia (421614)\n` +
-              `• OP Sepolia (11155420)\n\n` +
+              `• OP Sepolia (11155420)\n` +
+              `• Hedera Testnet (296)\n\n` +
               `Then try again.`
           );
           setIsGenerating(false);
@@ -1891,7 +1892,8 @@ const CubePaymentEngine = ({
               `• Sepolia (11155111)\n` +
               `• Base Sepolia (84532)\n` +
               `• Arbitrum Sepolia (421614)\n` +
-              `• OP Sepolia (11155420)`
+              `• OP Sepolia (11155420)\n` +
+              `• Hedera Testnet (296)`
           );
           setIsGenerating(false);
           return;
