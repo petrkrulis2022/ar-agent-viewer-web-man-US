@@ -749,7 +749,10 @@ const ARQRDisplay = ({ qrData, onBack, agent, position = [0, 0, -3] }) => {
         detectedNetwork = "43113"; // Avalanche Fuji
       } else if (agentName.includes("hedera")) {
         detectedNetwork = "296"; // Hedera Testnet
-        console.log("🌐 Detected Hedera Testnet network for agent:", agent.name);
+        console.log(
+          "🌐 Detected Hedera Testnet network for agent:",
+          agent.name
+        );
       } else if (agentName.includes("solana")) {
         detectedNetwork = "solana-devnet"; // Solana Devnet
       }
