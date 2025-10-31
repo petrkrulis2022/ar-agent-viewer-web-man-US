@@ -7,6 +7,10 @@ import { hederaWalletService } from "../services/hederaWalletService";
 import { supabase } from "../lib/supabase";
 import QRCode from "react-qr-code";
 
+// Network Chain ID Constants
+const CHAIN_ID_HEDERA_TESTNET = 296;
+const CHAIN_ID_MORPH_HOLESKY = 2810;
+
 // AgentSphere Payment Configuration Reader
 const getAgentPaymentConfig = async (agentId) => {
   try {
@@ -757,6 +761,15 @@ const CubePaymentEngine = ({
     }
   };
 
+  // Helper function to generate Morph payment QR data
+  const generateMorphPaymentQR = async (agent, paymentAmount) => {
+    const morphPayment = await morphPaymentService.generateMorphAgentPayment(
+      agent,
+      paymentAmount || agent?.interaction_fee || 1
+    );
+    return morphPaymentService.generateMorphPaymentQRData(morphPayment);
+  };
+
   // Handle Crypto QR selection - integrate with existing system
   const handleCryptoQRSelection = async () => {
     setIsGenerating(true);
@@ -793,7 +806,7 @@ const CubePaymentEngine = ({
         agent?.network_id ||
         agent?.payment_config?.chainId;
 
-      const agentNetworkNum = agentNetwork ? parseInt(agentNetwork) : null;
+      const agentNetworkNum = agentNetwork ? parseInt(agentNetwork, 10) : null;
 
       // Log network detection results
       console.log("═══════════════════════════════════════════════════");
@@ -836,9 +849,11 @@ const CubePaymentEngine = ({
           );
 
           // Route to appropriate payment service based on chain ID
-          if (userNetwork === 296) {
+          if (userNetwork === CHAIN_ID_HEDERA_TESTNET) {
             // Hedera Testnet
-            console.log("🟣 Using Hedera payment service for chain 296");
+            console.log(
+              `🟣 Using Hedera payment service for chain ${CHAIN_ID_HEDERA_TESTNET}`
+            );
             const hederaPayment =
               await hederaWalletService.generateHederaAgentPayment(
                 agent,
@@ -846,29 +861,19 @@ const CubePaymentEngine = ({
               );
             qrPaymentData =
               hederaWalletService.generateHederaPaymentQRData(hederaPayment);
-          } else if (userNetwork === 2810) {
+          } else if (userNetwork === CHAIN_ID_MORPH_HOLESKY) {
             // Morph Holesky
-            console.log("🔵 Using Morph payment service for chain 2810");
-            const morphPayment =
-              await morphPaymentService.generateMorphAgentPayment(
-                agent,
-                paymentAmount || agent?.interaction_fee || 1
-              );
-            qrPaymentData =
-              morphPaymentService.generateMorphPaymentQRData(morphPayment);
+            console.log(
+              `🔵 Using Morph payment service for chain ${CHAIN_ID_MORPH_HOLESKY}`
+            );
+            qrPaymentData = await generateMorphPaymentQR(agent, paymentAmount);
           } else {
             // Other EVM networks - fallback to Morph
             console.log(
               "🔵 Using Morph payment service for chain",
               userNetwork
             );
-            const morphPayment =
-              await morphPaymentService.generateMorphAgentPayment(
-                agent,
-                paymentAmount || agent?.interaction_fee || 1
-              );
-            qrPaymentData =
-              morphPaymentService.generateMorphPaymentQRData(morphPayment);
+            qrPaymentData = await generateMorphPaymentQR(agent, paymentAmount);
           }
         } else {
           // ❌ CROSS-CHAIN PAYMENT
@@ -894,12 +899,7 @@ const CubePaymentEngine = ({
           isValidAgentNetwork
         );
 
-        const morphPayment = await morphPaymentService.generateMorphAgentPayment(
-          agent,
-          paymentAmount || agent?.interaction_fee || 1
-        );
-        qrPaymentData =
-          morphPaymentService.generateMorphPaymentQRData(morphPayment);
+        qrPaymentData = await generateMorphPaymentQR(agent, paymentAmount);
       }
 
       console.log("✅ QR data generated:", qrPaymentData);
