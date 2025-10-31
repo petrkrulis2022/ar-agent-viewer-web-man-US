@@ -789,17 +789,18 @@ const CubePaymentEngine = ({
         agent?.payment_config?.chainId;
 
       // Parse agent network with defensive checks
-      const agentNetwork = agentNetworkRaw
-        ? parseInt(agentNetworkRaw)
-        : null;
+      const agentNetwork =
+        agentNetworkRaw !== null && agentNetworkRaw !== undefined
+          ? parseInt(agentNetworkRaw)
+          : null;
       const isValidAgentNetwork =
         agentNetwork !== null && !isNaN(agentNetwork);
 
       console.log("═══════════════════════════════════════════════");
       console.log("🔍 NETWORK DETECTION");
-      console.log("User Network (parsed):", userNetwork || "Not connected");
-      console.log("Agent Network (raw):", agentNetworkRaw || "Not specified");
-      console.log("Agent Network (parsed):", agentNetwork || "Not specified");
+      console.log("User Network (parsed):", userNetwork ?? "Not connected");
+      console.log("Agent Network (raw):", agentNetworkRaw ?? "Not specified");
+      console.log("Agent Network (parsed):", agentNetwork ?? "Not specified");
       console.log("Is Valid Agent Network:", isValidAgentNetwork);
       console.log("═══════════════════════════════════════════════");
 
@@ -823,7 +824,7 @@ const CubePaymentEngine = ({
 
       // Check if user and agent are on the same network
       const isSameChain =
-        userNetwork &&
+        userNetwork !== null &&
         isValidAgentNetwork &&
         userNetwork === agentNetwork;
 
