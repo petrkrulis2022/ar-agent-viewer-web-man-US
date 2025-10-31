@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { networkDetectionService } from "../services/networkDetectionService";
+import { hederaWalletService } from "../services/hederaWalletService";
 
 const NetworkDisplay = ({ className = "" }) => {
   const [currentNetwork, setCurrentNetwork] = useState(null);
   const [isWalletConnected, setIsWalletConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [hbarBalance, setHbarBalance] = useState(null);
+  const [walletAddress, setWalletAddress] = useState(null);
 
   useEffect(() => {
     // Initial network detection
@@ -54,17 +57,40 @@ const NetworkDisplay = ({ className = "" }) => {
         if (accounts.length > 0) {
           const network = await networkDetectionService.detectCurrentNetwork();
           setCurrentNetwork(network);
+          setWalletAddress(accounts[0]);
+
+          // Fetch HBAR balance if connected to Hedera Testnet (Chain ID 296)
+          if (network && network.chainId === 296) {
+            try {
+              const balance = await hederaWalletService.getHBARBalance(
+                accounts[0]
+              );
+              setHbarBalance(balance);
+              console.log("💰 HBAR Balance fetched:", balance);
+            } catch (balanceError) {
+              console.error("Failed to fetch HBAR balance:", balanceError);
+              setHbarBalance(null);
+            }
+          } else {
+            setHbarBalance(null);
+          }
         } else {
           setCurrentNetwork(null);
+          setHbarBalance(null);
+          setWalletAddress(null);
         }
       } catch (error) {
         console.error("❌ Failed to detect network:", error);
         setCurrentNetwork(null);
         setIsWalletConnected(false);
+        setHbarBalance(null);
+        setWalletAddress(null);
       }
     } else {
       setCurrentNetwork(null);
       setIsWalletConnected(false);
+      setHbarBalance(null);
+      setWalletAddress(null);
     }
 
     setIsLoading(false);
@@ -75,6 +101,7 @@ const NetworkDisplay = ({ className = "" }) => {
   }
 
   const isSupported = currentNetwork.isSupported !== false;
+  const isHederaTestnet = currentNetwork.chainId === 296;
 
   return (
     <div className={`network-display ${className}`}>
@@ -99,6 +126,11 @@ const NetworkDisplay = ({ className = "" }) => {
         <span className="network-name">
           {currentNetwork.shortName || currentNetwork.name}
         </span>
+        {isHederaTestnet && hbarBalance !== null && (
+          <span className="balance-display" title="HBAR Balance">
+            {hbarBalance.toFixed(4)} HBAR
+          </span>
+        )}
         {!isSupported && (
           <span className="unsupported-warning" title="Unsupported Network">
             ⚠️
@@ -144,6 +176,16 @@ const NetworkDisplay = ({ className = "" }) => {
           font-size: 11px;
           font-weight: 600;
           letter-spacing: 0.025em;
+        }
+
+        .balance-display {
+          font-size: 10px;
+          font-weight: 700;
+          margin-left: 4px;
+          padding: 2px 6px;
+          background-color: rgba(255, 255, 255, 0.15);
+          border-radius: 8px;
+          letter-spacing: 0.02em;
         }
 
         .unsupported-warning {
