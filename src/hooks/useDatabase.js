@@ -354,8 +354,8 @@ export const useDatabase = () => {
               // Use enhanced chain ID unless database has a recognized testnet chain ID
               const dbChainId = obj.chain_id;
               const recognizedTestnets = [
-                11155111, 421614, 84532, 11155420, 43113,
-              ]; // Major testnets
+                296, 11155111, 421614, 84532, 11155420, 43113,
+              ]; // Major testnets (including Hedera)
 
               if (dbChainId && recognizedTestnets.includes(dbChainId)) {
                 return dbChainId;
@@ -456,6 +456,7 @@ export const useDatabase = () => {
               }
               // Assign networks based on agent name for consistency
               const agentName = (obj.name || "").toLowerCase();
+              if (agentName.includes("hedera")) return "Hedera Testnet";
               if (agentName.includes("dynamic")) return "Arbitrum Sepolia";
               if (agentName.includes("base")) return "Base Sepolia";
               if (agentName.includes("sepolia 4")) return "Ethereum Sepolia";
@@ -467,12 +468,13 @@ export const useDatabase = () => {
               // 🔧 CRITICAL: Derive network name from actual chain_id (like deployment_chain_id logic)
               const dbChainId = obj.deployment_chain_id || obj.chain_id;
               const recognizedTestnets = [
-                11155111, 421614, 84532, 11155420, 43113,
+                296, 11155111, 421614, 84532, 11155420, 43113,
               ];
 
               // If database has valid chain_id, use it to derive network name
               if (dbChainId && recognizedTestnets.includes(dbChainId)) {
                 const chainToNetwork = {
+                  296: "Hedera Testnet",
                   11155111: "Ethereum Sepolia",
                   421614: "Arbitrum Sepolia",
                   84532: "Base Sepolia",
@@ -517,8 +519,8 @@ export const useDatabase = () => {
               // Use enhanced chain ID unless database has a testnet chain ID we recognize
               const dbChainId = obj.deployment_chain_id || obj.chain_id;
               const recognizedTestnets = [
-                11155111, 421614, 84532, 11155420, 43113,
-              ]; // Major testnets
+                296, 11155111, 421614, 84532, 11155420, 43113,
+              ]; // Major testnets (including Hedera)
 
               if (dbChainId && recognizedTestnets.includes(dbChainId)) {
                 return dbChainId;

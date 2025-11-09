@@ -117,7 +117,24 @@ class DynamicQRService {
   }
 
   async getAgentNetwork(agentData) {
-    return String(agentData.chain_id || agentData.network_id || 11155111);
+    // Check deployment_chain_id first (most authoritative)
+    let chainId = String(
+      agentData.deployment_chain_id ||
+        agentData.chain_id ||
+        agentData.network_id ||
+        11155111
+    );
+
+    // 🔧 CRITICAL FIX: Override chain ID if network name indicates Hedera but database has wrong value
+    const networkName = agentData.deployment_network_name || agentData.network;
+    if (networkName && networkName.toLowerCase().includes("hedera")) {
+      console.log(
+        "🔧 [getAgentNetwork] Hedera network detected from name - overriding chain ID to 296"
+      );
+      chainId = "296";
+    }
+
+    return chainId;
   }
 
   async detectCrossChainNeed(agentData, userChainId = null) {
@@ -630,27 +647,60 @@ class DynamicQRService {
       // Get token address for current network
       let tokenAddress;
 
-      // 🪙 Check if custom stablecoin (USDh, USDΔ, etc.)
-      if (feeToken !== "USDC" && feeToken !== "SOL") {
-        // Get custom stablecoin address
-        tokenAddress = customStablecoinService.getTokenAddress(
-          feeToken,
-          parseInt(targetNetwork)
-        );
+      console.log(`🔍 PRE-TOKEN LOOKUP DEBUG:`, {
+        targetNetwork,
+        targetNetworkType: typeof targetNetwork,
+        feeToken,
+        isCustomToken: feeToken !== "USDC" && feeToken !== "SOL",
+        agentTokenAddress: agentData.token_address,
+      });
+
+      // 🎯 PRIORITY 1: Use agent's token_address if available (most reliable)
+      if (agentData.token_address) {
+        tokenAddress = agentData.token_address;
+        console.log(`✅ Using agent's token_address directly:`, tokenAddress);
+      }
+      // 🪙 PRIORITY 2: Check if custom stablecoin (USDh, USDΔ, etc.)
+      else if (feeToken !== "USDC" && feeToken !== "SOL") {
+        // Get custom stablecoin address - ensure chainId is a number
+        const chainIdNumber =
+          typeof targetNetwork === "string"
+            ? parseInt(targetNetwork)
+            : targetNetwork;
+
         console.log(
-          `🪙 Using custom stablecoin ${feeToken} at address:`,
-          tokenAddress
+          `🪙 Looking up custom stablecoin ${feeToken} on chain ${chainIdNumber}`
         );
 
+        tokenAddress = customStablecoinService.getTokenAddress(
+          feeToken,
+          chainIdNumber
+        );
+
+        console.log(`🪙 Custom stablecoin lookup result:`, {
+          token: feeToken,
+          chainId: chainIdNumber,
+          address: tokenAddress,
+          found: !!tokenAddress,
+        });
+
         if (!tokenAddress) {
+          console.error(
+            `❌ Custom stablecoin ${feeToken} not found on network ${chainIdNumber}`
+          );
+          console.error(
+            `Available custom stablecoins:`,
+            customStablecoinService.getAvailableStablecoins(chainIdNumber)
+          );
           throw new Error(
             `Custom stablecoin ${feeToken} not available on network ${targetNetwork}. ` +
               `Please select a different payment token.`
           );
         }
       } else {
-        // Use standard USDC address
+        // PRIORITY 3: Use standard USDC address
         tokenAddress = this.usdcTokenAddresses[targetNetwork];
+        console.log(`💵 Using standard USDC address:`, tokenAddress);
       }
 
       const networkInfo = this.getNetworkInfo(targetNetwork);
@@ -681,6 +731,15 @@ class DynamicQRService {
           tokenAddress
         );
 
+        console.log(`🔍 Generated ERC-20 transfer data:`, {
+          transferData,
+          dataLength: transferData.length,
+          recipient: walletAddress,
+          amount: feeAmount,
+          token: feeToken,
+          tokenAddress,
+        });
+
         // Create mobile-compatible EIP-681 URI for scanning with chain ID
         if (tokenAddress) {
           // ERC-20 token transfer URI format with chain ID
@@ -691,6 +750,15 @@ class DynamicQRService {
           console.log(
             `📱 Generated EIP-681 for ERC-20 on chain ${targetNetwork}: ${paymentUri}`
           );
+          console.log(`🔍 EIP-681 Details:`, {
+            tokenContract: tokenAddress,
+            recipientWallet: walletAddress,
+            amount: feeAmount,
+            amountInDecimals: amountInDecimals,
+            decimals: 6,
+            token: feeToken,
+            chainId: targetNetwork,
+          });
         } else {
           // CRITICAL: No native token support - all payments must be ERC-20 stablecoins
           console.error(
@@ -768,6 +836,12 @@ class DynamicQRService {
       };
     } catch (error) {
       console.error("❌ QR generation failed:", error);
+      console.error("❌ Error stack:", error.stack);
+      console.error("❌ Agent data:", agentData);
+      console.error(
+        "❌ Fee token:",
+        paymentToken || agentData.interaction_fee_token
+      );
       return {
         success: false,
         error: error.message,

@@ -696,6 +696,7 @@ const ARQRDisplay = ({
   agent,
   position = [0, 0, -3],
   transactionHash,
+  paymentAmount,
 }) => {
   const [selectedNetwork, setSelectedNetwork] = useState("11155111"); // Default to Ethereum Sepolia
   const [isGeneratingQR, setIsGeneratingQR] = useState(false);
@@ -772,11 +773,38 @@ const ARQRDisplay = ({
         detectedNetwork = "solana-devnet"; // Solana Devnet
       }
 
-      // Priority: deployment_chain_id > name-based detection > chain_id (fallback)
-      // deployment_chain_id is the authoritative source for actual deployment network
+      // 🔧 CRITICAL: Check deployment_chain_id but OVERRIDE if network name contradicts it
+      // This handles agents with wrong deployment_chain_id in database
       if (agent.deployment_chain_id) {
         const deploymentChainId = String(agent.deployment_chain_id);
-        if (supportedNetworks[deploymentChainId]) {
+
+        // ⚠️ VALIDATION: If network name says "Hedera" but deployment_chain_id is NOT 296, override it!
+        const networkName = (
+          agent.deployment_network_name ||
+          agent.network ||
+          ""
+        ).toLowerCase();
+        const isHederaByName = networkName.includes("hedera");
+        const isPolygonByName =
+          networkName.includes("polygon") || networkName.includes("amoy");
+        const isSolanaByName = networkName.includes("solana");
+
+        if (isHederaByName && deploymentChainId !== "296") {
+          console.warn(
+            `⚠️ Agent has deployment_chain_id=${deploymentChainId} but network name="${agent.deployment_network_name}" - OVERRIDING to 296`
+          );
+          detectedNetwork = "296";
+        } else if (isPolygonByName && deploymentChainId !== "80002") {
+          console.warn(
+            `⚠️ Agent has deployment_chain_id=${deploymentChainId} but network name="${agent.deployment_network_name}" - OVERRIDING to 80002`
+          );
+          detectedNetwork = "80002";
+        } else if (isSolanaByName) {
+          console.warn(
+            `⚠️ Agent has deployment_chain_id=${deploymentChainId} but network name="${agent.deployment_network_name}" - OVERRIDING to solana-devnet`
+          );
+          detectedNetwork = "solana-devnet";
+        } else if (supportedNetworks[deploymentChainId]) {
           detectedNetwork = deploymentChainId;
           console.log(
             "🌐 Using agent's deployment_chain_id (authoritative):",
@@ -1084,10 +1112,13 @@ const ARQRDisplay = ({
         console.log(
           "📱 QR data URL detected, regenerating transaction data..."
         );
-        const qrResult = await dynamicQRService.generateDynamicQR({
-          ...agent,
-          preferred_network: selectedNetwork,
-        });
+        const qrResult = await dynamicQRService.generateDynamicQR(
+          agent,
+          paymentAmount ||
+            agent?.interaction_fee_amount ||
+            agent?.interaction_fee ||
+            1
+        );
         if (!qrResult.success) {
           throw new Error(qrResult.error);
         }
@@ -2033,7 +2064,7 @@ const CubePaymentEngine = ({
       } else if (
         userNetwork &&
         agentNetworkNum &&
-        userNetwork !== agentNetworkNum
+        String(userNetwork) !== String(agentNetworkNum)
       ) {
         // 🌉 CROSS-CHAIN (EVM only): Show intermediate modal first
         console.log("🌉 Cross-chain detected → Triggering intermediate modal");
@@ -2058,8 +2089,8 @@ const CubePaymentEngine = ({
 
         console.log("✅ Same-chain QR generated:", result);
 
-        // Use the payment URI for QR display
-        setQrData(result.paymentUri);
+        // Simple flow that works for Sepolia - just set QR data and show it
+        setQrData(result.qrData);
         setCurrentView("qr");
       }
     } catch (error) {
@@ -2603,6 +2634,7 @@ const CubePaymentEngine = ({
               onBack={handleBackToCube}
               position={[0, 0, -3]}
               transactionHash={transactionHash}
+              paymentAmount={paymentAmount}
             />
           )}
 
