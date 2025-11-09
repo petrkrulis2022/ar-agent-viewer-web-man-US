@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { networkDetectionService } from "../services/networkDetectionService";
-import { hederaWalletService } from "../services/hederaWalletService";
+import customStablecoinService from "../services/customStablecoinService";
+import { ethers } from "ethers";
 
 const NetworkDisplay = ({ className = "" }) => {
   const [currentNetwork, setCurrentNetwork] = useState(null);
   const [isWalletConnected, setIsWalletConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [hbarBalance, setHbarBalance] = useState(null);
+  const [stablecoinBalances, setStablecoinBalances] = useState({});
   const [walletAddress, setWalletAddress] = useState(null);
 
   useEffect(() => {
@@ -59,41 +60,82 @@ const NetworkDisplay = ({ className = "" }) => {
           setCurrentNetwork(network);
           setWalletAddress(accounts[0]);
 
-          // Fetch HBAR balance if connected to Hedera Testnet (Chain ID 296)
-          if (network && network.chainId === 296) {
-            try {
-              const balance = await hederaWalletService.getHBARBalance(
-                accounts[0]
-              );
-              setHbarBalance(balance);
-              console.log("💰 HBAR Balance fetched:", balance);
-            } catch (balanceError) {
-              console.error("Failed to fetch HBAR balance:", balanceError);
-              setHbarBalance(null);
-            }
+          // Fetch custom stablecoin balances
+          if (network && network.chainId) {
+            await fetchStablecoinBalances(network.chainId, accounts[0]);
           } else {
-            setHbarBalance(null);
+            setStablecoinBalances({});
           }
         } else {
           setCurrentNetwork(null);
-          setHbarBalance(null);
+          setStablecoinBalances({});
           setWalletAddress(null);
         }
       } catch (error) {
         console.error("❌ Failed to detect network:", error);
         setCurrentNetwork(null);
         setIsWalletConnected(false);
-        setHbarBalance(null);
+        setStablecoinBalances({});
         setWalletAddress(null);
       }
     } else {
       setCurrentNetwork(null);
       setIsWalletConnected(false);
-      setHbarBalance(null);
+      setStablecoinBalances({});
       setWalletAddress(null);
     }
 
     setIsLoading(false);
+  };
+
+  /**
+   * Fetch balances for all deployed custom stablecoins
+   */
+  const fetchStablecoinBalances = async (chainId, address) => {
+    try {
+      const stablecoins = customStablecoinService.getAllStablecoins(chainId);
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const balances = {};
+
+      // ERC-20 ABI for balanceOf
+      const erc20Abi = [
+        "function balanceOf(address owner) view returns (uint256)",
+      ];
+
+      for (const token of stablecoins) {
+        // Skip placeholder tokens
+        if (!token.isDeployed) {
+          console.log(`⏭️ Skipping ${token.symbol} (not deployed)`);
+          continue;
+        }
+
+        try {
+          const tokenContract = new ethers.Contract(
+            token.tokenAddress,
+            erc20Abi,
+            provider
+          );
+          const balance = await tokenContract.balanceOf(address);
+          const formattedBalance = parseFloat(
+            ethers.utils.formatUnits(balance, token.decimals)
+          );
+
+          balances[token.symbol] = {
+            balance: formattedBalance,
+            icon: customStablecoinService.getIcon(token.symbol),
+          };
+
+          console.log(`💰 ${token.symbol} Balance:`, formattedBalance);
+        } catch (tokenError) {
+          console.error(`Failed to fetch ${token.symbol} balance:`, tokenError);
+        }
+      }
+
+      setStablecoinBalances(balances);
+    } catch (error) {
+      console.error("Failed to fetch stablecoin balances:", error);
+      setStablecoinBalances({});
+    }
   };
 
   if (!isWalletConnected || !currentNetwork || isLoading) {
@@ -101,7 +143,7 @@ const NetworkDisplay = ({ className = "" }) => {
   }
 
   const isSupported = currentNetwork.isSupported !== false;
-  const isHederaTestnet = currentNetwork.chainId === 296;
+  const hasStablecoins = Object.keys(stablecoinBalances).length > 0;
 
   return (
     <div className={`network-display ${className}`}>
@@ -126,11 +168,16 @@ const NetworkDisplay = ({ className = "" }) => {
         <span className="network-name">
           {currentNetwork.shortName || currentNetwork.name}
         </span>
-        {isHederaTestnet && hbarBalance !== null && (
-          <span className="balance-display" title="HBAR Balance">
-            {hbarBalance.toFixed(4)} HBAR
-          </span>
-        )}
+        {hasStablecoins &&
+          Object.entries(stablecoinBalances).map(([symbol, data]) => (
+            <span
+              key={symbol}
+              className="balance-display stablecoin-balance"
+              title={`${symbol} Token Balance`}
+            >
+              {data.icon} {data.balance.toFixed(2)} {symbol}
+            </span>
+          ))}
         {!isSupported && (
           <span className="unsupported-warning" title="Unsupported Network">
             ⚠️
@@ -186,6 +233,11 @@ const NetworkDisplay = ({ className = "" }) => {
           background-color: rgba(255, 255, 255, 0.15);
           border-radius: 8px;
           letter-spacing: 0.02em;
+        }
+
+        .balance-display.stablecoin-balance {
+          background: linear-gradient(135deg, rgba(0, 212, 170, 0.25), rgba(0, 170, 255, 0.25));
+          border: 1px solid rgba(0, 212, 170, 0.4);
         }
 
         .unsupported-warning {

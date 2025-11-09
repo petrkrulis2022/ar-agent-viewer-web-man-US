@@ -709,8 +709,8 @@ const ARQRDisplay = ({
   const [crossChainOptions, setCrossChainOptions] = useState([]);
   const [showCrossChainUI, setShowCrossChainUI] = useState(false);
   const [crossChainFeeEstimate, setCrossChainFeeEstimate] = useState(null);
-  const [paymentMode, setPaymentMode] = useState("same-chain"); // 'same-chain', 'cross-chain', 'switch-network'  
-  
+  const [paymentMode, setPaymentMode] = useState("same-chain"); // 'same-chain', 'cross-chain', 'switch-network'
+
   // Update currentQRData when qrData prop changes (for Hedera transactions)
   useEffect(() => {
     if (qrData) {
@@ -726,7 +726,7 @@ const ARQRDisplay = ({
     11155420: { name: "OP Sepolia", color: "#FF0420", symbol: "USDC" },
     43113: { name: "Avalanche Fuji", color: "#E84142", symbol: "USDC" },
     80002: { name: "Polygon Amoy", color: "#8247E5", symbol: "USDC" },
-    296: { name: "Hedera Testnet", color: "#00D4AA", symbol: "HBAR" },
+    296: { name: "Hedera Testnet", color: "#00D4AA", symbol: "USDh" },
     "solana-devnet": {
       name: "Solana Devnet",
       color: "#9945FF",
@@ -772,8 +772,24 @@ const ARQRDisplay = ({
         detectedNetwork = "solana-devnet"; // Solana Devnet
       }
 
-      // Check agent's chain_id property if available
-      if (agent.chain_id) {
+      // Priority: deployment_chain_id > name-based detection > chain_id (fallback)
+      // deployment_chain_id is the authoritative source for actual deployment network
+      if (agent.deployment_chain_id) {
+        const deploymentChainId = String(agent.deployment_chain_id);
+        if (supportedNetworks[deploymentChainId]) {
+          detectedNetwork = deploymentChainId;
+          console.log(
+            "🌐 Using agent's deployment_chain_id (authoritative):",
+            deploymentChainId
+          );
+        }
+      } else if (
+        agent.chain_id &&
+        !agentName.includes("hedera") &&
+        !agentName.includes("polygon") &&
+        !agentName.includes("solana")
+      ) {
+        // Only use chain_id if no deployment_chain_id AND name didn't detect specific network
         const chainId = String(agent.chain_id);
         if (supportedNetworks[chainId]) {
           detectedNetwork = chainId;
@@ -1494,7 +1510,8 @@ const ARQRDisplay = ({
           ) : currentQRData ? (
             <div onClick={handleQRClick}>
               {typeof currentQRData === "string" &&
-              (currentQRData.startsWith("data:image") || currentQRData.startsWith("http")) ? (
+              (currentQRData.startsWith("data:image") ||
+                currentQRData.startsWith("http")) ? (
                 <img
                   src={currentQRData}
                   alt="Payment QR Code"
@@ -1597,7 +1614,7 @@ const ARQRDisplay = ({
           >
             {transactionHash ? (
               <>
-                ✅ HBAR PAYMENT SUCCESSFUL!
+                ✅ PAYMENT SUCCESSFUL!
                 <br />
                 <a
                   href={`https://hashscan.io/testnet/transaction/${transactionHash}`}
@@ -2030,78 +2047,7 @@ const CubePaymentEngine = ({
         console.log("📱 Same-chain EVM detected → Direct QR generation");
         console.log(`  - Both user and agent on chain ${userNetwork}`);
 
-        // 🔧 HEDERA SPECIAL CASE: Direct MetaMask payment instead of QR
-        if (agentNetworkNum === 296 || userNetwork === 296) {
-          console.log("🟢 Hedera detected → Triggering direct HBAR payment");
-
-          try {
-            const amount =
-              paymentAmount ||
-              agent?.interaction_fee_amount ||
-              agent?.interaction_fee ||
-              5;
-            console.log(`💰 Payment amount: ${amount} HBAR`);
-
-            // Get agent wallet address - check ALL possible fields
-            const walletAddress =
-              agent?.agent_wallet_address ||
-              agent?.wallet_address ||
-              agent?.owner_wallet ||
-              agent?.deployer_address ||
-              agent?.payment_config?.walletAddress;
-
-            console.log("🔍 Agent wallet fields:", {
-              agent_wallet_address: agent?.agent_wallet_address,
-              wallet_address: agent?.wallet_address,
-              owner_wallet: agent?.owner_wallet,
-              deployer_address: agent?.deployer_address,
-              payment_config_wallet: agent?.payment_config?.walletAddress,
-              selected: walletAddress,
-            });
-
-            if (!walletAddress) {
-              throw new Error(
-                "Agent wallet address not found. Please ensure the agent has a valid wallet address configured."
-              );
-            }
-
-            console.log(`📍 Sending ${amount} HBAR to ${walletAddress}`);
-
-            // Direct HBAR transfer via MetaMask
-            const amountInWei =
-              "0x" +
-              Math.floor(parseFloat(amount) * Math.pow(10, 18)).toString(16);
-
-            const txHash = await window.ethereum.request({
-              method: "eth_sendTransaction",
-              params: [
-                {
-                  from: window.ethereum.selectedAddress,
-                  to: walletAddress,
-                  value: amountInWei,
-                  gas: "0x5208", // 21000 gas for simple transfer
-                },
-              ],
-            });
-
-            console.log("✅ HBAR payment sent! Transaction hash:", txHash);
-
-            // Generate a dummy QR code for visual consistency
-            const dummyQR = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=HEDERA-TX-${txHash}`;
-
-            // Store transaction info for display
-            setQrData(dummyQR);
-            setTransactionHash(txHash);
-            setCurrentView("qr");
-            return;
-          } catch (error) {
-            console.error("❌ HBAR payment failed:", error);
-            alert(`❌ Payment Failed\n\n${error.message}\n\nPlease try again.`);
-            setIsGenerating(false);
-            return;
-          }
-        }
-
+        // Generate QR code for payment (supports USDh and all custom stablecoins)
         const result = await dynamicQRService.generateDynamicQR(
           agent,
           paymentAmount ||

@@ -1,0 +1,180 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "lastUpdated": "2025-11-08",
+    "description": "Custom stablecoin registry for AgentSphere platform",
+    "standard": "ERC-20 6-decimal stablecoins"
+  },
+  "stablecoins": {
+    "USDh": {
+      "symbol": "USDh",
+      "name": "USDh Stablecoin",
+      "decimals": 6,
+      "status": "DEPLOYED",
+      "deployedNetworks": {
+        "HederaTestnet": {
+          "chainId": 296,
+          "contractAddress": "0x00000000000000000000000000000000006e24c7",
+          "deploymentDate": "2025-11-08",
+          "verified": true
+        }
+      },
+      "icon": "💎",
+      "description": "Official AgentSphere stablecoin deployed on Hedera Testnet"
+    },
+    "USDΔ": {
+      "symbol": "USDΔ",
+      "name": "USD Delta",
+      "decimals": 6,
+      "status": "NOT_DEPLOYED",
+      "deployedNetworks": {},
+      "icon": "🔺",
+      "description": "USD Delta stablecoin - Planned deployment"
+    },
+    "USDaix": {
+      "symbol": "USDaix",
+      "name": "USDaix",
+      "decimals": 6,
+      "status": "NOT_DEPLOYED",
+      "deployedNetworks": {},
+      "icon": "🌊",
+      "description": "USDaix stablecoin - Planned deployment"
+    },
+    "USDΔ+": {
+      "symbol": "USDΔ+",
+      "name": "USD Delta Plus",
+      "decimals": 6,
+      "status": "NOT_DEPLOYED",
+      "deployedNetworks": {},
+      "icon": "⚡",
+      "description": "USD Delta Plus stablecoin - Planned deployment"
+    },
+    "USDaix+": {
+      "symbol": "USDaix+",
+      "name": "USDaix Plus",
+      "decimals": 6,
+      "status": "NOT_DEPLOYED",
+      "deployedNetworks": {},
+      "icon": "🚀",
+      "description": "USDaix Plus stablecoin - Planned deployment"
+    },
+    "USDar": {
+      "symbol": "USDar",
+      "name": "USDar",
+      "decimals": 6,
+      "status": "NOT_DEPLOYED",
+      "deployedNetworks": {},
+      "icon": "🎯",
+      "description": "USDar stablecoin - Planned deployment"
+    },
+    "USDair": {
+      "symbol": "USDair",
+      "name": "USDair",
+      "decimals": 6,
+      "status": "NOT_DEPLOYED",
+      "deployedNetworks": {},
+      "icon": "☁️",
+      "description": "USDair stablecoin - Planned deployment"
+    }
+  },
+  "networkSupport": {
+    "HederaTestnet": {
+      "chainId": 296,
+      "supportedStablecoins": ["USDh"],
+      "plannedStablecoins": [
+        "USDΔ",
+        "USDaix",
+        "USDΔ+",
+        "USDaix+",
+        "USDar",
+        "USDair"
+      ],
+      "primaryStablecoin": "USDh"
+    },
+    "EthereumSepolia": {
+      "chainId": 11155111,
+      "supportedStablecoins": [],
+      "plannedStablecoins": [
+        "USDΔ",
+        "USDaix",
+        "USDΔ+",
+        "USDaix+",
+        "USDar",
+        "USDair"
+      ],
+      "primaryStablecoin": null
+    },
+    "ArbitrumSepolia": {
+      "chainId": 421614,
+      "supportedStablecoins": [],
+      "plannedStablecoins": [
+        "USDΔ",
+        "USDaix",
+        "USDΔ+",
+        "USDaix+",
+        "USDar",
+        "USDair"
+      ],
+      "primaryStablecoin": null
+    },
+    "BaseSepolia": {
+      "chainId": 84532,
+      "supportedStablecoins": [],
+      "plannedStablecoins": [
+        "USDΔ",
+        "USDaix",
+        "USDΔ+",
+        "USDaix+",
+        "USDar",
+        "USDair"
+      ],
+      "primaryStablecoin": null
+    },
+    "OPSepolia": {
+      "chainId": 11155420,
+      "supportedStablecoins": [],
+      "plannedStablecoins": [
+        "USDΔ",
+        "USDaix",
+        "USDΔ+",
+        "USDaix+",
+        "USDar",
+        "USDair"
+      ],
+      "primaryStablecoin": null
+    },
+    "AvalancheFuji": {
+      "chainId": 43113,
+      "supportedStablecoins": [],
+      "plannedStablecoins": [
+        "USDΔ",
+        "USDaix",
+        "USDΔ+",
+        "USDaix+",
+        "USDar",
+        "USDair"
+      ],
+      "primaryStablecoin": null
+    },
+    "PolygonAmoy": {
+      "chainId": 80002,
+      "supportedStablecoins": [],
+      "plannedStablecoins": [
+        "USDΔ",
+        "USDaix",
+        "USDΔ+",
+        "USDaix+",
+        "USDar",
+        "USDair"
+      ],
+      "primaryStablecoin": null
+    }
+  },
+  "placeholderAddress": "0x0000000000000000000000000000000000000000",
+  "validationRules": {
+    "requireDeployedTokens": true,
+    "allowPlaceholderInDev": false,
+    "enforceDecimals": 6,
+    "requireERC20Standard": true
+  }
+}

@@ -1,11 +1,12 @@
-// Dynamic QR Service for AR Viewer - CCIP Cross-Chain Enhanced
+// Dynamic QR Service for AR Viewer - Custom Stablecoins Enhanced
 // Handles EVM network autodetection and QR generation
-// Phase 2: Implements dual QR logic for same-chain vs cross-chain payments
+// Supports USDh and 6 additional custom stablecoins (all 6-decimal ERC-20)
 
 import QRCode from "qrcode";
 import { ethers } from "ethers";
 import ccipConfigService from "./ccipConfigService.js";
 import ccipConfigConsolidated from "../config/ccip-config-consolidated.json";
+import customStablecoinService from "./customStablecoinService.js";
 
 class DynamicQRService {
   constructor() {
@@ -61,16 +62,10 @@ class DynamicQRService {
       networks: Object.keys(this.supportedNetworks).length,
     });
 
-    // 🔧 Add Hedera Testnet support (not in CCIP config, uses native HBAR)
-    this.supportedNetworks[296] = {
-      name: "Hedera Testnet",
-      symbol: "HBAR",
-      type: "EVM",
-      rpc: "https://testnet.hashio.io/api",
-      chainSelector: null, // Not part of CCIP
-      router: null, // Not part of CCIP
-    };
-    console.log("✅ Added Hedera Testnet (296) support with native HBAR");
+    // ✅ Hedera Testnet already in consolidated config with custom stablecoins
+    console.log(
+      "✅ Hedera Testnet (296) configured with USDh and custom stablecoins"
+    );
   }
 
   // Network utility methods
@@ -395,7 +390,7 @@ class DynamicQRService {
   }
 
   // Enhanced QR generation with DUAL LOGIC: same-chain vs cross-chain
-  async generateDynamicQR(agentData, amountUSD = null) {
+  async generateDynamicQR(agentData, amountUSD = null, paymentToken = null) {
     try {
       console.log(
         "🔗 Generating dynamic QR code for:",
@@ -417,8 +412,12 @@ class DynamicQRService {
           ? amountUSD
           : agentData.interaction_fee_amount || agentData.fee_amount || "1.00";
 
+      // 🪙 Use custom payment token if provided, otherwise use agent's default
       const feeToken =
-        agentData.interaction_fee_token || agentData.fee_token || "USDC";
+        paymentToken ||
+        agentData.interaction_fee_token ||
+        agentData.fee_token ||
+        "USDC";
 
       // Get agent chain ID - check deployment_chain_id first
       let agentChainId = String(
@@ -440,6 +439,26 @@ class DynamicQRService {
 
       if (!walletAddress) {
         throw new Error("No wallet address found for QR generation");
+      }
+
+      // 🔐 VALIDATE CUSTOM STABLECOIN (if using custom token like USDh)
+      if (
+        feeToken !== "USDC" &&
+        feeToken !== "SOL" &&
+        parseInt(agentChainId) === 296
+      ) {
+        try {
+          customStablecoinService.validateToken(
+            feeToken,
+            parseInt(agentChainId)
+          );
+          console.log(
+            `✅ Custom stablecoin ${feeToken} validated for chain ${agentChainId}`
+          );
+        } catch (validationError) {
+          console.error(`❌ Token validation failed:`, validationError.message);
+          throw validationError;
+        }
       }
 
       // � SOLANA DETECTION: Check if agent is on Solana network
@@ -609,7 +628,31 @@ class DynamicQRService {
       }
 
       // Get token address for current network
-      const tokenAddress = this.usdcTokenAddresses[targetNetwork];
+      let tokenAddress;
+
+      // 🪙 Check if custom stablecoin (USDh, USDΔ, etc.)
+      if (feeToken !== "USDC" && feeToken !== "SOL") {
+        // Get custom stablecoin address
+        tokenAddress = customStablecoinService.getTokenAddress(
+          feeToken,
+          parseInt(targetNetwork)
+        );
+        console.log(
+          `🪙 Using custom stablecoin ${feeToken} at address:`,
+          tokenAddress
+        );
+
+        if (!tokenAddress) {
+          throw new Error(
+            `Custom stablecoin ${feeToken} not available on network ${targetNetwork}. ` +
+              `Please select a different payment token.`
+          );
+        }
+      } else {
+        // Use standard USDC address
+        tokenAddress = this.usdcTokenAddresses[targetNetwork];
+      }
+
       const networkInfo = this.getNetworkInfo(targetNetwork);
 
       console.log(`🔍 DEBUGGING TOKEN ADDRESS LOOKUP:`, {
@@ -643,33 +686,23 @@ class DynamicQRService {
           // ERC-20 token transfer URI format with chain ID
           const amountInDecimals = Math.floor(
             parseFloat(feeAmount) * Math.pow(10, 6)
-          ); // USDC has 6 decimals
+          ); // All custom stablecoins use 6 decimals
           paymentUri = `ethereum:${tokenAddress}@${targetNetwork}/transfer?address=${walletAddress}&uint256=${amountInDecimals}`;
           console.log(
             `📱 Generated EIP-681 for ERC-20 on chain ${targetNetwork}: ${paymentUri}`
           );
-        } else if (targetNetwork === 296) {
-          // 🔧 HEDERA SPECIAL CASE: Native HBAR transfer (no token contract)
-          console.log("🔧 Hedera native HBAR payment detected");
-          const amountInWei = Math.floor(
-            parseFloat(feeAmount) * Math.pow(10, 18)
-          ); // HBAR has 18 decimals
-          paymentUri = `ethereum:${walletAddress}@${targetNetwork}?value=${amountInWei}`;
-          console.log(
-            `📱 Generated EIP-681 for native HBAR on chain ${targetNetwork}: ${paymentUri}`
-          );
         } else {
-          // CRITICAL FIX: Never generate direct ETH transfers for AR payments
-          // All AR payments should be USDC transfers, if token address is missing, it's an error
+          // CRITICAL: No native token support - all payments must be ERC-20 stablecoins
           console.error(
-            `❌ USDC token address not found for network ${targetNetwork}`
+            `❌ Token address not found for network ${targetNetwork}`
           );
           console.error(
             `Available networks:`,
             Object.keys(this.usdcTokenAddresses)
           );
           throw new Error(
-            `USDC token address not configured for network ${targetNetwork}. ` +
+            `Token address not configured for network ${targetNetwork}. ` +
+              `All payments must use ERC-20 stablecoins. ` +
               `Available networks: ${Object.keys(this.usdcTokenAddresses).join(
                 ", "
               )}`
@@ -761,8 +794,8 @@ class DynamicQRService {
       .replace("0x", "")
       .padStart(64, "0");
 
-    // Convert amount to wei (assuming 6 decimals for USDC)
-    const decimals = token === "USDC" ? 6 : 18;
+    // All custom stablecoins use 6 decimals (USDh, USDC, USDT, etc.)
+    const decimals = 6;
     const amountWei = (parseFloat(amount) * Math.pow(10, decimals))
       .toString(16)
       .padStart(64, "0");

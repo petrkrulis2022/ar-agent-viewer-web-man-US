@@ -92,7 +92,7 @@ const getServiceFeeDisplay = (agent, paymentAmount = null) => {
       // Auto-detect token from network name
       const networkName = agent?.deployment_network_name || agent?.network;
       if (networkName && networkName.toLowerCase().includes("hedera")) {
-        token = "HBAR";
+        token = "USDh"; // Use USDh stablecoin for Hedera (not native HBAR)
       } else {
         token = "USDC";
       }

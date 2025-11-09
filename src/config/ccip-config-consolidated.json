@@ -170,6 +170,73 @@
         "toOPSepolia": "Ccip842gzYHhvdDkSyi2YVCoAWPbYJoApMFzSxQroE9C",
         "toPolygonAmoy": "Ccip842gzYHhvdDkSyi2YVCoAWPbYJoApMFzSxQroE9C"
       }
+    },
+    "HederaTestnet": {
+      "chainName": "HederaTestnet",
+      "chainId": 296,
+      "rpcUrl": "https://testnet.hashio.io/api",
+      "currencySymbol": "USDh",
+      "chainSelector": "0",
+      "router": "0x0000000000000000000000000000000000000000",
+      "usdc": {
+        "tokenAddress": "0x00000000000000000000000000000000006e24c7",
+        "tokenPoolAddress": "0x0000000000000000000000000000000000000000",
+        "decimals": 6
+      },
+      "customStablecoins": {
+        "USDh": {
+          "tokenAddress": "0x00000000000000000000000000000000006e24c7",
+          "decimals": 6,
+          "symbol": "USDh",
+          "name": "USDh Stablecoin",
+          "status": "DEPLOYED"
+        },
+        "USDΔ": {
+          "tokenAddress": "0x0000000000000000000000000000000000000000",
+          "decimals": 6,
+          "symbol": "USDΔ",
+          "name": "USD Delta",
+          "status": "NOT_DEPLOYED"
+        },
+        "USDaix": {
+          "tokenAddress": "0x0000000000000000000000000000000000000000",
+          "decimals": 6,
+          "symbol": "USDaix",
+          "name": "USDaix",
+          "status": "NOT_DEPLOYED"
+        },
+        "USDΔ+": {
+          "tokenAddress": "0x0000000000000000000000000000000000000000",
+          "decimals": 6,
+          "symbol": "USDΔ+",
+          "name": "USD Delta Plus",
+          "status": "NOT_DEPLOYED"
+        },
+        "USDaix+": {
+          "tokenAddress": "0x0000000000000000000000000000000000000000",
+          "decimals": 6,
+          "symbol": "USDaix+",
+          "name": "USDaix Plus",
+          "status": "NOT_DEPLOYED"
+        },
+        "USDar": {
+          "tokenAddress": "0x0000000000000000000000000000000000000000",
+          "decimals": 6,
+          "symbol": "USDar",
+          "name": "USDar",
+          "status": "NOT_DEPLOYED"
+        },
+        "USDair": {
+          "tokenAddress": "0x0000000000000000000000000000000000000000",
+          "decimals": 6,
+          "symbol": "USDair",
+          "name": "USDair",
+          "status": "NOT_DEPLOYED"
+        }
+      },
+      "feeTokens": {},
+      "lanes": {},
+      "defaultPaymentToken": "USDh"
     }
   },
   "supportedRoutes": {

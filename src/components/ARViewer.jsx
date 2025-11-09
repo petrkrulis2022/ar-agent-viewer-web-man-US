@@ -583,21 +583,19 @@ const ARViewer = () => {
       const beforeNetworkFilter = agentsToFilter.length;
 
       agentsToFilter = agentsToFilter.filter((agent) => {
-        // Get chain ID from multiple possible fields
-        const chainId =
-          agent.deployment_chain_id ||
-          agent.chain_id ||
-          agent.payment_config?.chainId;
+        // Get network info from multiple sources with proper priority
+        const deploymentChainId = agent.deployment_chain_id;
+        const chainId = agent.chain_id;
+        const networkName = (
+          agent.deployment_network_name ||
+          agent.payment_config?.network_info?.name ||
+          ""
+        ).toLowerCase();
 
         // For Solana (null chain_id), check deployment_network_name
         if (networkFilter === "solana-devnet") {
-          const networkName =
-            agent.deployment_network_name ||
-            agent.payment_config?.network_info?.name ||
-            "";
           const isSolana =
-            networkName.toLowerCase().includes("solana") &&
-            networkName.toLowerCase().includes("devnet");
+            networkName.includes("solana") && networkName.includes("devnet");
 
           if (isSolana) {
             console.log("✅ Solana Devnet match:", {
@@ -608,34 +606,73 @@ const ARViewer = () => {
           return isSolana;
         }
 
-        // For Hedera (chain ID 296), also check network name as fallback
+        // For Hedera (chain ID 296)
         if (networkFilter === "296") {
-          const networkName =
-            agent.deployment_network_name ||
-            agent.payment_config?.network_info?.name ||
-            "";
+          // Match by deployment_chain_id, chain_id, OR network name
+          const matchesByDeployment = deploymentChainId === 296;
+          const matchesByChainId = chainId === 296;
+          const matchesByName = networkName.includes("hedera");
+
           const isHedera =
-            chainId === 296 || networkName.toLowerCase().includes("hedera");
+            matchesByDeployment || matchesByChainId || matchesByName;
 
           if (isHedera) {
             console.log("✅ Hedera Testnet match:", {
               name: agent.name,
+              deploymentChainId,
               chainId,
               network: networkName,
+              matchedBy: matchesByDeployment
+                ? "deployment_chain_id"
+                : matchesByChainId
+                ? "chain_id"
+                : "network_name",
             });
           }
           return isHedera;
         }
 
-        // For EVM networks, compare chain IDs
-        const matchesFilter = chainId && chainId.toString() === networkFilter;
+        // For EVM networks (Ethereum, Polygon, Arbitrum, etc.)
+        const filterChainId = parseInt(networkFilter);
+
+        // Match by deployment_chain_id OR chain_id
+        const matchesByDeployment = deploymentChainId === filterChainId;
+        const matchesByChainId = chainId === filterChainId;
+
+        // IMPORTANT: Reject if network name clearly indicates a different network
+        // (e.g., Hedera agent shouldn't appear in Ethereum filter even if chain_id matches)
+        const isHederaAgent = networkName.includes("hedera");
+        const isSolanaAgent = networkName.includes("solana");
+        const hasWrongNetwork =
+          (isHederaAgent && filterChainId !== 296) ||
+          (isSolanaAgent && networkFilter !== "solana-devnet");
+
+        // Match if deployment_chain_id OR chain_id matches, AND network name doesn't contradict
+        const matchesFilter =
+          (matchesByDeployment || matchesByChainId) && !hasWrongNetwork;
 
         if (matchesFilter) {
           console.log("✅ EVM Network match:", {
             name: agent.name,
+            deploymentChainId,
             chainId,
+            networkName,
             filter: networkFilter,
+            matchedBy: matchesByDeployment ? "deployment_chain_id" : "chain_id",
           });
+        } else if (
+          (matchesByDeployment || matchesByChainId) &&
+          hasWrongNetwork
+        ) {
+          console.warn(
+            "⚠️ Agent chain_id matches but network name contradicts - FILTERED OUT:",
+            {
+              name: agent.name,
+              chainId,
+              networkName,
+              filter: networkFilter,
+            }
+          );
         }
 
         return matchesFilter;
