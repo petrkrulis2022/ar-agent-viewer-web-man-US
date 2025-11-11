@@ -564,25 +564,62 @@ const AR3DScene = ({
         onClose={closeModals}
         onPaymentComplete={handleCubePaymentComplete}
         paymentAmount={
-          // 💰 ONLY use dynamic amount for Payment Terminals, NOT regular agents
+          // 💰 Respect fee_type field - return null for dynamic fees
           (() => {
+            // DEBUG: Log full agent object to see what we're getting from database
+            console.log("🔍🔍🔍 AR3DScene: FULL AGENT DATA", {
+              agentName: selectedAgent?.name,
+              fullAgent: selectedAgent,
+              fee_type: selectedAgent?.fee_type,
+              interaction_fee_amount: selectedAgent?.interaction_fee_amount,
+              interaction_fee: selectedAgent?.interaction_fee,
+              agent_type: selectedAgent?.agent_type,
+            });
+
             const isPaymentTerminal =
               selectedAgent?.agent_type === "Payment Terminal" ||
               selectedAgent?.agent_type === "Trailing Payment Terminal";
 
-            const amount = isPaymentTerminal
-              ? paymentContext?.amount || selectedAgent?.interaction_fee || 10.0
-              : selectedAgent?.interaction_fee_amount ||
+            // Check if this is a dynamic fee type agent
+            const isDynamicFee = selectedAgent?.fee_type === "dynamic";
+
+            // For dynamic fee agents, return null to show "Dynamic Amount" label
+            if (isDynamicFee && !isPaymentTerminal) {
+              console.log(
+                "✅ AR3DScene: Dynamic fee agent detected - returning NULL",
+                {
+                  agentName: selectedAgent?.name,
+                  feeType: selectedAgent?.fee_type,
+                  paymentAmount: null,
+                }
+              );
+              return null;
+            }
+
+            // For payment terminals, use payment context amount
+            if (isPaymentTerminal) {
+              const amount =
+                paymentContext?.amount ||
                 selectedAgent?.interaction_fee ||
                 10.0;
+              console.log("🔍 AR3DScene: Payment terminal amount", {
+                agentName: selectedAgent?.name,
+                amount,
+              });
+              return amount;
+            }
 
-            console.log("🔍 AR3DScene: Determining paymentAmount for cube", {
+            // For fixed fee agents, use interaction_fee_amount
+            const amount =
+              selectedAgent?.interaction_fee_amount ||
+              selectedAgent?.interaction_fee ||
+              10.0;
+
+            console.log("🔍 AR3DScene: Fixed fee agent amount", {
               agentName: selectedAgent?.name,
-              agentType: selectedAgent?.agent_type,
-              isPaymentTerminal,
-              paymentContextAmount: paymentContext?.amount,
-              selectedAgentFee: selectedAgent?.interaction_fee,
-              selectedAgentFeeAmount: selectedAgent?.interaction_fee_amount,
+              feeType: selectedAgent?.fee_type,
+              interaction_fee_amount: selectedAgent?.interaction_fee_amount,
+              interaction_fee: selectedAgent?.interaction_fee,
               finalAmount: amount,
             });
 

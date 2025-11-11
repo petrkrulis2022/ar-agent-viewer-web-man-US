@@ -15,6 +15,13 @@ import IntermediatePaymentModal from "./IntermediatePaymentModal"; // Transactio
 import RevolutBankQRModal from "./RevolutBankQRModal"; // Revolut Bank QR modal
 import { VirtualCardManager } from "./VirtualCardManager"; // NEW: Virtual Card Manager with card selector
 import { usePaymentStatus } from "../hooks/usePaymentStatus"; // Real-time payment status hook
+import {
+  parsePaymentDataFromURL,
+  getDynamicPaymentAmount,
+  validatePaymentAmount,
+  formatPaymentAmount,
+  getPaymentConfigSummary,
+} from "../utils/paymentUtils"; // Dynamic payment utilities
 
 // AgentSphere Payment Configuration Reader
 const getAgentPaymentConfig = async (agentId) => {
@@ -33,7 +40,7 @@ const getAgentPaymentConfig = async (agentId) => {
     const { data, error } = await supabase
       .from("deployed_objects")
       .select(
-        "payment_methods, payment_config, agent_wallet_address, payment_recipient_address"
+        "payment_methods, payment_config, agent_wallet_address, payment_recipient_address, fee_type, interaction_fee_amount, interaction_fee_token"
       )
       .eq("id", agentId)
       .single();
@@ -697,6 +704,7 @@ const ARQRDisplay = ({
   position = [0, 0, -3],
   transactionHash,
   paymentAmount,
+  urlPaymentData,
 }) => {
   const [selectedNetwork, setSelectedNetwork] = useState("11155111"); // Default to Ethereum Sepolia
   const [isGeneratingQR, setIsGeneratingQR] = useState(false);
@@ -1114,10 +1122,7 @@ const ARQRDisplay = ({
         );
         const qrResult = await dynamicQRService.generateDynamicQR(
           agent,
-          paymentAmount ||
-            agent?.interaction_fee_amount ||
-            agent?.interaction_fee ||
-            1
+          paymentAmount || 1
         );
         if (!qrResult.success) {
           throw new Error(qrResult.error);
@@ -1129,7 +1134,9 @@ const ARQRDisplay = ({
           to: agent.agent_wallet_address || agent.payment_recipient_address,
           value: "0",
           data: "0x",
-          amount: agent.interaction_fee_amount || "1.00",
+          amount: paymentAmount
+            ? paymentAmount.toString()
+            : agent.interaction_fee_amount || "1.00",
           token: agent.interaction_fee_token || "USDC",
           chainId: selectedNetwork,
         };
@@ -1481,9 +1488,33 @@ const ARQRDisplay = ({
               textAlign: "center",
             }}
           >
-            {agent?.interaction_fee_amount || "1.00"}{" "}
-            {supportedNetworks[selectedNetwork]?.symbol || "USDC"}
-            <br />
+            <div
+              style={{ fontSize: "16px", fontWeight: "bold", color: "#333" }}
+            >
+              {(() => {
+                // Check if agent has dynamic fee type
+                const isDynamicFee = agent?.fee_type === "dynamic";
+
+                // Use the paymentAmount prop that was passed to this component
+                // It already has the final calculated amount from getFinalPaymentAmount()
+                const finalAmount = paymentAmount;
+
+                // For dynamic fee agents without payment amount, show "Dynamic Amount"
+                if (isDynamicFee && !finalAmount) {
+                  return (
+                    <span style={{ color: "#ff9500" }}>Dynamic Amount</span>
+                  );
+                }
+
+                // Otherwise show the amount
+                return (
+                  <>
+                    {finalAmount}{" "}
+                    {supportedNetworks[selectedNetwork]?.symbol || "USDC"}
+                  </>
+                );
+              })()}
+            </div>
             <span
               style={{
                 fontSize: "12px",
@@ -1492,6 +1523,27 @@ const ARQRDisplay = ({
             >
               on {supportedNetworks[selectedNetwork]?.name}
             </span>
+
+            {/* Show URL payment data if available */}
+            {urlPaymentData && (
+              <div
+                style={{
+                  marginTop: "10px",
+                  padding: "8px",
+                  backgroundColor: "#e8f5e8",
+                  borderRadius: "6px",
+                  fontSize: "11px",
+                  color: "#333",
+                }}
+              >
+                {urlPaymentData.orderId && (
+                  <div>📝 Order: {urlPaymentData.orderId}</div>
+                )}
+                {urlPaymentData.merchantName && (
+                  <div>🏪 From: {urlPaymentData.merchantName}</div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* QR Code Display */}
@@ -1783,6 +1835,10 @@ const CubePaymentEngine = ({
   const [isLoadingConfig, setIsLoadingConfig] = useState(true);
   const cubeRef = useRef();
 
+  // Dynamic Payment Amount State
+  const [urlPaymentData, setUrlPaymentData] = useState(null);
+  const [dynamicPaymentAmount, setDynamicPaymentAmount] = useState(null);
+
   // Intermediate Payment Modal State
   const [showIntermediateModal, setShowIntermediateModal] = useState(false);
   const [intermediateTransactionData, setIntermediateTransactionData] =
@@ -1814,6 +1870,37 @@ const CubePaymentEngine = ({
       return () => clearTimeout(timer);
     }
   }, [isOpen]);
+
+  // Parse URL parameters and calculate dynamic payment amount
+  useEffect(() => {
+    if (!isOpen || !agent) return;
+
+    console.log(
+      "📋 Parsing URL payment data and calculating dynamic amount..."
+    );
+
+    // Parse URL parameters
+    const paymentData = parsePaymentDataFromURL();
+    setUrlPaymentData(paymentData);
+
+    // Determine final payment amount based on fee_type and URL data
+    const finalAmount = getDynamicPaymentAmount(agent, paymentData);
+    setDynamicPaymentAmount(finalAmount);
+
+    // Log payment configuration for debugging
+    const configSummary = getPaymentConfigSummary(
+      agent,
+      paymentData,
+      finalAmount
+    );
+    console.log("💳 Payment configuration:", configSummary);
+
+    // Validate the amount if it's defined
+    if (finalAmount !== null && !validatePaymentAmount(finalAmount)) {
+      console.error("❌ Invalid payment amount detected:", finalAmount);
+      alert("Invalid payment amount. Please check the payment details.");
+    }
+  }, [isOpen, agent]);
 
   // Load payment configuration from AgentSphere when component opens
   useEffect(() => {
@@ -1858,6 +1945,68 @@ const CubePaymentEngine = ({
       cubeWillRender: currentView === "cube" && !isLoadingConfig,
     });
   }, [currentView, isLoadingConfig, isInitializing, isOpen]);
+
+  // Helper function to get the final payment amount to use
+  const getFinalPaymentAmount = useCallback(() => {
+    // Priority 1: Use dynamic amount from URL if available and valid
+    if (dynamicPaymentAmount !== null && dynamicPaymentAmount !== undefined) {
+      console.log(
+        "💰 getFinalPaymentAmount: Using dynamic amount from URL",
+        dynamicPaymentAmount
+      );
+      return dynamicPaymentAmount;
+    }
+
+    // Check if agent has dynamic fee type
+    const isDynamicFee = agent?.fee_type === "dynamic";
+
+    // For dynamic fee agents WITHOUT URL data, return null for display
+    // (this shows "Dynamic Amount" label)
+    if (isDynamicFee) {
+      console.log(
+        "💰 getFinalPaymentAmount: Agent has dynamic fee_type, but no URL data - returning null",
+        {
+          agent: agent?.name,
+          fee_type: agent?.fee_type,
+        }
+      );
+      return null; // This will trigger "Dynamic Amount" display
+    }
+
+    // For FIXED fee agents, use standard priority chain:
+
+    // Priority 2: Use prop paymentAmount if provided
+    if (paymentAmount && paymentAmount !== 10.0) {
+      // 10.0 is the default
+      console.log(
+        "💰 getFinalPaymentAmount: Using prop paymentAmount",
+        paymentAmount
+      );
+      return paymentAmount;
+    }
+
+    // Priority 3: Use agent's interaction_fee_amount
+    if (agent?.interaction_fee_amount) {
+      console.log(
+        "💰 getFinalPaymentAmount: Using agent.interaction_fee_amount",
+        agent.interaction_fee_amount
+      );
+      return agent.interaction_fee_amount;
+    }
+
+    // Priority 4: Use legacy interaction_fee
+    if (agent?.interaction_fee) {
+      console.log(
+        "💰 getFinalPaymentAmount: Using agent.interaction_fee",
+        agent.interaction_fee
+      );
+      return agent.interaction_fee;
+    }
+
+    // Fallback: 10.0
+    console.log("💰 getFinalPaymentAmount: Using fallback 10.0");
+    return 10.0;
+  }, [dynamicPaymentAmount, paymentAmount, agent]);
 
   // Handle face selection
   const handleFaceSelected = async (methodKey, methodConfig) => {
@@ -2050,12 +2199,12 @@ const CubePaymentEngine = ({
           "🌟 Solana-to-Solana detected → Direct Solana QR generation"
         );
 
+        const finalAmount = getFinalPaymentAmount();
+        console.log("💰 Using payment amount:", finalAmount);
+
         const result = await dynamicQRService.generateDynamicQR(
           agent,
-          paymentAmount ||
-            agent?.interaction_fee_amount ||
-            agent?.interaction_fee ||
-            1
+          finalAmount
         );
 
         console.log("✅ Solana QR generated:", result);
@@ -2078,13 +2227,13 @@ const CubePaymentEngine = ({
         console.log("📱 Same-chain EVM detected → Direct QR generation");
         console.log(`  - Both user and agent on chain ${userNetwork}`);
 
+        const finalAmount = getFinalPaymentAmount();
+        console.log("💰 Using payment amount:", finalAmount);
+
         // Generate QR code for payment (supports USDh and all custom stablecoins)
         const result = await dynamicQRService.generateDynamicQR(
           agent,
-          paymentAmount ||
-            agent?.interaction_fee_amount ||
-            agent?.interaction_fee ||
-            1
+          finalAmount
         );
 
         console.log("✅ Same-chain QR generated:", result);
@@ -2147,11 +2296,7 @@ const CubePaymentEngine = ({
 
     try {
       // 💰 Use dynamic payment amount from e-shop/on-ramp OR agent's fee OR default
-      const amount =
-        paymentAmount ||
-        agent?.interaction_fee_amount ||
-        agent?.interaction_fee ||
-        10.0;
+      const amount = getFinalPaymentAmount();
 
       console.log(
         "💰 Creating Revolut Bank QR order for amount:",
@@ -2159,10 +2304,12 @@ const CubePaymentEngine = ({
         "USD"
       );
       console.log("💰 Payment amount source:", {
+        fromDynamicAmount: dynamicPaymentAmount,
         fromPaymentContext: paymentAmount,
         fromAgentFeeAmount: agent?.interaction_fee_amount,
         fromAgentFee: agent?.interaction_fee,
         finalAmount: amount,
+        urlPaymentData: urlPaymentData,
       });
 
       // Create Revolut Bank QR order
@@ -2204,17 +2351,15 @@ const CubePaymentEngine = ({
     console.log("💳 showVirtualCardModal before:", showVirtualCardModal);
 
     // 💰 Calculate dynamic payment amount
-    const amount =
-      paymentAmount ||
-      agent?.interaction_fee_amount ||
-      agent?.interaction_fee ||
-      10.0;
+    const amount = getFinalPaymentAmount();
 
     console.log("💰 Payment amount:", {
+      fromDynamicAmount: dynamicPaymentAmount,
       fromPaymentContext: paymentAmount,
       fromAgentFeeAmount: agent?.interaction_fee_amount,
       fromAgentFee: agent?.interaction_fee,
       finalAmount: amount,
+      urlPaymentData: urlPaymentData,
     });
 
     try {
@@ -2401,10 +2546,13 @@ const CubePaymentEngine = ({
     try {
       console.log("🔧 Building CCIP transaction for intermediate modal...");
 
+      const finalAmount = getFinalPaymentAmount();
+      console.log("💰 Using payment amount for cross-chain:", finalAmount);
+
       const ccipTransactionData = await ccipConfigService.buildCCIPTransaction(
         userNetwork, // Source chain
         agentNetwork, // Destination chain
-        agent?.interaction_fee_amount || "1.00", // USDC amount
+        finalAmount.toString(), // USDC amount
         agent?.agent_wallet_address || agent?.payment_recipient_address, // Recipient
         "native" // Fee token (ETH)
       );
@@ -2634,7 +2782,8 @@ const CubePaymentEngine = ({
               onBack={handleBackToCube}
               position={[0, 0, -3]}
               transactionHash={transactionHash}
-              paymentAmount={paymentAmount}
+              paymentAmount={getFinalPaymentAmount()}
+              urlPaymentData={urlPaymentData}
             />
           )}
 
@@ -2728,12 +2877,7 @@ const CubePaymentEngine = ({
             isOpen={showVirtualCardModal}
             onClose={handleVirtualCardClose}
             agentName={agent?.name || "AgentSphere Agent"}
-            agentFee={
-              paymentAmount ||
-              agent?.interaction_fee_amount ||
-              agent?.interaction_fee ||
-              10.0
-            }
+            agentFee={getFinalPaymentAmount()}
             agentToken={
               supportedNetworks[
                 agent?.deployment_chain_id ||
@@ -2781,11 +2925,7 @@ const CubePaymentEngine = ({
                 onPaymentComplete({
                   method: "cubepay-terminal",
                   switchToCubePay: true,
-                  amount:
-                    paymentAmount ||
-                    agent?.interaction_fee_amount ||
-                    agent?.interaction_fee ||
-                    10.0,
+                  amount: getFinalPaymentAmount(),
                   status: "pending_cubepay",
                 });
               }

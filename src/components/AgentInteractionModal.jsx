@@ -55,10 +55,20 @@ const getServiceFeeDisplay = (agent, paymentAmount = null) => {
     return `${paymentAmount} USDC`;
   }
 
+  // ✅ CHECK FOR DYNAMIC FEE TYPE FIRST!
+  if (agent?.fee_type === "dynamic") {
+    console.log("💰 Agent has dynamic fee_type - showing Dynamic Amount", {
+      agent: agent?.name,
+      fee_type: agent?.fee_type,
+    });
+    return "Dynamic Amount";
+  }
+
   // Use the same priority logic as resolveInteractionFee to ensure consistency
   console.log("🔍 AgentInteractionModal: Full agent data for fee:", {
     name: agent?.name,
     id: agent?.id,
+    fee_type: agent?.fee_type,
     interaction_fee_amount: agent?.interaction_fee_amount,
     interaction_fee_usdfc: agent?.interaction_fee_usdfc,
     interaction_fee: agent?.interaction_fee,

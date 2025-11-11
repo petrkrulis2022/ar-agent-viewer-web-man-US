@@ -65,12 +65,29 @@ function AppContent() {
         {/* Main Landing Screen Route */}
         <Route
           path="/"
-          element={
-            <MainLandingScreen
-              onEnterAgentWorld={() => navigate("/ar-view")}
-              onShowWallet={handleShowWallet}
-            />
-          }
+          element={(() => {
+            // If paymentData parameter exists, redirect directly to AR view
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has("paymentData")) {
+              console.log(
+                "💳 Payment data detected, redirecting to AR view..."
+              );
+              return (
+                <Navigate to={`/ar-view${window.location.search}`} replace />
+              );
+            }
+
+            return (
+              <MainLandingScreen
+                onEnterAgentWorld={() => {
+                  // Preserve URL parameters when navigating to AR view
+                  const currentParams = window.location.search;
+                  navigate(`/ar-view${currentParams}`);
+                }}
+                onShowWallet={handleShowWallet}
+              />
+            );
+          })()}
         />
 
         {/* Simple Cube Test Route */}

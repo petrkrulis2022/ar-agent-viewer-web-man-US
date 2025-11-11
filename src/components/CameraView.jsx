@@ -886,7 +886,14 @@ const CameraView = ({
         isOpen={showCubePayment}
         onClose={closeModals}
         onPaymentComplete={handleCubePaymentComplete}
-        paymentAmount={selectedAgent?.interaction_fee || 10.0}
+        paymentAmount={
+          // Respect fee_type field - return null for dynamic fees
+          selectedAgent?.fee_type === "dynamic"
+            ? null
+            : selectedAgent?.interaction_fee_amount ||
+              selectedAgent?.interaction_fee ||
+              10.0
+        }
         enabledMethods={[
           "crypto_qr",
           "virtual_card",

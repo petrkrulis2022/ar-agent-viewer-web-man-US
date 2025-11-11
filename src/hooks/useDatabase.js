@@ -377,9 +377,29 @@ export const useDatabase = () => {
               : obj.interaction_fee_usdfc
               ? parseFloat(obj.interaction_fee_usdfc)
               : 1.0,
+
+            // ✅ PRESERVE fee_type from database
+            fee_type: obj.fee_type || "fixed",
+            interaction_fee_token: obj.interaction_fee_token || "USDC",
+
             // Enhanced payment fields with realistic dynamic fees for real agents
             interaction_fee_amount: (() => {
-              // Generate realistic fee based on agent characteristics FIRST
+              // ✅ RESPECT fee_type='dynamic' - keep NULL for dynamic agents
+              if (obj.fee_type === "dynamic") {
+                console.log("💰 useDatabase: Preserving dynamic fee type", {
+                  agent: obj.name,
+                  fee_type: obj.fee_type,
+                  interaction_fee_amount: null,
+                });
+                return null;
+              }
+
+              // For fixed fee agents, use database value or calculate enhanced fee
+              if (obj.interaction_fee_amount) {
+                return parseFloat(obj.interaction_fee_amount);
+              }
+
+              // Generate realistic fee based on agent characteristics as fallback
               const agentId = obj.id || "";
               const agentName = (obj.name || "").toLowerCase();
 
@@ -400,13 +420,7 @@ export const useDatabase = () => {
                 enhancedFee = 3 + (Math.abs(hash) % 13); // 3-15 USDC
               }
 
-              // Use enhanced fee unless database has a reasonable value (> 2 USDC)
-              if (
-                obj.interaction_fee_amount &&
-                parseFloat(obj.interaction_fee_amount) > 2
-              ) {
-                return parseFloat(obj.interaction_fee_amount);
-              }
+              // Use enhanced fee if database doesn't have a reasonable value
               if (obj.interaction_fee && parseFloat(obj.interaction_fee) > 2) {
                 return parseFloat(obj.interaction_fee);
               }
