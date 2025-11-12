@@ -37,7 +37,18 @@ export default defineConfig({
     },
   },
   server: {
+    port: 5173,
+    strictPort: true,
     host: true,
-    allowedHosts: "all",
+    allowedHosts: [
+      "ce9c2121aa0a.ngrok-free.app", // Ngrok URL (without https://)
+    ],
+    cors: {
+      origin: [
+        "http://localhost:5173",
+        "https://ce9c2121aa0a.ngrok-free.app", // Ngrok URL (with https://)
+      ],
+      credentials: true,
+    },
   },
 });
