@@ -25,7 +25,12 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    include: ["@solana/web3.js", "@solana/spl-token", "buffer"],
+    include: [
+      "@solana/web3.js",
+      "@solana/spl-token",
+      "@hashgraph/sdk",
+      "buffer",
+    ],
     esbuildOptions: {
       // Node.js global to browser globalThis
       define: {
