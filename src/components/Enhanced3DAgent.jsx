@@ -146,7 +146,7 @@ const Enhanced3DAgent = ({
   // Animation state
   const animationTime = useRef(0);
   const floatOffset = useRef(Math.random() * Math.PI * 2);
-  const spinSpeed = useRef(0.3 + Math.random() * 0.2);
+  const spinSpeed = useRef(0.05 + Math.random() * 0.05); // Reduced from 0.3 to 0.05 for slower spin
 
   // Animate the 3D model
   useFrame((state, delta) => {
