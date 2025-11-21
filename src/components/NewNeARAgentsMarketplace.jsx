@@ -10,6 +10,7 @@ const NewNeARAgentsMarketplace = ({ isOpen, onClose, userLocation }) => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
+  const [showOnlyVerified, setShowOnlyVerified] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [error, setError] = useState(null);
@@ -98,8 +99,13 @@ const NewNeARAgentsMarketplace = ({ isOpen, onClose, userLocation }) => {
       );
     }
 
+    // Apply verified filter
+    if (showOnlyVerified) {
+      filtered = filtered.filter((agent) => agent.agent_identity);
+    }
+
     setFilteredAgents(filtered);
-  }, [agents, searchTerm, selectedFilter]);
+  }, [agents, searchTerm, selectedFilter, showOnlyVerified]);
 
   // Calculate filter counts
   const filtersWithCounts = agentFilters.map((filter) => ({
@@ -169,15 +175,28 @@ const NewNeARAgentsMarketplace = ({ isOpen, onClose, userLocation }) => {
         {/* Search and Filters - EXACT copy from old marketplace */}
         <div className="p-6 border-b border-green-500/20">
           {/* Search Bar */}
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Search agents by name, type, or location..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:border-green-500 focus:outline-none"
-            />
+          <div className="flex gap-4 mb-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Search agents by name, type, or location..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:border-green-500 focus:outline-none"
+              />
+            </div>
+            <label className="flex items-center gap-2 px-4 bg-gray-800 border border-gray-700 rounded-lg cursor-pointer hover:bg-gray-700 transition-colors">
+              <input
+                type="checkbox"
+                checked={showOnlyVerified}
+                onChange={(e) => setShowOnlyVerified(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-600 text-green-500 focus:ring-green-500 bg-gray-700"
+              />
+              <span className="text-sm text-white font-medium flex items-center gap-1">
+                <span>🆔</span> Verified Only
+              </span>
+            </label>
           </div>
 
           {/* Filter Buttons */}

@@ -183,9 +183,19 @@ const AgentDetailModal = ({ agent, isOpen, onClose, userLocation }) => {
               {getAgentTypeIcon(agent.agent_type || agent.object_type)}
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-white">
-                {agent.name || "Unnamed Agent"}
-              </h2>
+              <div className="flex items-center gap-3">
+                <h2 className="text-2xl font-bold text-white">
+                  {agent.name || "Unnamed Agent"}
+                </h2>
+                {agent.agent_identity && (
+                  <div className="flex items-center gap-1.5 px-3 py-1 bg-blue-500/20 border border-blue-500/30 rounded-full">
+                    <span className="text-sm">🆔</span>
+                    <span className="text-xs font-medium text-blue-400">
+                      Verified Identity
+                    </span>
+                  </div>
+                )}
+              </div>
               <p className="text-green-400 text-lg">
                 {agent.agent_type || agent.object_type || "Agent"}
               </p>
@@ -262,6 +272,61 @@ const AgentDetailModal = ({ agent, isOpen, onClose, userLocation }) => {
               </div>
             </div>
           </Section>
+
+          {/* Identity Verification Section */}
+          {agent.agent_identity && (
+            <Section
+              title="Identity Verification"
+              icon={Shield}
+              sectionKey="identity"
+            >
+              <div className="space-y-4">
+                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="text-2xl">🆔</div>
+                    <div className="flex-1">
+                      <h4 className="text-blue-400 font-medium mb-1">
+                        Verified Hedera Identity
+                      </h4>
+                      <p className="text-gray-300 text-sm mb-3">
+                        This agent has been verified on the Hedera network using
+                        Decentralized Identifiers (DID).
+                      </p>
+
+                      <div className="space-y-2">
+                        <CopyableField
+                          label="DID"
+                          value={agent.agent_identity}
+                          fullValue={agent.agent_identity}
+                          fieldName="did"
+                        />
+
+                        {agent.hedera_account_id && (
+                          <CopyableField
+                            label="Hedera Account"
+                            value={agent.hedera_account_id}
+                            fieldName="hedera_account"
+                          />
+                        )}
+                      </div>
+
+                      {agent.hedera_account_id && (
+                        <a
+                          href={`https://hashscan.io/testnet/account/${agent.hedera_account_id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+                        >
+                          <span>View Identity on HashScan</span>
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Section>
+          )}
 
           {/* Location Details */}
           <Section

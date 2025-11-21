@@ -169,9 +169,19 @@ const NeARAgentsList = ({
                     {getAgentTypeIcon(agent.agent_type || agent.object_type)}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-white text-lg leading-tight">
-                      {agent.name || "Unnamed Agent"}
-                    </h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-white text-lg leading-tight">
+                        {agent.name || "Unnamed Agent"}
+                      </h3>
+                      {agent.agent_identity && (
+                        <div className="flex items-center gap-1 px-2 py-0.5 bg-blue-500/20 border border-blue-500/30 rounded-full">
+                          <span className="text-xs">🆔</span>
+                          <span className="text-[10px] font-medium text-blue-400">
+                            Verified
+                          </span>
+                        </div>
+                      )}
+                    </div>
                     <p className="text-green-400 text-sm">
                       {agent.agent_type || agent.object_type || "Agent"}
                     </p>
@@ -201,6 +211,28 @@ const NeARAgentsList = ({
                     {agent.interaction_range || 15}m
                   </span>
                 </div>
+
+                {/* Identity Info */}
+                {agent.agent_identity && (
+                  <div className="flex items-center space-x-2 text-sm text-gray-400">
+                    <span className="text-xs">🆔</span>
+                    <span className="font-mono text-xs bg-gray-700/50 px-1.5 py-0.5 rounded">
+                      {agent.agent_identity.slice(0, 20)}...
+                    </span>
+                    {agent.hedera_account_id && (
+                      <a
+                        href={`https://hashscan.io/testnet/account/${agent.hedera_account_id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:text-blue-300"
+                        onClick={(e) => e.stopPropagation()}
+                        title="View on HashScan"
+                      >
+                        🔗
+                      </a>
+                    )}
+                  </div>
+                )}
 
                 {/* Payment Info */}
                 <div className="flex items-center space-x-2 text-sm text-gray-400">

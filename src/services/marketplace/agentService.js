@@ -64,6 +64,9 @@ const AgentService = {
           // Normalize field names for consistency
           deployment_network_name: agent.network || "Unknown Network",
           deployment_chain_id: agent.chain_id || "Unknown",
+          // Identity fields
+          agent_identity: agent.agent_identity,
+          hedera_account_id: agent.hedera_account_id,
           // FIX: Use proper wallet fields, not token_address which is USDC contract
           deployer_address:
             agent.deployer_wallet_address ||
