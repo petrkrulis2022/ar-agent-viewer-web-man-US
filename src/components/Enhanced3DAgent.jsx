@@ -249,11 +249,11 @@ const Enhanced3DAgent = ({
     // Map agent types to GLB models
     const agentModelPaths = {
       bus_agent: "/models/agents/bus_agent.glb",
-      train_agent: "/models/agents/train_agent.glb",
+      train_agent: "/models/agents/travel_agent.glb", // Swapped: train_agent uses travel_agent model
       hotel_agent: "/models/agents/hotel_agent.glb",
       flight_agent: "/models/agents/flight_agent.glb",
       restaurant_agent: "/models/agents/restarurant_agent.glb",
-      travel_agent: "/models/agents/travel_agent.glb",
+      travel_agent: "/models/agents/train_agent.glb", // Swapped: travel_agent uses train_agent model
     };
 
     // Debug logging
@@ -422,6 +422,12 @@ const Enhanced3DAgent = ({
     >
       {/* Enhanced 3D Model */}
       {getEnhanced3DModel()}
+
+      {/* Invisible Hit Box to ensure clickability */}
+      <mesh visible={false}>
+        <boxGeometry args={[2, 3, 2]} />
+        <meshBasicMaterial transparent opacity={0} />
+      </mesh>
 
       {/* Distance label */}
       <Text
