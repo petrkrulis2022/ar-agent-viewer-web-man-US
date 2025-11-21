@@ -417,8 +417,8 @@ const Enhanced3DAgent = ({
     Math.max(0.4, Math.min(2.0, 60 / Math.max(distance, 15))) * scale;
 
   // Determine hit box size based on agent type
-  // All agents use standard hit box size
-  const hitBoxArgs = [2, 3, 2];
+  // Reduced hit box for tighter clickable areas (prevents overlap when agents are close)
+  const hitBoxArgs = [1.2, 2, 1.2];
 
   return (
     <group

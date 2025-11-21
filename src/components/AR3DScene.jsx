@@ -11,7 +11,6 @@ import CubePaymentEngine from "./CubePaymentEngine";
 import QRScannerOverlay from "./QRScannerOverlay";
 import ARQRCodeFixed from "./ARQRCodeFixed";
 import arQRManager from "../services/arQRManager";
-import TravelAgentFlow from "./travel/TravelAgentFlow";
 
 // Unique ID generator to avoid React key collisions
 let notificationIdCounter = 0;
@@ -35,7 +34,6 @@ const AR3DScene = ({
   const [showAgentModal, setShowAgentModal] = useState(false);
   const [showCubePayment, setShowCubePayment] = useState(false);
   const [paidAgents, setPaidAgents] = useState(new Set()); // 🔓 Track which agents have been paid for
-  const [showTravelFlow, setShowTravelFlow] = useState(false);
 
   // QR Scanner states
   const [showQRScanner, setShowQRScanner] = useState(false);
@@ -55,19 +53,6 @@ const AR3DScene = ({
   const handleAgentClick = (agent) => {
     console.log("🤖 3D Agent clicked:", agent.name);
     console.log("🤖 Agent data:", agent);
-
-    // Check for Travel Agent to trigger special flow
-    if (
-      agent.name === "Travel Agent" ||
-      agent.agent_type === "travel_agent" ||
-      agent.agent_type === "Travel Agent" ||
-      (agent.name && agent.name.toLowerCase().includes("travel"))
-    ) {
-      console.log("✈️ Travel Agent clicked - triggering x402 MCP flow");
-      setSelectedAgent(agent);
-      setShowTravelFlow(true);
-      return;
-    }
 
     // DEBUG: Log all payment-related fields for debugging payment modal
     console.log("💰 PAYMENT DEBUG - Agent Payment Fields:", {
@@ -567,14 +552,6 @@ const AR3DScene = ({
           })()
         }
       />
-
-      {/* Travel Agent x402 MCP Flow */}
-      {showTravelFlow && selectedAgent && (
-        <>
-          {console.log("Rendering TravelAgentFlow for", selectedAgent.name)}
-          <TravelAgentFlow agent={selectedAgent} onClose={closeModals} />
-        </>
-      )}
 
       {/* 3D Cube Payment Engine - Revolutionary AR Payment Interface */}
       <CubePaymentEngine

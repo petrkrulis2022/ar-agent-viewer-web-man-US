@@ -29,6 +29,8 @@ import {
   getUSDCContractForChain,
   getNetworkInfo,
 } from "../services/evmNetworkService";
+import { x402MCPService } from "../services/x402MCPService";
+import { hederaWalletService } from "../services/hederaWalletService";
 
 // Network to Chain ID mapping for consistency with ModernAgentCard
 const networkToChainId = {
@@ -449,21 +451,132 @@ const AgentInteractionModal = ({
     setInputMessage("");
     setIsTyping(true);
 
-    // Simulate agent response
-    setTimeout(() => {
-      const agentResponse = {
-        id: Date.now() + 1,
-        type: "agent",
-        content: generateAgentResponse(inputMessage, agent),
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, agentResponse]);
-      setIsTyping(false);
-    }, 1000 + Math.random() * 2000);
+    // Check if this is Travel Agent with MCP integration
+    const isTravelAgent =
+      agent.name === "Travel Agent" ||
+      agent.agent_type === "travel_agent" ||
+      (agent.name && agent.name.toLowerCase().includes("travel"));
+
+    if (isTravelAgent && isPaid) {
+      // ✈️ Travel Agent with MCP - query Flightradar24 via x402
+      console.log("✈️ Travel Agent x402 MCP query:", inputMessage);
+
+      // Real x402 MCP integration
+      (async () => {
+        try {
+          // Show payment initiation message
+          const paymentMessage = {
+            id: Date.now() + 1,
+            type: "agent",
+            content:
+              "💳 Initiating x402 micropayment (0.1 USDh) for Flightradar24 query...",
+            timestamp: new Date(),
+          };
+          setMessages((prev) => [...prev, paymentMessage]);
+
+          // Get user's connected wallet
+          const userWallet =
+            await hederaWalletService.getConnectedWalletAddress();
+
+          if (!userWallet) {
+            throw new Error(
+              "Please connect your MetaMask wallet to Hedera Testnet"
+            );
+          }
+
+          // Execute x402 payment and query
+          const queryResult = await x402MCPService.queryFlights(
+            inputMessage,
+            userWallet
+          );
+
+          if (queryResult.success) {
+            // Format flight data
+            const flightData = x402MCPService.formatFlightData(
+              queryResult.flights
+            );
+
+            // Show results with payment confirmation
+            const resultMessage = {
+              id: Date.now() + 2,
+              type: "agent",
+              content: `✈️ **Flightradar24 Results** (via x402 MCP)\n\n${flightData}\n\n💰 **Payment Confirmed:**\n- Amount: ${
+                queryResult.payment.amount
+              } ${
+                queryResult.payment.token
+              }\n- Transaction: ${queryResult.payment.transactionHash.substring(
+                0,
+                20
+              )}...\n- 🔗 [View on HashScan](${
+                queryResult.payment.hashscanUrl
+              })\n\nWould you like me to check alternative travel packages combining bus, train, and hotel? I can coordinate with other agents for you.`,
+              timestamp: new Date(),
+            };
+            setMessages((prev) => [...prev, resultMessage]);
+          }
+        } catch (error) {
+          console.error("❌ x402 MCP query failed:", error);
+
+          // Show error message
+          const errorMessage = {
+            id: Date.now() + 3,
+            type: "agent",
+            content: `❌ Failed to query Flightradar24 via x402 MCP:\n\n${error.message}\n\nPlease ensure:\n1. MetaMask is connected to Hedera Testnet\n2. You have sufficient USDh balance (0.1 USDh needed)\n3. Network connection is stable`,
+            timestamp: new Date(),
+          };
+          setMessages((prev) => [...prev, errorMessage]);
+        } finally {
+          setIsTyping(false);
+        }
+      })();
+    } else {
+      // Standard agent response
+      setTimeout(() => {
+        const agentResponse = {
+          id: Date.now() + 1,
+          type: "agent",
+          content: generateAgentResponse(inputMessage, agent),
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, agentResponse]);
+        setIsTyping(false);
+      }, 1000 + Math.random() * 2000);
+    }
   };
 
   // Generate contextual agent response
   const generateAgentResponse = (userInput, agent) => {
+    // Check for Travel Agent package/alternative queries
+    const isTravelAgent =
+      agent.name === "Travel Agent" ||
+      agent.agent_type === "travel_agent" ||
+      (agent.name && agent.name.toLowerCase().includes("travel"));
+
+    const input = userInput.toLowerCase();
+
+    if (isTravelAgent && isPaid) {
+      // Handle package/alternative queries
+      if (
+        input.includes("package") ||
+        input.includes("alternative") ||
+        input.includes("bus") ||
+        input.includes("train") ||
+        input.includes("hotel")
+      ) {
+        return `🚌🚆🏨 Coordinating with Bus, Train, and Hotel agents...\n\n**Alternative Travel Package:**\n- Bus to station: $1000 (Bus Agent)\n- Train to Barcelona: $1500 (Train Agent)\n- Hotel (2 nights): $1200 (Hotel Agent)\n- Travel Agent fee: $625\n\n**Total: $4325**\n\nThis saves you $150 compared to direct flight + hotel!\n\nWould you like to proceed with this package? I'll handle the payments to all three agents for you.`;
+      }
+
+      // Handle payment confirmation
+      if (
+        input.includes("yes") ||
+        input.includes("proceed") ||
+        input.includes("book") ||
+        input.includes("confirm")
+      ) {
+        return `✅ Perfect! Please proceed to the Payment tab to pay $4325.\n\nOnce paid, I will automatically split and send:\n- $1000 to Bus Agent\n- $1500 to Train Agent  \n- $1200 to Hotel Agent\n- $625 to my account (coordination fee)\n\nYour package will be confirmed immediately!`;
+      }
+    }
+
     const responses = {
       "Intelligent Assistant": [
         "I can help you with analysis, research, and problem-solving. What would you like to explore?",

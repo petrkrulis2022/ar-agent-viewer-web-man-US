@@ -705,6 +705,7 @@ const ARQRDisplay = ({
   transactionHash,
   paymentAmount,
   urlPaymentData,
+  onPaymentComplete,
 }) => {
   const [selectedNetwork, setSelectedNetwork] = useState("11155111"); // Default to Ethereum Sepolia
   const [isGeneratingQR, setIsGeneratingQR] = useState(false);
@@ -1182,6 +1183,17 @@ const ARQRDisplay = ({
           );
           setWalletBalance(newBalance);
         }, 2000);
+
+        // Call onPaymentComplete to return to modal with unlocked interactions
+        if (onPaymentComplete) {
+          onPaymentComplete(agent, {
+            success: true,
+            transactionHash: transactionResult.transactionHash,
+            network: supportedNetworks[selectedNetwork].name,
+            method: "crypto_qr",
+            amount: transactionData.amount || paymentAmount,
+          });
+        }
       } else {
         console.error("❌ Transaction failed:", transactionResult.error);
         alert(
@@ -2784,6 +2796,7 @@ const CubePaymentEngine = ({
               transactionHash={transactionHash}
               paymentAmount={getFinalPaymentAmount()}
               urlPaymentData={urlPaymentData}
+              onPaymentComplete={onPaymentComplete}
             />
           )}
 
