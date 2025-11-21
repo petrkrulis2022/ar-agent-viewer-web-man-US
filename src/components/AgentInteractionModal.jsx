@@ -32,6 +32,64 @@ import {
 import { x402MCPService } from "../services/x402MCPService";
 import { hederaWalletService } from "../services/hederaWalletService";
 
+// Parse flight query from user message
+const parseFlightQuery = (message) => {
+  const lowerMessage = message.toLowerCase();
+  
+  // Match patterns like "flights from BUD to BCN" or "get me flight BUD BCN"
+  const patterns = [
+    /(?:flight|flights).*?from\s+(\w+).*?to\s+(\w+)/i,
+    /(?:flight|flights)\s+(\w+)\s+(?:to\s+)?(\w+)/i,
+    /(\w{3})\s+to\s+(\w{3})/i,
+  ];
+  
+  for (const pattern of patterns) {
+    const match = message.match(pattern);
+    if (match) {
+      return {
+        origin: match[1].toUpperCase(),
+        destination: match[2].toUpperCase(),
+      };
+    }
+  }
+  
+  return null;
+};
+
+// Format flight results from backend response
+const formatFlightResults = (data) => {
+  if (!data.flights || data.flights.length === 0) {
+    return "No flights found for this route.";
+  }
+  
+  let message = `✈️ **Found ${data.flights.length} flights:**\n\n`;
+  
+  data.flights.forEach((flight, idx) => {
+    message += `**Flight ${idx + 1}**: ${flight.airline} ${flight.flightNumber}\n`;
+    message += `- Route: ${flight.origin} → ${flight.destination}\n`;
+    message += `- Departure: ${flight.departure} | Arrival: ${flight.arrival}\n`;
+    message += `- Duration: ${flight.duration}\n`;
+    message += `- Price: ${flight.price}\n`;
+    if (flight.aircraft) {
+      message += `- Aircraft: ${flight.aircraft}\n`;
+    }
+    if (flight.status) {
+      message += `- Status: ${flight.status}\n`;
+    }
+    message += "\n";
+  });
+  
+  // Add x402 payment info with HashScan link
+  if (data.payment) {
+    message += `\n💳 **MCP Query Cost:** ${data.payment.cost_usdh} USDh (paid by agent)\n`;
+    message += `🔗 [View x402 payment on HashScan](${data.payment.hashscan_url})\n\n`;
+  }
+  
+  message += "Would you like me to check alternative travel packages combining bus, train, and hotel? I can coordinate with other agents for you.";
+  
+  return message;
+};
+
 // Network to Chain ID mapping for consistency with ModernAgentCard
 const networkToChainId = {
   "ethereum-sepolia": 11155111,
@@ -458,70 +516,68 @@ const AgentInteractionModal = ({
       (agent.name && agent.name.toLowerCase().includes("travel"));
 
     if (isTravelAgent && isPaid) {
-      // ✈️ Travel Agent with MCP - query Flightradar24 via x402
-      console.log("✈️ Travel Agent x402 MCP query:", inputMessage);
+      // ✈️ Travel Agent with MCP - SERVER-SIDE x402 payment via backend
+      console.log("✈️ Travel Agent MCP query (server-side x402):", inputMessage);
 
-      // Real x402 MCP integration
+      // Call backend API - agent pays x402 from its own wallet
       (async () => {
         try {
-          // Show payment initiation message
-          const paymentMessage = {
+          // Show querying message
+          const queryingMessage = {
             id: Date.now() + 1,
             type: "agent",
-            content:
-              "💳 Initiating x402 micropayment (0.1 USDh) for Flightradar24 query...",
+            content: "🔍 Querying Flightradar24 MCP (agent paying x402 fee)...",
             timestamp: new Date(),
           };
-          setMessages((prev) => [...prev, paymentMessage]);
+          setMessages((prev) => [...prev, queryingMessage]);
 
-          // Get user's connected wallet
-          const userWallet =
-            await hederaWalletService.getConnectedWalletAddress();
-
-          if (!userWallet) {
-            throw new Error(
-              "Please connect your MetaMask wallet to Hedera Testnet"
-            );
+          // Parse flight query from user message
+          const query = parseFlightQuery(inputMessage);
+          
+          if (!query) {
+            throw new Error("Please specify origin and destination (e.g., 'flights from BUD to BCN')");
           }
 
-          // Execute x402 payment and query
-          const queryResult = await x402MCPService.queryFlights(
-            inputMessage,
-            userWallet
-          );
+          console.log("📍 Parsed flight query:", query);
 
-          if (queryResult.success) {
-            // Format flight data
-            const flightData = x402MCPService.formatFlightData(
-              queryResult.flights
-            );
+          // Call Travel Agent backend API (SERVER-SIDE x402 payment)
+          const response = await fetch('http://localhost:4001/api/agents/travel/query', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              origin: query.origin,
+              destination: query.destination,
+              date: new Date().toISOString().split('T')[0],
+              maxResults: 5
+            })
+          });
 
-            // Show results with payment confirmation
-            const resultMessage = {
-              id: Date.now() + 2,
-              type: "agent",
-              content: `✈️ **Flightradar24 Results** (via x402 MCP)\n\n${flightData}\n\n💰 **Payment Confirmed:**\n- Amount: ${
-                queryResult.payment.amount
-              } ${
-                queryResult.payment.token
-              }\n- Transaction: ${queryResult.payment.transactionHash.substring(
-                0,
-                20
-              )}...\n- 🔗 [View on HashScan](${
-                queryResult.payment.hashscanUrl
-              })\n\nWould you like me to check alternative travel packages combining bus, train, and hotel? I can coordinate with other agents for you.`,
-              timestamp: new Date(),
-            };
-            setMessages((prev) => [...prev, resultMessage]);
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Backend API error: ${response.status} - ${errorText}`);
           }
+
+          const data = await response.json();
+          console.log("✈️ Backend response:", data);
+
+          // Format and display results
+          const flightData = formatFlightResults(data);
+          
+          const resultMessage = {
+            id: Date.now() + 2,
+            type: "agent",
+            content: flightData,
+            timestamp: new Date(),
+          };
+          setMessages((prev) => [...prev, resultMessage]);
+
         } catch (error) {
-          console.error("❌ x402 MCP query failed:", error);
-
-          // Show error message
+          console.error("❌ Backend MCP query failed:", error);
+          
           const errorMessage = {
             id: Date.now() + 3,
             type: "agent",
-            content: `❌ Failed to query Flightradar24 via x402 MCP:\n\n${error.message}\n\nPlease ensure:\n1. MetaMask is connected to Hedera Testnet\n2. You have sufficient USDh balance (0.1 USDh needed)\n3. Network connection is stable`,
+            content: `❌ Failed to query flights:\n\n${error.message}\n\nPlease ensure:\n1. Travel Agent backend is running (http://localhost:4001)\n2. Agent has sufficient USDh balance for x402 payment\n3. Query format: "flights from [ORIGIN] to [DEST]"\n\nExample: "flights from BUD to BCN"`,
             timestamp: new Date(),
           };
           setMessages((prev) => [...prev, errorMessage]);
