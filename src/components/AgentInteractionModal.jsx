@@ -32,27 +32,115 @@ import {
 import { x402MCPService } from "../services/x402MCPService";
 import { hederaWalletService } from "../services/hederaWalletService";
 
-// Parse flight query from user message
+/**
+ * Extract date from natural language in user message
+ * Supports: YYYY-MM-DD, "on January 15", "tomorrow", "next week"
+ */
+const extractDateFromMessage = (message) => {
+  const msg = message.toLowerCase();
+
+  // Match YYYY-MM-DD format
+  const dateMatch = msg.match(/(\d{4}-\d{2}-\d{2})/);
+  if (dateMatch) {
+    return dateMatch[1];
+  }
+
+  // Match "on January 15", "on Jan 15", etc.
+  const monthNames = {
+    january: "01",
+    jan: "01",
+    february: "02",
+    feb: "02",
+    march: "03",
+    mar: "03",
+    april: "04",
+    apr: "04",
+    may: "05",
+    june: "06",
+    jun: "06",
+    july: "07",
+    jul: "07",
+    august: "08",
+    aug: "08",
+    september: "09",
+    sep: "09",
+    october: "10",
+    oct: "10",
+    november: "11",
+    nov: "11",
+    december: "12",
+    dec: "12",
+  };
+
+  for (const [name, num] of Object.entries(monthNames)) {
+    const regex = new RegExp(`on\\s+${name}\\s+(\\d{1,2})`, "i");
+    const match = msg.match(regex);
+    if (match) {
+      const day = match[1].padStart(2, "0");
+      const year = new Date().getFullYear();
+      return `${year}-${num}-${day}`;
+    }
+  }
+
+  // Match "tomorrow"
+  if (msg.includes("tomorrow")) {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split("T")[0];
+  }
+
+  // Match "next week"
+  if (msg.includes("next week")) {
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    return nextWeek.toISOString().split("T")[0];
+  }
+
+  return null; // No date found
+};
+
+/**
+ * Parse flight query from user message
+ * Supports formats:
+ * - "flights from BUD to BCN"
+ * - "flights from BUD to BCN on 2025-01-15"
+ * - "flights from BUD to BCN on January 15"
+ * - "flights from BUD to BCN tomorrow"
+ * - "find flights BUD BCN 2025-01-15"
+ */
 const parseFlightQuery = (message) => {
   const lowerMessage = message.toLowerCase();
-  
+
   // Match patterns like "flights from BUD to BCN" or "get me flight BUD BCN"
   const patterns = [
     /(?:flight|flights).*?from\s+(\w+).*?to\s+(\w+)/i,
     /(?:flight|flights)\s+(\w+)\s+(?:to\s+)?(\w+)/i,
     /(\w{3})\s+to\s+(\w{3})/i,
   ];
-  
+
   for (const pattern of patterns) {
     const match = message.match(pattern);
     if (match) {
+      const origin = match[1].toUpperCase();
+      const destination = match[2].toUpperCase();
+
+      // Extract date from message
+      let date = extractDateFromMessage(message);
+
+      // If no date provided, default to TODAY (for live flight tracking)
+      if (!date) {
+        const today = new Date();
+        date = today.toISOString().split("T")[0]; // Format: YYYY-MM-DD
+      }
+
       return {
-        origin: match[1].toUpperCase(),
-        destination: match[2].toUpperCase(),
+        origin,
+        destination,
+        date,
       };
     }
   }
-  
+
   return null;
 };
 
@@ -61,11 +149,23 @@ const formatFlightResults = (data) => {
   if (!data.flights || data.flights.length === 0) {
     return "No flights found for this route.";
   }
-  
-  let message = `✈️ **Found ${data.flights.length} flights:**\n\n`;
-  
+
+  const isMockMode = data.payment && data.payment.mock === true;
+
+  // Show mock mode warning banner
+  let message = "";
+  if (isMockMode) {
+    message += `⚠️ **DEVELOPMENT MODE - MOCK FLIGHT DATA**\n`;
+    message += `_This is simulated data for testing. Real MCP integration coming soon._\n\n`;
+  }
+
+  message += `✈️ **Found ${data.flights.length} flights:**\n\n`;
+
   data.flights.forEach((flight, idx) => {
-    message += `**Flight ${idx + 1}**: ${flight.airline} ${flight.flightNumber}\n`;
+    const mockBadge = isMockMode ? " 🔧 MOCK" : "";
+    message += `**Flight ${idx + 1}**: ${flight.airline} ${
+      flight.flightNumber
+    }${mockBadge}\n`;
     message += `- Route: ${flight.origin} → ${flight.destination}\n`;
     message += `- Departure: ${flight.departure} | Arrival: ${flight.arrival}\n`;
     message += `- Duration: ${flight.duration}\n`;
@@ -78,15 +178,26 @@ const formatFlightResults = (data) => {
     }
     message += "\n";
   });
-  
+
   // Add x402 payment info with HashScan link
   if (data.payment) {
-    message += `\n💳 **MCP Query Cost:** ${data.payment.cost_usdh} USDh (paid by agent)\n`;
-    message += `🔗 [View x402 payment on HashScan](${data.payment.hashscan_url})\n\n`;
+    const paymentLabel = isMockMode
+      ? "Mock Transaction"
+      : "View x402 payment on HashScan";
+    const costNote = isMockMode ? " (SIMULATED)" : " (paid by agent)";
+
+    message += `\n💳 **MCP Query Cost:** ${data.payment.cost_usdh} USDh${costNote}\n`;
+    message += `🔗 [${paymentLabel}](${data.payment.hashscan_url})`;
+
+    if (isMockMode) {
+      message += ` _(Development only - no real payment)_`;
+    }
+    message += `\n\n`;
   }
-  
-  message += "Would you like me to check alternative travel packages combining bus, train, and hotel? I can coordinate with other agents for you.";
-  
+
+  message +=
+    "Would you like me to check alternative travel packages combining bus, train, and hotel? I can coordinate with other agents for you.";
+
   return message;
 };
 
@@ -517,7 +628,10 @@ const AgentInteractionModal = ({
 
     if (isTravelAgent && isPaid) {
       // ✈️ Travel Agent with MCP - SERVER-SIDE x402 payment via backend
-      console.log("✈️ Travel Agent MCP query (server-side x402):", inputMessage);
+      console.log(
+        "✈️ Travel Agent MCP query (server-side x402):",
+        inputMessage
+      );
 
       // Call backend API - agent pays x402 from its own wallet
       (async () => {
@@ -533,28 +647,55 @@ const AgentInteractionModal = ({
 
           // Parse flight query from user message
           const query = parseFlightQuery(inputMessage);
-          
+
           if (!query) {
-            throw new Error("Please specify origin and destination (e.g., 'flights from BUD to BCN')");
+            throw new Error(
+              "❌ I couldn't understand your flight query. Please use this format:\n\n" +
+                '"flights from [ORIGIN] to [DESTINATION]"\n\n' +
+                "Examples:\n" +
+                '• "flights from BUD to BCN" (shows live flights today)\n' +
+                '• "flights from JFK to LAX" (current flights)\n' +
+                '• "flights from LHR to CDG"\n\n' +
+                "Note: I search for LIVE flights currently in the air or departing today."
+            );
           }
 
           console.log("📍 Parsed flight query:", query);
 
+          // Prepare request payload
+          const requestPayload = {
+            origin: query.origin,
+            destination: query.destination,
+            date: query.date,
+            maxResults: 5,
+          };
+
+          console.log("📤 Sending to backend:", requestPayload);
+
+          // Show user what we're searching for
+          const searchingMessage = {
+            id: Date.now() + 0.5,
+            type: "agent",
+            content: `🔍 Searching flights from ${query.origin} to ${query.destination} on ${query.date}...`,
+            timestamp: new Date(),
+          };
+          setMessages((prev) => [...prev, searchingMessage]);
+
           // Call Travel Agent backend API (SERVER-SIDE x402 payment)
-          const response = await fetch('http://localhost:4001/api/agents/travel/query', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              origin: query.origin,
-              destination: query.destination,
-              date: new Date().toISOString().split('T')[0],
-              maxResults: 5
-            })
-          });
+          const response = await fetch(
+            "http://localhost:4001/api/agents/travel/query",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(requestPayload),
+            }
+          );
 
           if (!response.ok) {
             const errorText = await response.text();
-            throw new Error(`Backend API error: ${response.status} - ${errorText}`);
+            throw new Error(
+              `Backend API error: ${response.status} - ${errorText}`
+            );
           }
 
           const data = await response.json();
@@ -562,7 +703,7 @@ const AgentInteractionModal = ({
 
           // Format and display results
           const flightData = formatFlightResults(data);
-          
+
           const resultMessage = {
             id: Date.now() + 2,
             type: "agent",
@@ -570,14 +711,13 @@ const AgentInteractionModal = ({
             timestamp: new Date(),
           };
           setMessages((prev) => [...prev, resultMessage]);
-
         } catch (error) {
           console.error("❌ Backend MCP query failed:", error);
-          
+
           const errorMessage = {
             id: Date.now() + 3,
             type: "agent",
-            content: `❌ Failed to query flights:\n\n${error.message}\n\nPlease ensure:\n1. Travel Agent backend is running (http://localhost:4001)\n2. Agent has sufficient USDh balance for x402 payment\n3. Query format: "flights from [ORIGIN] to [DEST]"\n\nExample: "flights from BUD to BCN"`,
+            content: `❌ Failed to query flights:\n\n${error.message}\n\nPlease ensure:\n1. Travel Agent backend is running (http://localhost:4001)\n2. Agent has sufficient USDh balance for x402 payment\n3. Query format: "flights from [ORIGIN] to [DEST]"\n\nExamples:\n• "flights from BUD to BCN" (live flights today)\n• "flights from JFK to LAX" (current flights)\n• "flights from LHR to CDG"\n\nNote: I search for LIVE flights currently in the air or departing today.`,
             timestamp: new Date(),
           };
           setMessages((prev) => [...prev, errorMessage]);

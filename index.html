@@ -81,7 +81,7 @@
       font-src 'self' https://fonts.gstatic.com;
       img-src 'self' data: blob: https: http:;
       media-src 'self' blob: mediastream: data:;
-      connect-src 'self' blob: https: wss: ws: https://*.thirdweb.com https://*.walletconnect.com https://*.walletconnect.org https://*.sentry.io https://*.supabase.co https://*.supabase.io;
+      connect-src 'self' blob: https: wss: ws: http://localhost:* http://127.0.0.1:* https://*.thirdweb.com https://*.walletconnect.com https://*.walletconnect.org https://*.sentry.io https://*.supabase.co https://*.supabase.io;
       worker-src 'self' blob: data:;
       child-src 'self' blob: data:;
       frame-src 'self' https://*.thirdweb.com https://*.walletconnect.com;
