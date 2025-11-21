@@ -299,7 +299,9 @@ export const useDatabase = () => {
             user_id: obj.user_id || "unknown",
             object_type: obj.object_type || "agent",
             agent_type:
-              obj.agent_type || obj.object_type || "intelligent_assistant",
+              obj.agent_type ||
+              (obj.object_type !== "agent" ? obj.object_type : null) ||
+              "intelligent_assistant",
             name: obj.name || "Unnamed Agent",
             description: obj.description || "No description available",
             latitude: parseFloat(obj.latitude || 0),

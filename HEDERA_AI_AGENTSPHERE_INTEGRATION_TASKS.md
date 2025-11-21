@@ -356,17 +356,20 @@ export async function deployAgent(agentData) {
 #### Implemented Components:
 
 1. **Agent Type Implementations**
+
    - BusAgent: Handles bus schedules, routes, tickets
    - TrainAgent: Manages train bookings, connections
    - HotelAgent: Hotel search, reservations, availability
    - Each agent has Hedera wallet and can receive payments
 
 2. **A2A Communication** (a2aService.ts)
+
    - Agents can discover and communicate with each other
    - Journey coordination between multiple agents
    - Bus → Train → Hotel complete journey flows
 
 3. **x402 Integration** (x402Client.ts)
+
    - Agents fetch external data (schedules, availability)
    - Micropayments for API calls
    - Real-time data integration
@@ -389,7 +392,7 @@ server/
     agentDeploymentService.ts  # Deployment workflow
   agents/
     BusAgent.ts            # Bus service logic
-    TrainAgent.ts          # Train service logic  
+    TrainAgent.ts          # Train service logic
     HotelAgent.ts          # Hotel service logic
 ```
 
@@ -659,12 +662,14 @@ export default router;
 #### Implemented Endpoints:
 
 1. **GET /api/agents/discover**
+
    - Returns nearby agents within radius
    - Filters by agent type
    - Includes Hedera account info
    - **Used by AR Viewer:** `agentDiscoveryService.discoverAgents()`
 
 2. **GET /api/agents/:id**
+
    - Returns specific agent details
    - Includes service URL, A2A endpoint, identity NFT
    - **Used by AR Viewer:** `agentDiscoveryService.getAgentDetails()`
@@ -701,12 +706,14 @@ export default router;
 #### Test Scenarios:
 
 **Scenario 1: Deployment & Discovery**
+
 1. Deploy 3 agents via Agentsphere (bus, train, hotel)
 2. Verify Hedera accounts created and funded
 3. Verify agents appear in AR Viewer discovery
 4. Verify agent cards display correctly
 
 **Scenario 2: Multi-Agent Journey**
+
 1. User requests London → Paris journey in AR Viewer
 2. AR Viewer discovers bus, train, hotel agents
 3. Agents use A2A to coordinate journey
@@ -714,6 +721,7 @@ export default router;
 5. User pays all agents in single multi-transfer transaction
 
 **Scenario 3: x402 External Data**
+
 1. Train agent needs real-time schedule data
 2. Agent uses x402 to fetch from external API
 3. Pays for data with USDh micropayment
@@ -1095,9 +1103,11 @@ VITE_HOTEL_API_URL=https://api.example.com/hotels
 ## 🎯 System Status Overview
 
 ### ✅ AR Viewer Platform (Complete)
+
 **Repository:** `ar-agent-viewer-web-man-US`
 
 **Implemented Components:**
+
 - ✅ `src/services/agentDiscoveryService.js` - Discover agents from Agentsphere API
 - ✅ `src/services/agentCommunicationService.js` - WebSocket agent communication
 - ✅ `src/services/hederaPaymentService.js` - Multi-transfer USDh payments
@@ -1107,6 +1117,7 @@ VITE_HOTEL_API_URL=https://api.example.com/hotels
 - ✅ Documentation: `HEDERA_AI_INTEGRATION_GUIDE.md`
 
 **Capabilities:**
+
 - Discover nearby agents by location/type
 - Real-time chat with agents via WebSocket
 - Pay multiple agents in single transaction
@@ -1115,9 +1126,11 @@ VITE_HOTEL_API_URL=https://api.example.com/hotels
 ---
 
 ### ✅ Agentsphere Platform (Complete)
+
 **Repository:** `agentsphere-full-web-man-US`
 
 **Implemented Components:**
+
 - ✅ `server/services/hederaService.ts` - Wallet & token management
 - ✅ `server/services/a2aService.ts` - Agent-to-agent communication
 - ✅ `server/services/x402Client.ts` - Micropayment protocol
@@ -1128,6 +1141,7 @@ VITE_HOTEL_API_URL=https://api.example.com/hotels
 - ✅ Documentation: `HEDERA_AI_AGENT_KIT_GUIDE.md`
 
 **Capabilities:**
+
 - Create Hedera wallets for agents
 - Mint ERC-8004 identity NFTs
 - Deploy agents with A2A communication
@@ -1140,6 +1154,7 @@ VITE_HOTEL_API_URL=https://api.example.com/hotels
 ## 🧪 Integration Testing Plan
 
 ### Prerequisites
+
 - Both servers running: Agentsphere (port 3001), AR Viewer (port 5173)
 - Testnet accounts funded with HBAR and USDh
 - USDh token: `0.0.7218375`
@@ -1147,6 +1162,7 @@ VITE_HOTEL_API_URL=https://api.example.com/hotels
 ### Test Scenario 1: Agent Deployment & Discovery ⏳
 
 **Step 1 - Deploy Test Agent (Agentsphere)**
+
 ```typescript
 await deployAgent({
   name: "Downtown Bus Stop #42",
@@ -1154,20 +1170,24 @@ await deployAgent({
   latitude: 51.5074,
   longitude: -0.1278,
   fee: 5,
-  capabilities: { chat: true, a2a: true, x402: false }
+  capabilities: { chat: true, a2a: true, x402: false },
 });
 ```
 
 **Step 2 - Verify Deployment**
+
 - ✓ Check Hedera account created
 - ✓ Check USDh funded
 - ✓ Check identity NFT minted
 - ✓ Check database entry complete
 
 **Step 3 - Discover from AR Viewer**
+
 ```javascript
 const agents = await agentDiscoveryService.discoverAgents(
-  51.5074, -0.1278, 5000
+  51.5074,
+  -0.1278,
+  5000
 );
 // Should return Bus Agent with all metadata
 ```
@@ -1179,6 +1199,7 @@ const agents = await agentDiscoveryService.discoverAgents(
 ### Test Scenario 2: Multi-Agent Journey Planning ⏳
 
 **Step 1 - Deploy Journey Agents**
+
 ```typescript
 await Promise.all([
   deployAgent({ name: "London Bus", type: "bus_agent", ... }),
@@ -1188,24 +1209,27 @@ await Promise.all([
 ```
 
 **Step 2 - User Journey Request (AR Viewer)**
+
 ```javascript
 const busAgent = await agentCommunicationService.connect(busAgentUrl);
 await busAgent.sendChatMessage("I need to get to Paris with train and hotel");
 ```
 
 **Step 3 - A2A Coordination (Agentsphere)**
+
 - Bus Agent → Train Agent: Query trains to Paris
 - Train Agent → Hotel Agent: Query hotels near Gare du Nord
 - Agents return coordinated journey plan
 
 **Step 4 - Payment (AR Viewer)**
+
 ```javascript
 await hederaPaymentService.handlePaymentWithWallet({
   recipients: [
     { accountId: "0.0.bus", amount: 5 },
     { accountId: "0.0.train", amount: 15 },
-    { accountId: "0.0.hotel", amount: 20 }
-  ]
+    { accountId: "0.0.hotel", amount: 20 },
+  ],
 });
 ```
 
@@ -1216,26 +1240,29 @@ await hederaPaymentService.handlePaymentWithWallet({
 ### Test Scenario 3: x402 External Data Fetching ⏳
 
 **Step 1 - Deploy x402-Enabled Agent**
+
 ```typescript
 await deployAgent({
   name: "Smart Train Agent",
   type: "train_agent",
   capabilities: { x402: true },
-  x402Endpoints: ["timetable-api", "nexus-api"]
+  x402Endpoints: ["timetable-api", "nexus-api"],
 });
 ```
 
 **Step 2 - User Requests Real-Time Data**
+
 ```javascript
 await agent.sendChatMessage("What's the next train to Paris?");
 ```
 
 **Step 3 - Agent Uses x402 (Agentsphere)**
+
 ```typescript
 // Agent automatically:
 const timetable = await x402Client.queryTimetable({
   from: "London St Pancras",
-  to: "Paris Gare du Nord"
+  to: "Paris Gare du Nord",
 });
 // Pays for data with USDh
 // Returns to user

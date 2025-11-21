@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from "react";
+import React, { useRef, useState, useCallback, Suspense } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Text, Box, Sphere, Cylinder, Torus, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
@@ -6,6 +6,14 @@ import * as THREE from "three";
 // Preload 3D models for better performance
 useGLTF.preload("/models/terminals/humanoid_robot_face.glb");
 useGLTF.preload("/models/terminals/pax-a920_highpoly.glb");
+
+// Preload agent 3D models
+useGLTF.preload("/models/agents/bus_agent.glb");
+useGLTF.preload("/models/agents/train_agent.glb");
+useGLTF.preload("/models/agents/hotel_agent.glb");
+useGLTF.preload("/models/agents/flight_agent.glb");
+useGLTF.preload("/models/agents/restarurant_agent.glb");
+useGLTF.preload("/models/agents/travel_agent.glb");
 
 // 3D Model Components
 const RoboticFaceModel = ({ hovered }) => {
@@ -26,6 +34,104 @@ const PaymentTerminalModel = ({ hovered }) => {
   );
 };
 
+// Agent GLB Model Loader with error handling
+const AgentGLBModel = ({ modelPath, meshRef }) => {
+  try {
+    console.log("🔄 useGLTF attempting to load:", modelPath);
+    const gltf = useGLTF(modelPath);
+    console.log("📦 useGLTF returned:", gltf);
+    console.log("📦 Scene children count:", gltf?.scene?.children?.length);
+
+    if (!gltf || !gltf.scene) {
+      console.error("❌ useGLTF returned invalid data:", gltf);
+      throw new Error("Invalid GLTF data");
+    }
+
+    const clonedScene = gltf.scene.clone();
+
+    // Calculate bounding box to understand model size
+    const box = new THREE.Box3().setFromObject(clonedScene);
+    const size = new THREE.Vector3();
+    box.getSize(size);
+    const center = new THREE.Vector3();
+    box.getCenter(center);
+
+    console.log("📏 Model dimensions:", {
+      width: size.x.toFixed(3),
+      height: size.y.toFixed(3),
+      depth: size.z.toFixed(3),
+      center: {
+        x: center.x.toFixed(3),
+        y: center.y.toFixed(3),
+        z: center.z.toFixed(3),
+      },
+    });
+
+    // Log mesh information for debugging
+    let meshCount = 0;
+    clonedScene.traverse((child) => {
+      if (child.isMesh) {
+        meshCount++;
+        console.log(
+          "🔷 Mesh found:",
+          child.name,
+          "Material:",
+          child.material?.type
+        );
+      }
+    });
+
+    console.log(
+      "🎨 AgentGLBModel loaded successfully:",
+      modelPath,
+      "Meshes:",
+      meshCount
+    );
+
+    // Calculate appropriate scale based on model size
+    const maxDimension = Math.max(size.x, size.y, size.z);
+    const targetSize = 1.5; // Target size in units (reduced from 3.0 to make smaller)
+    const autoScale = maxDimension > 0 ? targetSize / maxDimension : 1.0;
+
+    console.log(
+      "🎯 Auto-calculated scale:",
+      autoScale,
+      "for max dimension:",
+      maxDimension
+    );
+
+    return (
+      <group ref={meshRef}>
+        <primitive
+          object={clonedScene}
+          scale={autoScale}
+          position={[0, -center.y * autoScale, 0]}
+        />
+        {/* Add strong lighting to ensure visibility */}
+        <ambientLight intensity={1.5} />
+        <directionalLight position={[5, 5, 5]} intensity={2} />
+        <directionalLight position={[-5, 5, -5]} intensity={2} />
+        <pointLight position={[0, 3, 0]} intensity={3} color="#ffffff" />
+      </group>
+    );
+  } catch (error) {
+    console.error("💥 AgentGLBModel error:", error);
+    console.error("💥 Error stack:", error.stack);
+    // Return error fallback sphere (red indicates error)
+    return (
+      <group ref={meshRef}>
+        <Sphere args={[2]}>
+          <meshStandardMaterial
+            color="#ff0000"
+            emissive="#ff0000"
+            emissiveIntensity={1.0}
+          />
+        </Sphere>
+      </group>
+    );
+  }
+};
+
 const Enhanced3DAgent = ({
   agent,
   position,
@@ -44,7 +150,7 @@ const Enhanced3DAgent = ({
 
   // Animate the 3D model
   useFrame((state, delta) => {
-    if (!groupRef.current || !meshRef.current) return;
+    if (!groupRef.current) return;
 
     animationTime.current += delta;
 
@@ -58,11 +164,13 @@ const Enhanced3DAgent = ({
       floatIntensity;
     groupRef.current.position.y = position[1] + floatY;
 
-    // Subtle pulse effect when hovered
-    if (hovered) {
+    // Subtle pulse effect when hovered (only if meshRef exists)
+    if (meshRef.current && hovered) {
       const pulse = 1 + Math.sin(animationTime.current * 8) * 0.08;
-      meshRef.current.scale.setScalar(pulse);
-    } else {
+      if (meshRef.current.scale) {
+        meshRef.current.scale.setScalar(pulse);
+      }
+    } else if (meshRef.current && meshRef.current.scale) {
       meshRef.current.scale.setScalar(1);
     }
   });
@@ -136,6 +244,49 @@ const Enhanced3DAgent = ({
     const baseColor = getAgentColor(agent.agent_type);
     const emissiveColor = new THREE.Color(baseColor).multiplyScalar(0.35);
 
+    const agentType = agent.agent_type || agent.object_type;
+
+    // Map agent types to GLB models
+    const agentModelPaths = {
+      bus_agent: "/models/agents/bus_agent.glb",
+      train_agent: "/models/agents/train_agent.glb",
+      hotel_agent: "/models/agents/hotel_agent.glb",
+      flight_agent: "/models/agents/flight_agent.glb",
+      restaurant_agent: "/models/agents/restarurant_agent.glb",
+      travel_agent: "/models/agents/travel_agent.glb",
+    };
+
+    // Debug logging
+    console.log(`🤖 Enhanced3DAgent rendering for ${agent.name}:`, {
+      agent_type: agent.agent_type,
+      object_type: agent.object_type,
+      agentType,
+      hasCustomModel: !!agentModelPaths[agentType],
+      modelPath: agentModelPaths[agentType],
+    });
+
+    // Check if this agent type has a custom GLB model
+    if (agentModelPaths[agentType]) {
+      console.log("✅ Loading custom agent model:", agentModelPaths[agentType]);
+      return (
+        <group ref={groupRef} position={position}>
+          {/* Load GLB directly WITHOUT Suspense */}
+          <AgentGLBModel
+            modelPath={agentModelPaths[agentType]}
+            meshRef={meshRef}
+          />
+
+          {/* Add ambient glow */}
+          <pointLight
+            position={[0, 0.5, 0]}
+            color={baseColor}
+            intensity={hovered ? 1.5 : 1.0}
+            distance={5}
+          />
+        </group>
+      );
+    }
+
     // Check if this is a payment terminal (use payment terminal model)
     const isPaymentTerminal =
       agent.agent_type === "payment_terminal" ||
@@ -145,9 +296,7 @@ const Enhanced3DAgent = ({
       agent.object_type === "payment_terminal" ||
       agent.object_type === "trailing_payment_terminal";
 
-    console.log(`🤖 Enhanced3DAgent rendering for ${agent.name}:`, {
-      agent_type: agent.agent_type,
-      object_type: agent.object_type,
+    console.log(`Payment terminal check:`, {
       isPaymentTerminal,
       willUseModel: isPaymentTerminal
         ? "pax-a920_highpoly"

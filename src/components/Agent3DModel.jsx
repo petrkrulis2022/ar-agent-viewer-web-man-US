@@ -1,7 +1,23 @@
-import React, { useRef, useState, useCallback } from "react";
+import React, { useRef, useState, useCallback, Suspense } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Text, Box, Sphere, Cylinder, Torus } from "@react-three/drei";
+import { Text, Box, Sphere, Cylinder, Torus, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
+
+// Preload agent 3D models
+useGLTF.preload("/models/agents/bus_agent.glb");
+useGLTF.preload("/models/agents/train_agent.glb");
+useGLTF.preload("/models/agents/hotel_agent.glb");
+useGLTF.preload("/models/agents/flight_agent.glb");
+useGLTF.preload("/models/agents/restarurant_agent.glb");
+useGLTF.preload("/models/agents/travel_agent.glb");
+
+// Component to load and display GLB models
+const GLBModel = ({ modelPath, meshRef }) => {
+  const { scene } = useGLTF(modelPath);
+  const clonedScene = scene.clone();
+
+  return <primitive ref={meshRef} object={clonedScene} scale={0.5} />;
+};
 
 const Agent3DModel = ({
   agent,
@@ -59,6 +75,47 @@ const Agent3DModel = ({
 
     const agentType = agent.agent_type || agent.object_type;
 
+    // Debug logging
+    console.log("🤖 Agent Model Loading:", {
+      agentName: agent.name,
+      agentType: agentType,
+      object_type: agent.object_type,
+      agent_type: agent.agent_type,
+    });
+
+    // Check if we have a GLB model for this agent type
+    const agentModelPaths = {
+      bus_agent: "/models/agents/bus_agent.glb",
+      train_agent: "/models/agents/train_agent.glb",
+      hotel_agent: "/models/agents/hotel_agent.glb",
+      flight_agent: "/models/agents/flight_agent.glb",
+      restaurant_agent: "/models/agents/restarurant_agent.glb", // Note: typo in filename
+      travel_agent: "/models/agents/travel_agent.glb",
+    };
+
+    // If agent type has a 3D model, load it
+    if (agentModelPaths[agentType]) {
+      console.log("✅ Loading 3D model:", agentModelPaths[agentType]);
+      return (
+        <Suspense
+          fallback={
+            <Box ref={meshRef} args={[0.8, 0.8, 0.8]}>
+              <meshStandardMaterial {...commonMaterial} />
+            </Box>
+          }
+        >
+          <GLBModel modelPath={agentModelPaths[agentType]} meshRef={meshRef} />
+        </Suspense>
+      );
+    }
+
+    console.log(
+      "⚠️ No 3D model found for agent type:",
+      agentType,
+      "Using geometric fallback"
+    );
+
+    // Fallback to geometric shapes for other agent types
     switch (agentType) {
       case "intelligent_assistant":
       case "Intelligent Assistant":

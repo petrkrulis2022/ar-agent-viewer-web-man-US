@@ -84,6 +84,14 @@ const ARViewer = () => {
     busStopAgent: false,
     trailingPaymentTerminal: false,
     myGhost: false,
+    // 🆕 Hedera AI Agent Types
+    busAgent: false,
+    trainAgent: false,
+    hotelAgent: false,
+    flightAgent: false,
+    restaurantAgent: false,
+    travelAgent: false,
+    allHederaAgents: false, // Filter for all Hedera agents at once
   });
 
   console.log("🎨 ARViewer component rendered. URL:", window.location.href);
@@ -538,6 +546,21 @@ const ARViewer = () => {
         const isAnyPaymentTerminal =
           isPaymentTerminal || isTrailingPaymentTerminal;
 
+        // Check for "All Hedera Agents" filter FIRST (before payment terminal filters)
+        const hederaTypes = [
+          "bus agent",
+          "train agent",
+          "hotel agent",
+          "flight agent",
+          "restaurant agent",
+          "travel agent",
+        ];
+        const isHederaAgent = hederaTypes.includes(agentType);
+
+        if (filters.allHederaAgents && isHederaAgent) {
+          return true; // Always show Hedera agents when filter is active
+        }
+
         if (filters.myPaymentTerminals) {
           return isMyAgent && isAnyPaymentTerminal;
         }
@@ -562,6 +585,13 @@ const ARViewer = () => {
             value: "trailing payment terminal",
           },
           { key: "myGhost", value: "my ghost" },
+          // 🆕 Hedera AI Agent Types
+          { key: "busAgent", value: "bus agent" },
+          { key: "trainAgent", value: "train agent" },
+          { key: "hotelAgent", value: "hotel agent" },
+          { key: "flightAgent", value: "flight agent" },
+          { key: "restaurantAgent", value: "restaurant agent" },
+          { key: "travelAgent", value: "travel agent" },
         ];
 
         // Check if any type filter is active
@@ -1232,6 +1262,67 @@ const ARViewer = () => {
                           </span>
                         </label>
                       ))}
+                    </div>
+
+                    {/* 🆕 Hedera AI Agents Section */}
+                    <div className="pt-2 border-t border-green-500/30">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <span className="text-xs text-green-300 font-semibold">
+                          🌟 Hedera AI Agents
+                        </span>
+                      </div>
+
+                      {/* All Hedera Agents Toggle */}
+                      <label className="flex items-center space-x-2 cursor-pointer hover:bg-green-500/10 p-1.5 rounded transition-colors mb-2">
+                        <input
+                          type="checkbox"
+                          checked={agentFilters.allHederaAgents}
+                          onChange={() => handleFilterChange("allHederaAgents")}
+                          className="w-4 h-4 text-green-500 border-green-400 rounded focus:ring-green-500"
+                        />
+                        <span className="text-xs text-green-200 font-medium">
+                          All Hedera Agents
+                        </span>
+                      </label>
+
+                      {/* Individual Hedera Agent Types */}
+                      <div className="grid grid-cols-2 gap-1">
+                        {[
+                          { key: "busAgent", label: "🚌 Bus", emoji: "🚌" },
+                          { key: "trainAgent", label: "🚆 Train", emoji: "🚆" },
+                          { key: "hotelAgent", label: "🏨 Hotel", emoji: "🏨" },
+                          {
+                            key: "flightAgent",
+                            label: "✈️ Flight",
+                            emoji: "✈️",
+                          },
+                          {
+                            key: "restaurantAgent",
+                            label: "🍽️ Restaurant",
+                            emoji: "🍽️",
+                          },
+                          {
+                            key: "travelAgent",
+                            label: "🌍 Travel",
+                            emoji: "🌍",
+                          },
+                        ].map((filter) => (
+                          <label
+                            key={filter.key}
+                            className="flex items-center space-x-1.5 cursor-pointer hover:bg-green-500/10 p-1 rounded transition-colors"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={agentFilters[filter.key]}
+                              onChange={() => handleFilterChange(filter.key)}
+                              className="w-3 h-3 text-green-500 border-green-400 rounded focus:ring-green-500"
+                            />
+                            <span className="text-[10px] text-green-200">
+                              {filter.label}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </CardContent>
