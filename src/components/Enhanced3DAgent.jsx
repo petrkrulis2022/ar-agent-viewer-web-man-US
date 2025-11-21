@@ -35,7 +35,7 @@ const PaymentTerminalModel = ({ hovered }) => {
 };
 
 // Agent GLB Model Loader with error handling
-const AgentGLBModel = ({ modelPath, meshRef }) => {
+const AgentGLBModel = ({ modelPath, meshRef, targetSize = 1.5 }) => {
   try {
     console.log("🔄 useGLTF attempting to load:", modelPath);
     const gltf = useGLTF(modelPath);
@@ -90,7 +90,7 @@ const AgentGLBModel = ({ modelPath, meshRef }) => {
 
     // Calculate appropriate scale based on model size
     const maxDimension = Math.max(size.x, size.y, size.z);
-    const targetSize = 1.5; // Target size in units (reduced from 3.0 to make smaller)
+    // targetSize is passed as prop (default 1.5)
     const autoScale = maxDimension > 0 ? targetSize / maxDimension : 1.0;
 
     console.log(
@@ -154,15 +154,11 @@ const Enhanced3DAgent = ({
 
     animationTime.current += delta;
 
-    // Slow spinning animation around Y axis
+    // Slow spinning animation around Y axis (vertical rotation only)
     groupRef.current.rotation.y += delta * spinSpeed.current;
 
-    // Floating animation (gentle up/down movement)
-    const floatIntensity = 0.15 * scale;
-    const floatY =
-      Math.sin(animationTime.current * 1.5 + floatOffset.current) *
-      floatIntensity;
-    groupRef.current.position.y = position[1] + floatY;
+    // Remove floating animation - keep agents stable on ground
+    groupRef.current.position.y = position[1];
 
     // Subtle pulse effect when hovered (only if meshRef exists)
     if (meshRef.current && hovered) {
@@ -249,11 +245,11 @@ const Enhanced3DAgent = ({
     // Map agent types to GLB models
     const agentModelPaths = {
       bus_agent: "/models/agents/bus_agent.glb",
-      train_agent: "/models/agents/travel_agent.glb", // Swapped: train_agent uses travel_agent model
-      hotel_agent: "/models/agents/hotel_agent.glb",
-      flight_agent: "/models/agents/flight_agent.glb",
-      restaurant_agent: "/models/agents/restarurant_agent.glb",
-      travel_agent: "/models/agents/train_agent.glb", // Swapped: travel_agent uses train_agent model
+      train_agent: "/models/agents/bus_agent.glb",
+      hotel_agent: "/models/agents/bus_agent.glb",
+      flight_agent: "/models/agents/bus_agent.glb",
+      restaurant_agent: "/models/agents/bus_agent.glb",
+      travel_agent: "/models/agents/bus_agent.glb",
     };
 
     // Debug logging
@@ -268,12 +264,21 @@ const Enhanced3DAgent = ({
     // Check if this agent type has a custom GLB model
     if (agentModelPaths[agentType]) {
       console.log("✅ Loading custom agent model:", agentModelPaths[agentType]);
+
+      // All agents use the same scale (1.5) - no special sizing
+      const customScale = 1.5;
+
+      console.log(
+        `📏 Scaling agent ${agent.name} (${agentType}) to ${customScale}`
+      );
+
       return (
         <group ref={groupRef} position={position}>
           {/* Load GLB directly WITHOUT Suspense */}
           <AgentGLBModel
             modelPath={agentModelPaths[agentType]}
             meshRef={meshRef}
+            targetSize={customScale}
           />
 
           {/* Add ambient glow */}
@@ -411,6 +416,10 @@ const Enhanced3DAgent = ({
   const distanceScale =
     Math.max(0.4, Math.min(2.0, 60 / Math.max(distance, 15))) * scale;
 
+  // Determine hit box size based on agent type
+  // All agents use standard hit box size
+  const hitBoxArgs = [2, 3, 2];
+
   return (
     <group
       ref={groupRef}
@@ -425,7 +434,7 @@ const Enhanced3DAgent = ({
 
       {/* Invisible Hit Box to ensure clickability */}
       <mesh visible={false}>
-        <boxGeometry args={[2, 3, 2]} />
+        <boxGeometry args={hitBoxArgs} />
         <meshBasicMaterial transparent opacity={0} />
       </mesh>
 

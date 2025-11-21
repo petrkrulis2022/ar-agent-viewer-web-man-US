@@ -11,6 +11,7 @@ import CubePaymentEngine from "./CubePaymentEngine";
 import QRScannerOverlay from "./QRScannerOverlay";
 import ARQRCodeFixed from "./ARQRCodeFixed";
 import arQRManager from "../services/arQRManager";
+import TravelAgentFlow from "./travel/TravelAgentFlow";
 
 // Unique ID generator to avoid React key collisions
 let notificationIdCounter = 0;
@@ -34,6 +35,7 @@ const AR3DScene = ({
   const [showAgentModal, setShowAgentModal] = useState(false);
   const [showCubePayment, setShowCubePayment] = useState(false);
   const [paidAgents, setPaidAgents] = useState(new Set()); // 🔓 Track which agents have been paid for
+  const [showTravelFlow, setShowTravelFlow] = useState(false);
 
   // QR Scanner states
   const [showQRScanner, setShowQRScanner] = useState(false);
@@ -53,6 +55,19 @@ const AR3DScene = ({
   const handleAgentClick = (agent) => {
     console.log("🤖 3D Agent clicked:", agent.name);
     console.log("🤖 Agent data:", agent);
+
+    // Check for Travel Agent to trigger special flow
+    if (
+      agent.name === "Travel Agent" ||
+      agent.agent_type === "travel_agent" ||
+      agent.agent_type === "Travel Agent" ||
+      (agent.name && agent.name.toLowerCase().includes("travel"))
+    ) {
+      console.log("✈️ Travel Agent clicked - triggering x402 MCP flow");
+      setSelectedAgent(agent);
+      setShowTravelFlow(true);
+      return;
+    }
 
     // DEBUG: Log all payment-related fields for debugging payment modal
     console.log("💰 PAYMENT DEBUG - Agent Payment Fields:", {
@@ -299,6 +314,7 @@ const AR3DScene = ({
     setShowAgentModal(false);
     setShowCubePayment(false);
     setShowQRScanner(false);
+    setShowTravelFlow(false);
     setSelectedAgent(null);
   };
 
@@ -315,21 +331,16 @@ const AR3DScene = ({
         }/${totalAgents}: ${agent.name}`
       );
 
-      // Use circular distribution for better spread - closer to camera
+      // Use circular distribution for better spread - MUCH CLOSER to camera
       const angle = (index / totalAgents) * 2 * Math.PI;
-      const radiusVariation = index % 4;
-      const radius = 2 + radiusVariation * 1.5; // Closer: 2-6.5 units instead of 3-9
+      const radius = 1.5; // Fixed close radius - all agents at same distance from camera
 
-      // Create multiple layers to avoid clustering
-      const layerAngleOffset = Math.floor(index / 4) * 30 * (Math.PI / 180);
-      const adjustedAngle = angle + layerAngleOffset;
+      // Calculate position in 3D space - at eye level, stationary
+      const x = Math.cos(angle) * radius;
+      const z = Math.sin(angle) * radius;
+      const y = 1.2; // Fixed eye level height
 
-      // Calculate position in 3D space - at eye level initially
-      const x = Math.cos(adjustedAngle) * radius;
-      const z = Math.sin(adjustedAngle) * radius;
-      const y = 0.5 + (index % 3) * 0.8; // Eye level: 0.5 to 2.1 meters
-
-      const distance = agent.distance_meters || 25 + (index % 5) * 15; // Closer distances
+      const distance = agent.distance_meters || 3; // Very close distance
 
       console.log(
         `📍 Agent ${agent.name} positioned at (${x.toFixed(1)}, ${y.toFixed(
@@ -556,6 +567,14 @@ const AR3DScene = ({
           })()
         }
       />
+
+      {/* Travel Agent x402 MCP Flow */}
+      {showTravelFlow && selectedAgent && (
+        <>
+          {console.log("Rendering TravelAgentFlow for", selectedAgent.name)}
+          <TravelAgentFlow agent={selectedAgent} onClose={closeModals} />
+        </>
+      )}
 
       {/* 3D Cube Payment Engine - Revolutionary AR Payment Interface */}
       <CubePaymentEngine
