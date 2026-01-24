@@ -131,27 +131,34 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
             </p>
           </div>
 
-          {/* Primary CTA Button */}
-          <div className="space-y-4">
+          {/* Primary CTA Buttons */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-5xl mx-auto">
             <Button
               onClick={onEnterAgentWorld}
               size="lg"
-              className="bg-green-500 hover:bg-green-600 text-black font-semibold px-8 py-4 text-lg rounded-full transition-all duration-200 hover:scale-105 shadow-lg shadow-green-500/25"
+              className="bg-green-500 hover:bg-green-600 text-black font-semibold px-6 py-4 text-lg rounded-full transition-all duration-200 hover:scale-105 shadow-lg shadow-green-500/25"
             >
               <ChevronRight className="w-5 h-5 mr-2" />
-              Enter Agent World
-              <span className="text-xs ml-2 opacity-75">
-                powered by CubePay
-              </span>
+              Pay with your terminal
             </Button>
 
-            {/* Secondary Link */}
-            <div>
-              <button className="text-green-400 hover:text-green-300 transition-colors text-sm font-medium group">
-                View Agent Network Status
-                <ChevronRight className="w-4 h-4 ml-1 inline-block group-hover:translate-x-1 transition-transform" />
-              </button>
-            </div>
+            <Button
+              onClick={onEnterAgentWorld}
+              size="lg"
+              className="bg-green-500 hover:bg-green-600 text-black font-semibold px-6 py-4 text-lg rounded-full transition-all duration-200 hover:scale-105 shadow-lg shadow-green-500/25"
+            >
+              <ChevronRight className="w-5 h-5 mr-2" />
+              Pay with CubePay
+            </Button>
+
+            <Button
+              onClick={onEnterAgentWorld}
+              size="lg"
+              className="bg-green-500 hover:bg-green-600 text-black font-semibold px-6 py-4 text-lg rounded-full transition-all duration-200 hover:scale-105 shadow-lg shadow-green-500/25"
+            >
+              <ChevronRight className="w-5 h-5 mr-2" />
+              Virtual ATMs
+            </Button>
           </div>
         </div>
       </main>
@@ -193,7 +200,6 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
                       CubePay Network: Connected
                     </span>
                   </div>
-                  <p className="text-xs text-slate-400">BlockDAG Testnet</p>
                 </div>
               </div>
 
