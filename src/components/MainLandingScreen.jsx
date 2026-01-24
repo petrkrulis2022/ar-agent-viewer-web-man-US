@@ -132,31 +132,28 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
           </div>
 
           {/* Primary CTA Buttons */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
             <Button
               onClick={onEnterAgentWorld}
               size="lg"
-              className="bg-green-500 hover:bg-green-600 text-black font-semibold px-6 py-4 text-lg rounded-full transition-all duration-200 hover:scale-105 shadow-lg shadow-green-500/25"
+              className="bg-gradient-to-br from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-black font-semibold px-3 py-6 text-sm rounded-2xl transition-all duration-200 hover:scale-105 shadow-xl hover:shadow-2xl shadow-green-500/30 flex flex-col items-center justify-center min-h-[100px] border-b-4 border-green-700"
             >
-              <ChevronRight className="w-5 h-5 mr-2" />
               Pay with your terminal
             </Button>
 
             <Button
               onClick={onEnterAgentWorld}
               size="lg"
-              className="bg-green-500 hover:bg-green-600 text-black font-semibold px-6 py-4 text-lg rounded-full transition-all duration-200 hover:scale-105 shadow-lg shadow-green-500/25"
+              className="bg-gradient-to-br from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-black font-semibold px-3 py-6 text-sm rounded-2xl transition-all duration-200 hover:scale-105 shadow-xl hover:shadow-2xl shadow-green-500/30 flex flex-col items-center justify-center min-h-[100px] border-b-4 border-green-700"
             >
-              <ChevronRight className="w-5 h-5 mr-2" />
               Pay with CubePay
             </Button>
 
             <Button
               onClick={onEnterAgentWorld}
               size="lg"
-              className="bg-green-500 hover:bg-green-600 text-black font-semibold px-6 py-4 text-lg rounded-full transition-all duration-200 hover:scale-105 shadow-lg shadow-green-500/25"
+              className="bg-gradient-to-br from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-black font-semibold px-3 py-6 text-sm rounded-2xl transition-all duration-200 hover:scale-105 shadow-xl hover:shadow-2xl shadow-green-500/30 flex flex-col items-center justify-center min-h-[100px] border-b-4 border-green-700"
             >
-              <ChevronRight className="w-5 h-5 mr-2" />
               Virtual ATMs
             </Button>
           </div>
