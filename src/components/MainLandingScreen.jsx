@@ -85,9 +85,6 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
             />
             <div>
               <h1 className="text-xl font-bold text-green-400">CubePay</h1>
-              <p className="text-xs text-slate-400">
-                Discover Agents in Your World
-              </p>
             </div>
           </div>
         </div>

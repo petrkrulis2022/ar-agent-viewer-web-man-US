@@ -46,7 +46,8 @@ export default defineConfig({
     strictPort: true,
     host: true,
     allowedHosts: [
-      "ce9c2121aa0a.ngrok-free.app", // Ngrok URL (without https://)
+      "ce9c2121aa0a.ngrok-free.app", // Old Ngrok URL
+      "e921551af012.ngrok-free.app", // Current Ngrok URL
     ],
     cors: {
       origin: [
