@@ -38,7 +38,7 @@ const CameraActivationScreen = ({ onStartCamera, onGoBack }) => {
         </button>
         <div className="flex items-center space-x-2">
           <Camera className="w-6 h-6 text-green-400" />
-          <h1 className="text-xl font-bold text-green-400">NeAR Viewer</h1>
+          <h1 className="text-xl font-bold text-green-400">CubePay</h1>
         </div>
         <div className="w-20"></div> {/* Spacer for centering */}
       </header>

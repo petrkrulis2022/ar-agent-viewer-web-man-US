@@ -35,7 +35,7 @@ function MinimalMainLanding({ onEnterAgentWorld, onShowWallet }) {
       <h1
         style={{ fontSize: "4rem", marginBottom: "20px", textAlign: "center" }}
       >
-        NeAR Viewer
+        CubePay
       </h1>
 
       <p

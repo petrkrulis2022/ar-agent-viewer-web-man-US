@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import CubePaymentEngine from "./CubePaymentEngine";
-import CubePaymentHandler from "./CubePaymentHandler-minimal"; // Using minimal version for testing
 
 const CubePaymentDemo = () => {
   const [showCube, setShowCube] = useState(false);
@@ -24,7 +23,7 @@ const CubePaymentDemo = () => {
       paymentData,
     });
     alert(
-      `🎉 Payment completed successfully!\n\nAgent: ${agent.name}\nAmount: $${agent.interaction_fee} USD`
+      `🎉 Payment completed successfully!\n\nAgent: ${agent.name}\nAmount: $${agent.interaction_fee} USD`,
     );
     setShowCube(false);
   };
@@ -175,13 +174,6 @@ const CubePaymentDemo = () => {
         onClose={() => setShowCube(false)}
         onPaymentComplete={handlePaymentComplete}
         paymentAmount={mockAgent.interaction_fee}
-      />
-
-      {/* Cube Payment Handler - Minimal test version */}
-      <CubePaymentHandler
-        agentData={[mockAgent]}
-        selectedAgent={mockAgent.id}
-        onPaymentComplete={handlePaymentComplete}
       />
     </div>
   );

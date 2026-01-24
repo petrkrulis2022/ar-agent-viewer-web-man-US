@@ -120,7 +120,7 @@ const ARViewer = () => {
         setShowOnlyTerminals(true);
         console.log("💳 Payment mode activated with data:", paymentData);
         console.log(
-          "🔒 Showing only MY Payment Terminal agents (user's own terminals)"
+          "🔒 Showing only MY Payment Terminal agents (user's own terminals)",
         );
 
         // 🔐 SECURITY: Update filters to show ONLY user's own payment terminals
@@ -174,7 +174,7 @@ const ARViewer = () => {
             };
             console.log(
               "✅ Found existing Solana connection:",
-              response.publicKey.toString()
+              response.publicKey.toString(),
             );
           }
         } catch (error) {
@@ -308,7 +308,7 @@ const ARViewer = () => {
         console.log(`📊 First object details:`, objects[0]);
         console.log(
           `📊 Object types:`,
-          objects.map((o) => o.agent_type || o.object_type).join(", ")
+          objects.map((o) => o.agent_type || o.object_type).join(", "),
         );
       }
 
@@ -364,7 +364,7 @@ const ARViewer = () => {
 
       setNearAgents(filteredObjects || []);
       console.log(
-        `✅ Set nearAgents state with ${filteredObjects?.length || 0} agents`
+        `✅ Set nearAgents state with ${filteredObjects?.length || 0} agents`,
       );
       console.log("🎯 Setting nearAgents to:", filteredObjects);
 
@@ -456,7 +456,7 @@ const ARViewer = () => {
       // Debug: Log the full walletConnection structure
       console.log(
         "🔍 WalletConnection Structure:",
-        JSON.stringify(walletConnection, null, 2)
+        JSON.stringify(walletConnection, null, 2),
       );
 
       // Get connected wallet address from EVM, Solana, or Hedera
@@ -498,7 +498,7 @@ const ARViewer = () => {
           name: a.name,
           owner_wallet: a.owner_wallet,
           type: a.agent_type || a.object_type,
-        }))
+        })),
       );
 
       agentsToFilter = nearAgents.filter((agent) => {
@@ -531,7 +531,7 @@ const ARViewer = () => {
         // Debug log for ownership filters
         if (filters.myAgents || filters.allNonMyAgents) {
           console.log(
-            `🔍 Agent: ${agent.name}, AgentWallet: ${agentWallet}, UserWallet: ${userWalletNormalized}, IsMyAgent: ${isMyAgent}, Type: ${agentType}`
+            `🔍 Agent: ${agent.name}, AgentWallet: ${agentWallet}, UserWallet: ${userWalletNormalized}, IsMyAgent: ${isMyAgent}, Type: ${agentType}`,
           );
         }
 
@@ -701,7 +701,7 @@ const ARViewer = () => {
               chainId,
               networkName,
               filter: networkFilter,
-            }
+            },
           );
         }
 
@@ -709,7 +709,7 @@ const ARViewer = () => {
       });
 
       console.log(
-        `🌐 Network filtered: ${beforeNetworkFilter} → ${agentsToFilter.length} agents`
+        `🌐 Network filtered: ${beforeNetworkFilter} → ${agentsToFilter.length} agents`,
       );
     }
 
@@ -809,7 +809,7 @@ const ARViewer = () => {
         <Card className="w-full max-w-md bg-black/50 border-purple-500/30 backdrop-blur-sm">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold text-white">
-              NeAR Viewer
+              CubePay
             </CardTitle>
             <CardDescription className="text-purple-200">
               Initializing AR Experience
@@ -918,7 +918,7 @@ const ARViewer = () => {
               <Camera className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">NeAR Viewer</h1>
+              <h1 className="text-xl font-bold text-white">CubePay</h1>
               <p className="text-sm text-purple-200">AR Agent Network</p>
             </div>
           </div>
@@ -947,7 +947,7 @@ const ARViewer = () => {
       <div className="bg-black/20 backdrop-blur-sm border-b border-purple-500/20">
         <div className="flex">
           {[
-            { id: "viewer", label: "NeAR Viewer", icon: Camera },
+            { id: "viewer", label: "CubePay", icon: Camera },
             { id: "agents", label: "NEAR Agents", icon: Users },
             { id: "map", label: "NEAR Map", icon: MapPin },
             { id: "wallet", label: "Wallet", icon: Wallet },
@@ -998,7 +998,7 @@ const ARViewer = () => {
                   onClick={() => {
                     const newMode = viewMode === "2d" ? "3d" : "2d";
                     console.log(
-                      `🔄 Switching AR view mode from ${viewMode} to ${newMode}`
+                      `🔄 Switching AR view mode from ${viewMode} to ${newMode}`,
                     );
                     setViewMode(newMode);
                   }}
@@ -1056,7 +1056,7 @@ const ARViewer = () => {
                         <p className="text-sm font-semibold text-white truncate">
                           {currentLocation
                             ? `${currentLocation.latitude.toFixed(
-                                4
+                                4,
                               )}, ${currentLocation.longitude.toFixed(4)}`
                             : "Unknown"}
                         </p>

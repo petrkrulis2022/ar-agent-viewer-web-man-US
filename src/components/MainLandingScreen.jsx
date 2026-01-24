@@ -47,7 +47,7 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
           setAgents(agentsData);
           setActiveAgentCount(agentsData.length);
           console.log(
-            `✅ Found ${agentsData.length} agents near current location`
+            `✅ Found ${agentsData.length} agents near current location`,
           );
         } else {
           console.log("⚠️ No agents found near current location");
@@ -78,11 +78,15 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
       <header className="flex items-center justify-between p-6 border-b border-white/10">
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
-            <Camera className="w-6 h-6 text-green-400" />
+            <img
+              src="/cubepay_simple_cube.gif"
+              alt="CubePay"
+              className="w-20 h-20 rounded-lg"
+            />
             <div>
-              <h1 className="text-xl font-bold text-green-400">NeAR Viewer</h1>
+              <h1 className="text-xl font-bold text-green-400">CubePay</h1>
               <p className="text-xs text-slate-400">
-                Discover NeAR Agents in Your NeAR World
+                Discover Agents in Your World
               </p>
             </div>
           </div>
@@ -94,7 +98,7 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
             <Bell className="w-5 h-5 text-slate-400" />
           </button>
 
-          {/* Wallet Address Display (replaces NeAR Protocol badge) */}
+          {/* Wallet Address Display */}
           <WalletAddressDisplay />
 
           {/* Wallet Button */}
@@ -114,26 +118,16 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
       {/* Main Content */}
       <main className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="max-w-4xl mx-auto text-center space-y-8">
-          {/* NeAR Viewer Logo */}
-          <div className="flex items-center justify-center space-x-3 mb-8">
-            <div className="p-3 bg-green-500/20 rounded-lg border border-green-400/30">
-              <Camera className="w-8 h-8 text-green-400" />
-            </div>
-            <h2 className="text-2xl font-bold text-green-400">NeAR Viewer</h2>
-          </div>
-
           {/* Main Title */}
           <div className="space-y-4">
             <h1 className="text-5xl md:text-6xl font-bold leading-tight">
-              Intelligent NeAR Agent
+              <span className="text-green-400">CubePay</span>
               <br />
-              <span className="text-green-400">Augmented Reality</span>
+              Future of Financial Infrastructure
             </h1>
 
             <p className="text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
-              Chat, interact, and collaborate with NeAR-powered AI agents
-              positioned at precise real-world locations using GEODNET RTK
-              precision
+              AR + AI + Blockchain
             </p>
           </div>
 
@@ -146,30 +140,8 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
             >
               <ChevronRight className="w-5 h-5 mr-2" />
               Enter Agent World
-              <span className="text-xs ml-2 opacity-75">powered by NeAR</span>
-            </Button>
-
-            {/* 3D Cube Payment Demo Button */}
-            <Button
-              onClick={() => (window.location.href = "/cube-demo")}
-              size="lg"
-              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold px-8 py-4 text-lg rounded-full transition-all duration-200 hover:scale-105 shadow-lg shadow-blue-500/25 w-full"
-            >
-              🎯 3D Cube Payment Demo
               <span className="text-xs ml-2 opacity-75">
-                revolutionary interface
-              </span>
-            </Button>
-
-            {/* Camera Debug Test Button */}
-            <Button
-              onClick={() => (window.location.href = "/camera-test")}
-              size="lg"
-              className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-semibold px-8 py-4 text-lg rounded-full transition-all duration-200 hover:scale-105 shadow-lg shadow-orange-500/25 w-full"
-            >
-              📹 Camera Debug Test
-              <span className="text-xs ml-2 opacity-75">
-                troubleshoot camera
+                powered by CubePay
               </span>
             </Button>
 
@@ -189,7 +161,7 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
         <div className="max-w-4xl mx-auto">
           <div className="bg-slate-800/50 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
             <h3 className="text-lg font-semibold text-green-400 mb-4 text-center">
-              NeAR Agent Network Status
+              CubePay Network Status
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -209,7 +181,7 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
                 </div>
               </div>
 
-              {/* NeAR Network Status */}
+              {/* CubePay Network Status */}
               <div className="flex items-center space-x-3 p-3 bg-slate-700/30 rounded-lg">
                 <div className="p-2 bg-green-500/20 rounded-lg">
                   <Zap className="w-5 h-5 text-green-400" />
@@ -218,7 +190,7 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
                   <div className="flex items-center space-x-2">
                     <CheckCircle className="w-4 h-4 text-green-400" />
                     <span className="text-sm font-medium text-green-400">
-                      NeAR Network: Connected
+                      CubePay Network: Connected
                     </span>
                   </div>
                   <p className="text-xs text-slate-400">BlockDAG Testnet</p>
@@ -234,7 +206,7 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
                   <div className="flex items-center space-x-2">
                     <CheckCircle className="w-4 h-4 text-green-400" />
                     <span className="text-sm font-medium text-green-400">
-                      Active NeAR Agents: {isLoading ? "..." : activeAgentCount}
+                      Active Agents: {isLoading ? "..." : activeAgentCount}
                     </span>
                   </div>
                   <p className="text-xs text-slate-400">Available in network</p>
@@ -251,7 +223,7 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
           <nav className="flex items-center justify-center space-x-8">
             <button className="flex flex-col items-center space-y-1 p-2 text-green-400 hover:text-green-300 transition-colors">
               <Camera className="w-5 h-5" />
-              <span className="text-xs font-medium">NeAR Viewer</span>
+              <span className="text-xs font-medium">CubePay</span>
             </button>
 
             <button
@@ -259,9 +231,7 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
               className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors group"
             >
               <Users className="w-5 h-5 group-hover:text-green-400 transition-colors" />
-              <span className="text-xs font-medium">
-                NeAR Agents Marketplace
-              </span>
+              <span className="text-xs font-medium">Agents Marketplace</span>
               <span className="text-xs text-green-400 opacity-75">
                 {activeAgentCount}
               </span>
@@ -269,7 +239,7 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
 
             <button className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors">
               <MapPin className="w-5 h-5" />
-              <span className="text-xs font-medium">NeAR Map</span>
+              <span className="text-xs font-medium">Agent Map</span>
             </button>
 
             <button
@@ -282,7 +252,7 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
 
             <button className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors">
               <Wallet className="w-5 h-5" />
-              <span className="text-xs font-medium">NEAR Wallet</span>
+              <span className="text-xs font-medium">Wallet</span>
             </button>
 
             <button className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors">
@@ -297,19 +267,37 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
 
             {/* Test Runner Button (Development Only) */}
             {process.env.NODE_ENV === "development" && (
-              <button
-                onClick={() => setShowTestRunner(true)}
-                className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors"
-              >
-                <Zap className="w-5 h-5" />
-                <span className="text-xs font-medium">QR Tests</span>
-              </button>
+              <>
+                <button
+                  onClick={() => setShowTestRunner(true)}
+                  className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors"
+                >
+                  <Zap className="w-5 h-5" />
+                  <span className="text-xs font-medium">QR Tests</span>
+                </button>
+
+                <button
+                  onClick={() => (window.location.href = "/cube-demo")}
+                  className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors"
+                >
+                  <span className="text-base">📦</span>
+                  <span className="text-xs font-medium">Cube Demo</span>
+                </button>
+
+                <button
+                  onClick={() => (window.location.href = "/camera-test")}
+                  className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors"
+                >
+                  <span className="text-base">📹</span>
+                  <span className="text-xs font-medium">Camera Test</span>
+                </button>
+              </>
             )}
           </nav>
         </div>
       </footer>
 
-      {/* New NeAR Agents Marketplace Modal with correct data */}
+      {/* Agents Marketplace Modal */}
       <NewNeARAgentsMarketplace
         isOpen={showMarketplace}
         onClose={() => setShowMarketplace(false)}

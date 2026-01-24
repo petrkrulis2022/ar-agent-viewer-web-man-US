@@ -206,10 +206,10 @@ const ThirdWebWalletConnect = ({ onConnectionChange }) => {
                   connectedButtonBgHover: "#047857",
                 },
               })}
-              modalTitle="Connect to NeAR Viewer"
+              modalTitle="Connect to CubePay"
               modalSize="wide"
               welcomeScreen={{
-                title: "Welcome to NeAR Viewer",
+                title: "Welcome to CubePay",
                 subtitle:
                   "Connect your wallet to interact with AR agents and access premium features",
                 img: {
@@ -252,10 +252,10 @@ const ThirdWebWalletConnect = ({ onConnectionChange }) => {
                 },
               })}
               btnTitle="Connect with MetaMask"
-              modalTitle="Connect to NeAR Viewer"
+              modalTitle="Connect to CubePay"
               modalSize="wide"
               welcomeScreen={{
-                title: "Welcome to NeAR Viewer",
+                title: "Welcome to CubePay",
                 subtitle: "Connect your wallet to interact with AR agents",
                 img: {
                   src: "https://via.placeholder.com/300x200/8b5cf6/ffffff?text=NeAR+AR",

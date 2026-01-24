@@ -1,8 +1,8 @@
-# NeAR Viewer - Augmented Reality Agent Interaction Platform
+# CubePay - Augmented Reality Agent Interaction Platform
 
 A cutting-edge augmented reality web application that allows users to discover, interact with, and pay AI agents in real-world locations using blockchain technology.
 
-![NeAR Viewer](https://via.placeholder.com/800x400/8b5cf6/ffffff?text=NeAR+Viewer+AR+Platform)
+![CubePay](https://via.placeholder.com/800x400/8b5cf6/ffffff?text=CubePay+AR+Platform)
 
 ## 🌟 Features
 

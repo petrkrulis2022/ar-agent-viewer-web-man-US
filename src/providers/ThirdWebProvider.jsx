@@ -43,7 +43,7 @@ const ThirdWebProviderWrapper = ({ children }) => {
 
   if (!clientId) {
     console.error(
-      "❌ VITE_THIRDWEB_CLIENT_ID is not set in environment variables"
+      "❌ VITE_THIRDWEB_CLIENT_ID is not set in environment variables",
     );
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
@@ -65,7 +65,7 @@ const ThirdWebProviderWrapper = ({ children }) => {
       supportedWallets={supportedWallets}
       locale={en()}
       dAppMeta={{
-        name: "NeAR Viewer",
+        name: "CubePay",
         description:
           "Augmented Reality viewer for NeAR agents with blockchain integration",
         logoUrl: "https://via.placeholder.com/200x200/8b5cf6/ffffff?text=NeAR",
@@ -96,7 +96,7 @@ const ThirdWebProviderWrapper = ({ children }) => {
           // Implement batch upload logic
           console.log("📁 Batch upload requested:", files);
           return Promise.resolve(
-            files.map(() => "https://example.com/uploaded-file")
+            files.map(() => "https://example.com/uploaded-file"),
           );
         },
       }}

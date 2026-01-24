@@ -27,20 +27,20 @@ function WorkingMainLanding({ onEnterAgentWorld, onShowWallet }) {
         const agentsData = await getNearAgentsFromSupabase(
           50.64, // Center of Europe
           13.83,
-          100000 // 100km radius to catch all agents
+          100000, // 100km radius to catch all agents
         );
 
         if (agentsData && agentsData.length > 0) {
           console.log(
             `✅ Loaded ${agentsData.length} real agents:`,
-            agentsData
+            agentsData,
           );
           setAgents(agentsData);
           setAgentCount(agentsData.length);
 
           // Find the Bus Stop Agent
           const busAgent = agentsData.find(
-            (agent) => agent.name && agent.name.toLowerCase().includes("bus")
+            (agent) => agent.name && agent.name.toLowerCase().includes("bus"),
           );
           if (busAgent) {
             console.log("🚌 Bus Stop Agent found:", busAgent.name);
@@ -78,7 +78,7 @@ function WorkingMainLanding({ onEnterAgentWorld, onShowWallet }) {
         <h1
           style={{ fontSize: "4rem", marginBottom: "10px", color: "#4CAF50" }}
         >
-          🌐 NeAR Viewer
+          🌐 CubePay
         </h1>
         <p style={{ fontSize: "1.2rem", opacity: 0.8 }}>
           AR Agent Network - Real Database Connection
@@ -155,7 +155,7 @@ function WorkingMainLanding({ onEnterAgentWorld, onShowWallet }) {
         >
           {/* Bus Stop Agent Highlight */}
           {agents.find(
-            (agent) => agent.name && agent.name.toLowerCase().includes("bus")
+            (agent) => agent.name && agent.name.toLowerCase().includes("bus"),
           ) && (
             <div
               style={{
@@ -173,7 +173,7 @@ function WorkingMainLanding({ onEnterAgentWorld, onShowWallet }) {
                 {
                   agents.find(
                     (agent) =>
-                      agent.name && agent.name.toLowerCase().includes("bus")
+                      agent.name && agent.name.toLowerCase().includes("bus"),
                   )?.name
                 }
               </p>
@@ -182,7 +182,7 @@ function WorkingMainLanding({ onEnterAgentWorld, onShowWallet }) {
                 {
                   agents.find(
                     (agent) =>
-                      agent.name && agent.name.toLowerCase().includes("bus")
+                      agent.name && agent.name.toLowerCase().includes("bus"),
                   )?.agent_type
                 }
               </p>
@@ -191,7 +191,7 @@ function WorkingMainLanding({ onEnterAgentWorld, onShowWallet }) {
                 {
                   agents.find(
                     (agent) =>
-                      agent.name && agent.name.toLowerCase().includes("bus")
+                      agent.name && agent.name.toLowerCase().includes("bus"),
                   )?.network
                 }
               </p>
@@ -237,7 +237,7 @@ function WorkingMainLanding({ onEnterAgentWorld, onShowWallet }) {
             <div>
               {[
                 ...new Set(
-                  agents.map((agent) => agent.agent_type || agent.object_type)
+                  agents.map((agent) => agent.agent_type || agent.object_type),
                 ),
               ].map((type) => (
                 <div key={type} style={{ margin: "5px 0", fontSize: "14px" }}>
@@ -245,7 +245,7 @@ function WorkingMainLanding({ onEnterAgentWorld, onShowWallet }) {
                   {
                     agents.filter(
                       (agent) =>
-                        (agent.agent_type || agent.object_type) === type
+                        (agent.agent_type || agent.object_type) === type,
                     ).length
                   }
                   )
@@ -366,7 +366,7 @@ function AppContent() {
 
   const handleShowWallet = () => {
     alert(
-      "🔗 Wallet connection would open here.\n✅ Multi-wallet support available\n🌐 Solana & EVM chains supported"
+      "🔗 Wallet connection would open here.\n✅ Multi-wallet support available\n🌐 Solana & EVM chains supported",
     );
   };
 

@@ -12,6 +12,7 @@ import AgentMarketplace from "./components/marketplace/AgentMarketplace";
 import MainLandingScreen from "./components/MainLandingScreen";
 import CameraActivationScreen from "./components/CameraActivationScreen";
 import SimpleCubeTest from "./components/SimpleCubeTest";
+import CubePaymentDemo from "./components/CubePaymentDemo";
 import CameraTest from "./components/CameraTest";
 import UnifiedWalletConnect from "./components/UnifiedWalletConnect";
 import AgentFeeValidationDashboard from "./components/AgentFeeValidationDashboard";
@@ -70,7 +71,7 @@ function AppContent() {
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.has("paymentData")) {
               console.log(
-                "💳 Payment data detected, redirecting to AR view..."
+                "💳 Payment data detected, redirecting to AR view...",
               );
               return (
                 <Navigate to={`/ar-view${window.location.search}`} replace />
@@ -92,6 +93,9 @@ function AppContent() {
 
         {/* Simple Cube Test Route */}
         <Route path="/test-cube" element={<SimpleCubeTest />} />
+
+        {/* 3D Cube Payment Demo Route */}
+        <Route path="/cube-demo" element={<CubePaymentDemo />} />
 
         {/* Agent Fee Validation Dashboard (Debug) */}
         <Route path="/debug-fees" element={<AgentFeeValidationDashboard />} />
@@ -149,7 +153,7 @@ function AppContent() {
                 // 🔧 CRITICAL FIX: Prioritize Solana address when connected
                 console.log(
                   "🔍 App: Received connection data:",
-                  connectionData
+                  connectionData,
                 );
 
                 if (connectionData) {
@@ -203,7 +207,7 @@ function AppContent() {
                   {walletConnection.address &&
                     `${walletConnection.address.slice(
                       0,
-                      6
+                      6,
                     )}...${walletConnection.address.slice(-4)}`}
                 </p>
               </div>
