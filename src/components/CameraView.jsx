@@ -131,7 +131,7 @@ const CameraView = ({
         console.error(
           "❌ Insecure context:",
           location.protocol,
-          location.hostname
+          location.hostname,
         );
         setError(errorMsg);
         if (onError) onError(new Error(errorMsg));
@@ -139,14 +139,14 @@ const CameraView = ({
       }
 
       console.log(
-        `🎥 Starting camera (attempt ${attempt}/${maxAttempts}, constraint level ${constraintLevel})...`
+        `🎥 Starting camera (attempt ${attempt}/${maxAttempts}, constraint level ${constraintLevel})...`,
       );
       console.log("🔍 Browser:", navigator.userAgent.substring(0, 100));
       console.log(
         "🔍 Secure context:",
         isSecure,
         "Protocol:",
-        location.protocol
+        location.protocol,
       );
 
       // Stop existing stream if any
@@ -172,7 +172,7 @@ const CameraView = ({
       const constraints = getConstraints(constraintLevel);
       console.log(
         "📱 Using constraints:",
-        JSON.stringify(constraints, null, 2)
+        JSON.stringify(constraints, null, 2),
       );
 
       // Request camera access
@@ -184,7 +184,7 @@ const CameraView = ({
 
       console.log(
         "✅ Camera stream acquired:",
-        stream.getTracks().map((t) => `${t.kind}: ${t.label || "unnamed"}`)
+        stream.getTracks().map((t) => `${t.kind}: ${t.label || "unnamed"}`),
       );
       streamRef.current = stream;
 
@@ -238,7 +238,7 @@ const CameraView = ({
       console.error(
         `❌ Camera error (attempt ${attempt}):`,
         err.name,
-        err.message
+        err.message,
       );
 
       // Clean up on error
@@ -254,14 +254,14 @@ const CameraView = ({
       // Retry logic
       if (attempt < maxAttempts) {
         console.log(
-          `🔄 Retrying camera access (${attempt + 1}/${maxAttempts})...`
+          `🔄 Retrying camera access (${attempt + 1}/${maxAttempts})...`,
         );
         setRetryCount(attempt);
         await new Promise((resolve) => setTimeout(resolve, 1000));
         return startCamera(constraintLevel, attempt + 1);
       } else if (constraintLevel < maxConstraintLevels - 1) {
         console.log(
-          `🔄 Trying simpler constraints (level ${constraintLevel + 1})...`
+          `🔄 Trying simpler constraints (level ${constraintLevel + 1})...`,
         );
         setRetryCount(0);
         await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -315,7 +315,7 @@ const CameraView = ({
       "🔄 Switching camera from",
       cameraFacing,
       "to",
-      cameraFacing === "environment" ? "user" : "environment"
+      cameraFacing === "environment" ? "user" : "environment",
     );
 
     const newFacing = cameraFacing === "environment" ? "user" : "environment";
@@ -360,7 +360,7 @@ const CameraView = ({
   useEffect(() => {
     if (isActive) {
       console.log(
-        "🎥 MOUNT: Auto-starting camera because isActive=true on mount"
+        "🎥 MOUNT: Auto-starting camera because isActive=true on mount",
       );
       startCamera();
     }
@@ -436,7 +436,7 @@ const CameraView = ({
   const handlePaymentRequest = async (agent) => {
     console.log(
       "🎯 Payment requested for agent - launching 3D cube:",
-      agent.name
+      agent.name,
     );
 
     // Stop the main camera to free up access for potential QR scanning
@@ -467,7 +467,7 @@ const CameraView = ({
     console.log(
       "✅ Cube payment completed for agent:",
       agent.name,
-      paymentData
+      paymentData,
     );
     setShowCubePayment(false);
 
@@ -526,7 +526,7 @@ const CameraView = ({
     // Auto-remove notification after 3 seconds
     setTimeout(() => {
       setArQRNotifications((prev) =>
-        prev.filter((n) => n.id !== notification.id)
+        prev.filter((n) => n.id !== notification.id),
       );
     }, 3000);
   };
@@ -552,7 +552,7 @@ const CameraView = ({
     // Auto-remove notification after 5 seconds
     setTimeout(() => {
       setArQRNotifications((prev) =>
-        prev.filter((n) => n.id !== notification.id)
+        prev.filter((n) => n.id !== notification.id),
       );
     }, 5000);
   };
@@ -575,7 +575,7 @@ const CameraView = ({
           // Fallback: show the URI for manual copying
           await navigator.clipboard.writeText(paymentUri);
           alert(
-            "Payment URI copied to clipboard. Open MetaMask and paste the URI."
+            "Payment URI copied to clipboard. Open MetaMask and paste the URI.",
           );
         }
 
@@ -653,7 +653,7 @@ const CameraView = ({
 
             {/* Error Display with Retry */}
             {error && (
-              <div className="absolute top-4 left-4 right-4">
+              <div className="absolute top-6 sm:top-4 left-4 right-4">
                 <div className="bg-red-500/90 backdrop-blur-sm rounded-lg p-4">
                   <div className="flex items-start space-x-3">
                     <AlertCircle className="w-5 h-5 text-white flex-shrink-0 mt-0.5" />
@@ -693,7 +693,7 @@ const CameraView = ({
 
             {/* Retry Status */}
             {isRetrying && !error && (
-              <div className="absolute top-4 left-4 right-4">
+              <div className="absolute top-6 sm:top-4 left-4 right-4">
                 <div className="bg-yellow-500/90 backdrop-blur-sm rounded-lg p-3 flex items-center space-x-3">
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   <div>
@@ -710,7 +710,7 @@ const CameraView = ({
 
             {/* Camera Status Badge */}
             {isStreaming && (
-              <div className="absolute top-4 left-4">
+              <div className="absolute top-6 sm:top-4 left-4">
                 <Badge className="bg-red-500 text-white flex items-center space-x-1">
                   <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
                   <span>LIVE</span>
@@ -720,7 +720,7 @@ const CameraView = ({
 
             {/* Camera Info */}
             {isStreaming && (
-              <div className="absolute top-4 right-4">
+              <div className="absolute top-6 sm:top-4 right-6 sm:right-4">
                 <Badge variant="secondary" className="bg-black/50 text-white">
                   {cameraFacing === "environment"
                     ? "Back Camera"
@@ -731,7 +731,7 @@ const CameraView = ({
 
             {/* AR QR Notifications */}
             {arQRNotifications.length > 0 && (
-              <div className="absolute top-20 right-4 space-y-2 z-50">
+              <div className="absolute top-24 sm:top-20 right-4 space-y-2 z-[50]">
                 {arQRNotifications.map((notification) => (
                   <Card
                     key={notification.id}
@@ -759,7 +759,7 @@ const CameraView = ({
 
             {/* Controls Overlay */}
             {showControls && (
-              <div className="absolute bottom-4 left-4 right-4">
+              <div className="absolute bottom-20 sm:bottom-4 left-4 right-4">
                 <div className="flex items-center justify-center space-x-3">
                   {/* Main Toggle Button */}
                   <Button

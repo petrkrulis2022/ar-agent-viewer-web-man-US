@@ -35,6 +35,7 @@ import AR3DScene from "./AR3DScene";
 import ARQRCodeFixed from "./ARQRCodeFixed";
 import ThirdWebWalletConnect from "./ThirdWebWalletConnect";
 import UnifiedWalletConnect from "./UnifiedWalletConnect";
+import { autoDetectWallet } from "../utils/mobileWalletDetection";
 import rtkLocationService from "../services/rtkLocation";
 
 const ARViewer = () => {
@@ -162,6 +163,20 @@ const ARViewer = () => {
 
       const connections = {};
 
+      // Check for mobile wallet reconnection first
+      const mobileWallet = await autoDetectWallet();
+      if (mobileWallet && mobileWallet.success) {
+        connections.evm = {
+          isConnected: true,
+          address: mobileWallet.address,
+        };
+        console.log(
+          "✅ Found mobile/desktop wallet:",
+          mobileWallet.method,
+          mobileWallet.address,
+        );
+      }
+
       // Check Solana/Phantom wallet
       if (window.solana && window.solana.isPhantom) {
         try {
@@ -182,8 +197,8 @@ const ARViewer = () => {
         }
       }
 
-      // Check EVM/MetaMask wallet
-      if (window.ethereum) {
+      // Fallback: Check EVM/MetaMask wallet if not already detected
+      if (!connections.evm && window.ethereum) {
         try {
           const accounts = await window.ethereum.request({
             method: "eth_accounts",
@@ -1382,7 +1397,7 @@ const ARViewer = () => {
                     />
                   </div>
                   {/* 3D Mode Controls - Highest priority */}
-                  <div className="absolute top-4 right-4 z-30">
+                  <div className="absolute top-6 sm:top-4 right-6 sm:right-4 z-[50]">
                     <div className="bg-black/70 backdrop-blur-sm rounded-lg p-3 text-white">
                       <p className="text-sm font-medium mb-1">
                         🚀 3D AR Mode ACTIVE
@@ -1397,7 +1412,7 @@ const ARViewer = () => {
                     </div>
                   </div>{" "}
                   {/* Camera View Toggle - Switch between AR Camera and Blue Background */}
-                  <div className="absolute bottom-4 right-4 z-30">
+                  <div className="absolute bottom-20 sm:bottom-4 right-4 z-[50]">
                     <button
                       onClick={() => setCameraActive(!cameraActive)}
                       className={`flex items-center space-x-2 px-4 py-3 rounded-full ${

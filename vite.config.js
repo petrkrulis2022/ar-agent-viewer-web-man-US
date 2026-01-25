@@ -46,13 +46,17 @@ export default defineConfig({
     strictPort: true,
     host: true,
     allowedHosts: [
-      "ce9c2121aa0a.ngrok-free.app", // Old Ngrok URL
-      "e921551af012.ngrok-free.app", // Current Ngrok URL
+      "ce9c2121aa0a.ngrok-free.app",
+      "e921551af012.ngrok-free.app",
+      "jair-unrenunciatory-pseudozealously.ngrok-free.app",
+      "jair-unrenunciatory-pseudozealously.ngrok-free.dev", // Current Ngrok URL
     ],
     cors: {
       origin: [
         "http://localhost:5173",
-        "https://ce9c2121aa0a.ngrok-free.app", // Ngrok URL (with https://)
+        "http://localhost:5174",
+        "https://ce9c2121aa0a.ngrok-free.app",
+        "https://jair-unrenunciatory-pseudozealously.ngrok-free.app",
       ],
       credentials: true,
     },

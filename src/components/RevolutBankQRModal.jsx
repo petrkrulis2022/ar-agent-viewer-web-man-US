@@ -63,7 +63,7 @@ const RevolutBankQRModal = ({
           });
       }, 500);
     },
-    [actualOrderId, actualOrderDetails, onPaymentFailed]
+    [actualOrderId, actualOrderDetails, onPaymentFailed],
   );
 
   const handleTimeout = useCallback(async () => {
@@ -86,7 +86,7 @@ const RevolutBankQRModal = ({
       } else if (status === "failed" || status === "cancelled") {
         handlePaymentFailure(status);
       }
-    }
+    },
   );
 
   // Countdown timer - must be called before conditional return
@@ -126,7 +126,7 @@ const RevolutBankQRModal = ({
         } catch (error) {
           console.error("❌ Error opening payment URL:", error);
           alert(
-            "Failed to open payment link. Please try scanning the QR code instead."
+            "Failed to open payment link. Please try scanning the QR code instead.",
           );
         }
       } else {
@@ -173,7 +173,7 @@ const RevolutBankQRModal = ({
     setShowRevolutModal(false);
 
     console.log(
-      `💳 Processing internal payment for order: ${pendingPayment.orderId}...`
+      `💳 Processing internal payment for order: ${pendingPayment.orderId}...`,
     );
 
     try {
@@ -198,7 +198,7 @@ const RevolutBankQRModal = ({
     } catch (error) {
       console.error("❌ Payment error:", error);
       alert(
-        `❌ Payment Failed:\n${error.message}\n\nPlease try again or contact support.`
+        `❌ Payment Failed:\n${error.message}\n\nPlease try again or contact support.`,
       );
     } finally {
       setIsProcessingPayment(false);
@@ -331,7 +331,7 @@ const RevolutBankQRModal = ({
       </style>
 
       <div
-        className={`fixed inset-0 flex items-center justify-center z-50 transition-all duration-300 ${
+        className={`fixed inset-0 flex items-center justify-center z-[500] transition-all duration-300 ${
           isClosing ? "opacity-0" : "opacity-100"
         }`}
         style={{
@@ -342,7 +342,7 @@ const RevolutBankQRModal = ({
         }}
       >
         <div
-          className={`relative rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl transform transition-all duration-500 ${
+          className={`relative rounded-2xl p-4 sm:p-8 max-w-md w-[95vw] sm:w-full mx-2 sm:mx-4 shadow-2xl transform transition-all duration-500 ${
             isClosing ? "scale-95 opacity-0" : "scale-100 opacity-100"
           }`}
           style={{
@@ -392,7 +392,7 @@ const RevolutBankQRModal = ({
             </div>
             <button
               onClick={handleClose}
-              className="text-gray-400 hover:text-gray-700 text-3xl transition-all duration-200 hover:rotate-90 w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100"
+              className="text-gray-400 hover:text-gray-700 text-3xl transition-all duration-200 hover:rotate-90 w-12 h-12 sm:w-10 sm:h-10 flex items-center justify-center rounded-full hover:bg-gray-100"
               aria-label="Close"
               disabled={isClosing}
             >
@@ -424,7 +424,7 @@ const RevolutBankQRModal = ({
                 {actualPaymentUrl && actualPaymentUrl.length > 0 ? (
                   <QRCode
                     value={actualPaymentUrl}
-                    size={200}
+                    size={window.innerWidth < 640 ? 150 : 200}
                     style={{
                       height: "auto",
                       maxWidth: "100%",
@@ -435,10 +435,15 @@ const RevolutBankQRModal = ({
                 ) : (
                   <div
                     className="flex items-center justify-center text-gray-500"
-                    style={{ width: "200px", height: "200px" }}
+                    style={{
+                      width: window.innerWidth < 640 ? "150px" : "200px",
+                      height: window.innerWidth < 640 ? "150px" : "200px",
+                    }}
                   >
                     <div className="text-center">
-                      <div className="text-5xl mb-3 animate-pulse">⏳</div>
+                      <div className="text-3xl sm:text-5xl mb-3 animate-pulse">
+                        ⏳
+                      </div>
                       <div className="text-sm font-medium">
                         Generating QR Code...
                       </div>
@@ -724,14 +729,14 @@ const RevolutBankQRModal = ({
       {/* Success Modal */}
       {showSuccessModal && successData && (
         <div
-          className="fixed inset-0 flex items-center justify-center z-[10002]"
+          className="fixed inset-0 flex items-center justify-center z-[1000]"
           style={{
             background: "rgba(0, 0, 0, 0.8)",
             backdropFilter: "blur(10px)",
           }}
         >
           <div
-            className="relative rounded-3xl p-10 max-w-md w-full mx-4 shadow-2xl text-center"
+            className="relative rounded-3xl p-6 sm:p-10 max-w-md w-[95vw] sm:w-full mx-2 sm:mx-4 shadow-2xl text-center"
             style={{
               background: "linear-gradient(135deg, #ffffff 0%, #f9fafb 100%)",
               animation: "slideUpFade 0.4s ease-out",

@@ -1,6 +1,22 @@
 /* Import Solana Wallet Adapter styles */
 @import "@solana/wallet-adapter-react-ui/styles.css";
 
+/* Z-Index System for Mobile Responsiveness */
+:root {
+  --z-touch-indicator: 100000;
+  --z-critical-alert: 10000;
+  --z-success-modal: 1000;
+  --z-modal: 500;
+  --z-modal-overlay: 400;
+  --z-navigation: 300;
+  --z-header: 200;
+  --z-overlay: 100;
+  --z-tooltip: 50;
+  --z-raised: 10;
+  --z-base: 1;
+  --z-default: 0;
+}
+
 /* Enhanced animations for AR QR system */
 @keyframes fadeIn {
   from {

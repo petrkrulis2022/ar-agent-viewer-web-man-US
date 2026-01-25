@@ -41,7 +41,7 @@ const UserFacingQRCode = ({
     console.log(
       "- Payment Amount:",
       qrData.tokenInfo?.amount,
-      qrData.tokenInfo?.symbol
+      qrData.tokenInfo?.symbol,
     );
 
     const canvas = document.createElement("canvas");
@@ -69,7 +69,7 @@ const UserFacingQRCode = ({
         }
 
         console.log(
-          "✅ CUBE QR: User-facing QR texture generated successfully"
+          "✅ CUBE QR: User-facing QR texture generated successfully",
         );
         const texture = new THREE.CanvasTexture(canvas);
         texture.flipY = false;
@@ -78,7 +78,7 @@ const UserFacingQRCode = ({
         texture.needsUpdate = true;
         setQrTexture(texture);
         setHasError(false);
-      }
+      },
     );
   }, [qrData]);
 
@@ -145,7 +145,7 @@ const UserFacingQRCode = ({
     } catch (error) {
       console.error("❌ CUBE QR: Click payment failed:", error);
       alert(
-        `Payment failed: ${error.message}\n\nTry scanning with your mobile wallet instead.`
+        `Payment failed: ${error.message}\n\nTry scanning with your mobile wallet instead.`,
       );
     } finally {
       setIsClicking(false);
@@ -159,7 +159,7 @@ const UserFacingQRCode = ({
     // Track scan for analytics
     const scanResult = qrPaymentDataService.handleQRScan(
       qrData,
-      "mobile-camera"
+      "mobile-camera",
     );
 
     // Notify parent component
@@ -427,7 +427,7 @@ const CubeQRIntegration = ({
   const handleQRClicked = async (paymentResult) => {
     console.log(
       "✅ CUBE QR INTEGRATION: Payment completed via click:",
-      paymentResult
+      paymentResult,
     );
 
     if (onPaymentComplete) {
@@ -475,7 +475,7 @@ const CubeQRIntegration = ({
       {/* Close button */}
       <button
         onClick={handleClose}
-        className="absolute top-4 right-4 z-40 w-10 h-10 bg-red-500/80 hover:bg-red-600/90 rounded-full flex items-center justify-center text-white text-lg font-bold backdrop-blur-sm border border-red-400/50 transition-all duration-200"
+        className="absolute top-4 right-4 z-[100] w-12 h-12 sm:w-10 sm:h-10 bg-red-500/80 hover:bg-red-600/90 rounded-full flex items-center justify-center text-white text-lg font-bold backdrop-blur-sm border border-red-400/50 transition-all duration-200"
       >
         ×
       </button>

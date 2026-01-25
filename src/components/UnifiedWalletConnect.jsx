@@ -20,6 +20,12 @@ import {
   OTHER_NETWORKS,
   networkDetectionService,
 } from "../services/networkDetectionService";
+import {
+  connectMetaMaskUniversal,
+  autoDetectWallet,
+  getWalletBalance,
+  isMobile,
+} from "../utils/mobileWalletDetection";
 
 const UnifiedWalletConnect = ({ open, onOpenChange }) => {
   const [activeTab, setActiveTab] = useState("evm");
@@ -31,10 +37,50 @@ const UnifiedWalletConnect = ({ open, onOpenChange }) => {
   const [balance, setBalance] = useState("");
   const [isConnecting, setIsConnecting] = useState(false);
   const [isNetworkSwitching, setIsNetworkSwitching] = useState(false);
+  const [mobileConnectionPending, setMobileConnectionPending] = useState(false);
   const modalRef = useRef(null);
 
   // Stable reference for callback data to prevent unnecessary re-renders
   const callbackDataRef = useRef({});
+
+  // Auto-detect wallet on mount (handles mobile deep link returns)
+  useEffect(() => {
+    const checkWallet = async () => {
+      const walletInfo = await autoDetectWallet();
+      if (walletInfo && walletInfo.success) {
+        console.log("✅ Auto-detected wallet:", walletInfo.method);
+        setWalletAddress(walletInfo.address);
+        setWalletConnected(true);
+
+        // Get balance
+        const bal = await getWalletBalance(
+          walletInfo.address,
+          walletInfo.provider,
+        );
+        setBalance(bal);
+
+        // Detect network
+        await detectCurrentNetwork();
+
+        // Notify parent
+        if (onOpenChange) {
+          onOpenChange({
+            evm: {
+              isConnected: true,
+              address: walletInfo.address,
+              balance: bal,
+              network: currentNetwork,
+            },
+            solana: connectionStates.solana,
+            hedera: connectionStates.hedera,
+            hasAnyConnection: true,
+          });
+        }
+      }
+    };
+
+    checkWallet();
+  }, []);
 
   // Network detection effect
   useEffect(() => {
@@ -43,7 +89,7 @@ const UnifiedWalletConnect = ({ open, onOpenChange }) => {
       const cleanup = networkDetectionService.startNetworkListener(
         (networkInfo) => {
           setCurrentNetwork(networkInfo);
-        }
+        },
       );
 
       return cleanup;
@@ -77,37 +123,31 @@ const UnifiedWalletConnect = ({ open, onOpenChange }) => {
   };
 
   const connectMetaMask = async () => {
-    if (!window.ethereum) {
-      alert("MetaMask is not installed. Please install MetaMask to continue.");
-      return;
-    }
-
     setIsConnecting(true);
-    try {
-      const accounts = await window.ethereum.request({
-        method: "eth_requestAccounts",
-      });
+    setMobileConnectionPending(false);
 
-      if (accounts.length > 0) {
-        const address = accounts[0];
-        setWalletAddress(address);
+    try {
+      const result = await connectMetaMaskUniversal();
+
+      // Handle mobile deep link redirect (user will be taken to MetaMask app)
+      if (result.pending) {
+        console.log("📱 Redirecting to MetaMask mobile app...");
+        setMobileConnectionPending(true);
+        // User is being redirected, will return when connection is made
+        return;
+      }
+
+      // Connection successful
+      if (result.success) {
+        console.log(`✅ Connected via ${result.method}:`, result.address);
+        setWalletAddress(result.address);
         setWalletConnected(true);
 
-        // Get balance (with fallback)
-        let balance = "0";
-        try {
-          const balanceHex = await window.ethereum.request({
-            method: "eth_getBalance",
-            params: [address, "latest"],
-          });
-          balance = (parseInt(balanceHex, 16) / 1e18).toFixed(4);
-          setBalance(balance);
-        } catch (balanceError) {
-          console.warn("Could not fetch balance:", balanceError);
-          setBalance("N/A");
-        }
+        // Get balance
+        const balance = await getWalletBalance(result.address, result.provider);
+        setBalance(balance);
 
-        // Detect network (with fallback)
+        // Detect network
         let networkInfo = { name: "Unknown", chainId: null };
         try {
           networkInfo = await detectCurrentNetwork();
@@ -115,24 +155,28 @@ const UnifiedWalletConnect = ({ open, onOpenChange }) => {
           console.warn("Could not detect network:", networkError);
         }
 
-        // Notify parent component - ALWAYS notify even if network detection fails
+        // Notify parent component
         if (onOpenChange) {
           onOpenChange({
             evm: {
               isConnected: true,
-              address: address,
+              address: result.address,
               balance: balance,
               network: networkInfo,
             },
-            solana: connectionStates.solana, // Include Solana state
-            hedera: connectionStates.hedera, // Include Hedera state
+            solana: connectionStates.solana,
+            hedera: connectionStates.hedera,
             hasAnyConnection: true,
           });
         }
       }
     } catch (error) {
       console.error("Failed to connect wallet:", error);
-      alert(`Failed to connect wallet: ${error.message}`);
+      const mobile = isMobile();
+      const message = mobile
+        ? "Please install MetaMask mobile app or open this page in MetaMask browser"
+        : error.message;
+      alert(message);
     } finally {
       setIsConnecting(false);
     }
@@ -156,7 +200,7 @@ const UnifiedWalletConnect = ({ open, onOpenChange }) => {
         solana: connectionStates.solana, // Keep Solana state
         hedera: connectionStates.hedera, // Keep Hedera state
         hasAnyConnection: Object.values(connectionStates).some(
-          (state) => state?.isConnected
+          (state) => state?.isConnected,
         ),
       });
     }
@@ -199,7 +243,7 @@ const UnifiedWalletConnect = ({ open, onOpenChange }) => {
       if (currentDataJson !== newDataJson) {
         console.log(
           `📤 UnifiedWalletConnect: Sending to parent:`,
-          newCallbackData
+          newCallbackData,
         );
         callbackDataRef.current = newCallbackData;
         onOpenChange(newCallbackData);
@@ -262,13 +306,26 @@ const UnifiedWalletConnect = ({ open, onOpenChange }) => {
         </CardHeader>
         <CardContent className="space-y-4">
           {!walletConnected ? (
-            <Button
-              onClick={connectMetaMask}
-              className="w-full"
-              disabled={isConnecting}
-            >
-              {isConnecting ? "Connecting..." : "Connect MetaMask"}
-            </Button>
+            <div className="space-y-3">
+              <Button
+                onClick={connectMetaMask}
+                className="w-full"
+                disabled={isConnecting || mobileConnectionPending}
+              >
+                {isConnecting
+                  ? "Connecting..."
+                  : mobileConnectionPending
+                  ? "Opening MetaMask App..."
+                  : isMobile()
+                  ? "Connect MetaMask Mobile"
+                  : "Connect MetaMask"}
+              </Button>
+              {isMobile() && !window.ethereum && (
+                <p className="text-xs text-gray-600 text-center">
+                  📱 Will open MetaMask app or install prompt
+                </p>
+              )}
+            </div>
           ) : (
             <div className="space-y-3">
               <div className="p-3 bg-green-50 rounded-lg border border-green-200">
@@ -423,7 +480,7 @@ const UnifiedWalletConnect = ({ open, onOpenChange }) => {
       {/* Connection Status Summary */}
       {(walletConnected ||
         Object.values(connectionStates).some(
-          (state) => state?.isConnected
+          (state) => state?.isConnected,
         )) && (
         <Card className="bg-gradient-to-r from-green-900/30 to-blue-900/30 border-green-500/30">
           <CardContent className="pt-4">

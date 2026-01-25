@@ -14,6 +14,7 @@ import {
   Zap,
   Satellite,
   Database,
+  Copy,
 } from "lucide-react";
 import { useDatabase } from "../hooks/useDatabase";
 import NewNeARAgentsMarketplace from "./NewNeARAgentsMarketplace";
@@ -31,9 +32,51 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
   const [showTestRunner, setShowTestRunner] = useState(false);
   const [showDatabaseStatus, setShowDatabaseStatus] = useState(false);
   const [currentLocation, setCurrentLocation] = useState(null);
+  const [walletAddress, setWalletAddress] = useState(null);
+  const [isWalletConnected, setIsWalletConnected] = useState(false);
+  // Initialize isMobile immediately, not in useEffect
+  const [isMobile] = useState(
+    () =>
+      typeof navigator !== "undefined" &&
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent,
+      ),
+  );
+  const [copiedAddress, setCopiedAddress] = useState(false);
 
   // Get current device location and fetch agents on component mount
   useEffect(() => {
+    // Initialize wallet state
+    const initWallet = async () => {
+      if (window.ethereum) {
+        try {
+          const accounts = await window.ethereum.request({
+            method: "eth_accounts",
+          });
+          if (accounts.length > 0) {
+            setWalletAddress(accounts[0]);
+            setIsWalletConnected(true);
+          }
+        } catch (error) {
+          console.error("Failed to initialize wallet:", error);
+        }
+      }
+    };
+    initWallet();
+
+    // Setup wallet listeners
+    if (window.ethereum) {
+      window.ethereum.on("accountsChanged", (accounts) => {
+        if (accounts.length === 0) {
+          setWalletAddress(null);
+          setIsWalletConnected(false);
+        } else {
+          setWalletAddress(accounts[0]);
+          setIsWalletConnected(true);
+        }
+      });
+    }
+
     const fetchAgentsForCurrentLocation = async () => {
       try {
         console.log("📍 Getting device location and fetching agents...");
@@ -72,43 +115,95 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
     }
   }, [agents]);
 
+  const formatAddress = (address) => {
+    if (!address) return "";
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
+
+  const handleCopyAddress = async (e) => {
+    if (isMobile && isWalletConnected && walletAddress) {
+      e.stopPropagation();
+      try {
+        await navigator.clipboard.writeText(walletAddress);
+        setCopiedAddress(true);
+        setTimeout(() => setCopiedAddress(false), 2000);
+      } catch (error) {
+        console.error("Failed to copy address:", error);
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
       {/* Top Navigation Bar */}
-      <header className="flex items-center justify-between p-6 border-b border-white/10">
-        <div className="flex items-center space-x-4">
+      <header className="flex items-center justify-between p-4 sm:p-6 border-b border-white/10">
+        <div className="flex items-center space-x-2 sm:space-x-4">
           <div className="flex items-center space-x-2">
             <img
               src="/cubepay_simple_cube.gif"
               alt="CubePay"
-              className="w-20 h-20 rounded-lg"
+              className="w-12 h-12 sm:w-20 sm:h-20 rounded-lg"
             />
-            <div>
+            <div className="hidden sm:block">
               <h1 className="text-xl font-bold text-green-400">CubePay</h1>
             </div>
           </div>
+
+          {/* Left side: Network Display (desktop only) */}
+          <div className="hidden md:block">
+            <NetworkDisplay />
+          </div>
         </div>
 
-        <div className="flex items-center space-x-4">
-          {/* Notifications */}
-          <button className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 transition-colors">
+        <div className="flex items-center space-x-2 sm:space-x-4">
+          {/* Notifications (desktop only) */}
+          <button className="hidden sm:block p-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 transition-colors">
             <Bell className="w-5 h-5 text-slate-400" />
           </button>
 
-          {/* Wallet Address Display */}
-          <WalletAddressDisplay />
+          {/* Wallet Address Display (desktop only) */}
+          <div className="hidden md:block">
+            <WalletAddressDisplay />
+          </div>
 
-          {/* Wallet Button */}
-          <Button
-            onClick={onShowWallet}
-            className="bg-purple-600 hover:bg-purple-700 text-white border border-purple-500/50 px-4 py-2"
-          >
-            <Wallet className="w-4 h-4 mr-2" />
-            Wallet
-          </Button>
+          {/* Smart Wallet Button - shows address on mobile when connected */}
+          {isMobile && isWalletConnected && walletAddress ? (
+            <Button
+              onClick={onShowWallet}
+              className="bg-purple-600 hover:bg-purple-700 text-white border border-purple-500/50 px-2 py-2 relative"
+            >
+              <div className="flex items-center space-x-1">
+                <Wallet className="w-4 h-4" />
+                <span className="text-xs font-mono">
+                  {formatAddress(walletAddress)}
+                </span>
+                <button
+                  onClick={handleCopyAddress}
+                  className="ml-1 p-1 hover:bg-purple-800 rounded touch-manipulation"
+                  aria-label="Copy address"
+                >
+                  {copiedAddress ? (
+                    <CheckCircle className="w-3 h-3 text-green-300" />
+                  ) : (
+                    <Copy className="w-3 h-3 opacity-70" />
+                  )}
+                </button>
+              </div>
+            </Button>
+          ) : (
+            <Button
+              onClick={onShowWallet}
+              className="bg-purple-600 hover:bg-purple-700 text-white border border-purple-500/50 px-4 py-2"
+            >
+              <Wallet className="w-4 h-4 mr-2" />
+              Wallet
+            </Button>
+          )}
 
-          {/* Network Status Display */}
-          <NetworkDisplay />
+          {/* Right side: Network Display (mobile only) */}
+          <div className="block md:hidden">
+            <NetworkDisplay />
+          </div>
         </div>
       </header>
 
@@ -117,7 +212,7 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
         <div className="max-w-4xl mx-auto text-center space-y-8">
           {/* Main Title */}
           <div className="space-y-4">
-            <h1 className="text-5xl md:text-6xl font-bold leading-tight">
+            <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold leading-tight">
               <span className="text-green-400">CubePay</span>
               <br />
               Future of Financial Infrastructure
@@ -133,7 +228,7 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
             <Button
               onClick={onEnterAgentWorld}
               size="lg"
-              className="bg-gradient-to-br from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-black font-semibold px-3 py-6 text-sm rounded-2xl transition-all duration-200 hover:scale-105 shadow-xl hover:shadow-2xl shadow-green-500/30 flex flex-col items-center justify-center min-h-[100px] border-b-4 border-green-700"
+              className="bg-gradient-to-br from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-black font-semibold px-3 py-6 text-sm rounded-2xl transition-all duration-200 hover:scale-105 shadow-xl hover:shadow-2xl shadow-green-500/30 flex flex-col items-center justify-center min-h-[80px] sm:min-h-[100px] border-b-4 border-green-700"
             >
               Pay with your terminal
             </Button>
@@ -141,7 +236,7 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
             <Button
               onClick={onEnterAgentWorld}
               size="lg"
-              className="bg-gradient-to-br from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-black font-semibold px-3 py-6 text-sm rounded-2xl transition-all duration-200 hover:scale-105 shadow-xl hover:shadow-2xl shadow-green-500/30 flex flex-col items-center justify-center min-h-[100px] border-b-4 border-green-700"
+              className="bg-gradient-to-br from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-black font-semibold px-3 py-6 text-sm rounded-2xl transition-all duration-200 hover:scale-105 shadow-xl hover:shadow-2xl shadow-green-500/30 flex flex-col items-center justify-center min-h-[80px] sm:min-h-[100px] border-b-4 border-green-700"
             >
               Pay with CubePay
             </Button>
@@ -149,7 +244,7 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
             <Button
               onClick={onEnterAgentWorld}
               size="lg"
-              className="bg-gradient-to-br from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-black font-semibold px-3 py-6 text-sm rounded-2xl transition-all duration-200 hover:scale-105 shadow-xl hover:shadow-2xl shadow-green-500/30 flex flex-col items-center justify-center min-h-[100px] border-b-4 border-green-700"
+              className="bg-gradient-to-br from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-black font-semibold px-3 py-6 text-sm rounded-2xl transition-all duration-200 hover:scale-105 shadow-xl hover:shadow-2xl shadow-green-500/30 flex flex-col items-center justify-center min-h-[80px] sm:min-h-[100px] border-b-4 border-green-700"
             >
               Virtual ATMs
             </Button>
@@ -314,7 +409,7 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
           className="fixed inset-0 bg-black/80"
           onClick={() => setShowDatabaseStatus(false)}
         />
-        <div className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 sm:rounded-lg">
+        <div className="fixed left-[50%] top-[50%] z-[500] grid w-[95vw] max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-4 sm:p-6 shadow-lg duration-200 sm:rounded-lg">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">Database Connection</h2>
             <Button
@@ -354,7 +449,7 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
             className="fixed inset-0 bg-black/80"
             onClick={() => setShowTestRunner(false)}
           />
-          <div className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-6xl translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 sm:rounded-lg">
+          <div className="fixed left-[50%] top-[50%] z-[500] grid w-[95vw] max-w-4xl translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-4 sm:p-6 shadow-lg duration-200 sm:rounded-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">
                 AR QR Payment Test Runner

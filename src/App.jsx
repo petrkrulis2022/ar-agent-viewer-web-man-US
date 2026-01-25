@@ -21,6 +21,7 @@ import SimpleDebugComponent from "./components/SimpleDebugComponent"; // TEMPORA
 import VirtualTerminal from "./components/VirtualTerminal"; // NEW: Dynamic payment terminal
 import PaymentRedirect from "./components/PaymentRedirect"; // NEW: Payment redirect page
 import PaymentRedirectSimple from "./components/PaymentRedirectSimple"; // Simple test version
+import TouchIndicator from "./components/TouchIndicator"; // Touch feedback for screen recording
 import ThirdWebProviderWrapper from "./providers/ThirdWebProvider";
 import NotificationProvider, {
   useNotifications,
@@ -56,6 +57,9 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      {/* Touch Indicator for Screen Recording */}
+      <TouchIndicator />
+
       <Routes>
         {/* Debug Route for Simple Test */}
         <Route path="/test" element={<SimpleTest />} />
