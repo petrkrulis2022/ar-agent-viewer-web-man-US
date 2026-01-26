@@ -15,6 +15,9 @@ import {
   Satellite,
   Database,
   Copy,
+  Twitter,
+  Instagram,
+  Github,
 } from "lucide-react";
 import { useDatabase } from "../hooks/useDatabase";
 import NewNeARAgentsMarketplace from "./NewNeARAgentsMarketplace";
@@ -270,14 +273,14 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
         <div className="max-w-md mx-auto px-6 py-6">
           {/* Navigation Bar */}
           <nav className="grid grid-cols-2 gap-3">
-            <button className="flex flex-col items-center space-y-1 p-2 text-green-400 hover:text-green-300 transition-colors">
+            <button className="flex flex-col items-center space-y-1 p-2 text-green-400 hover:text-green-300 transition-colors bg-slate-800/30 rounded-lg border border-slate-700/50">
               <Camera className="w-5 h-5" />
               <span className="text-xs font-medium">CubePay</span>
             </button>
 
             <button
               onClick={() => setShowMarketplace(true)}
-              className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors group"
+              className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors group bg-slate-800/30 rounded-lg border border-slate-700/50"
             >
               <Users className="w-5 h-5 group-hover:text-green-400 transition-colors" />
               <span className="text-xs font-medium text-center">
@@ -288,30 +291,30 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
               </span>
             </button>
 
-            <button className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors">
+            <button className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors bg-slate-800/30 rounded-lg border border-slate-700/50">
               <MapPin className="w-5 h-5" />
               <span className="text-xs font-medium">Agent Map</span>
             </button>
 
             <button
               onClick={() => setShowDatabaseStatus(true)}
-              className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors"
+              className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors bg-slate-800/30 rounded-lg border border-slate-700/50"
             >
               <Database className="w-5 h-5" />
               <span className="text-xs font-medium">Database</span>
             </button>
 
-            <button className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors">
+            <button className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors bg-slate-800/30 rounded-lg border border-slate-700/50">
               <Wallet className="w-5 h-5" />
               <span className="text-xs font-medium">Wallet</span>
             </button>
 
-            <button className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors">
+            <button className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors bg-slate-800/30 rounded-lg border border-slate-700/50">
               <Settings className="w-5 h-5" />
               <span className="text-xs font-medium">Settings</span>
             </button>
 
-            <button className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors">
+            <button className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors bg-slate-800/30 rounded-lg border border-slate-700/50">
               <Info className="w-5 h-5" />
               <span className="text-xs font-medium">About</span>
             </button>
@@ -321,7 +324,7 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
               <>
                 <button
                   onClick={() => setShowTestRunner(true)}
-                  className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors"
+                  className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors bg-slate-800/30 rounded-lg border border-slate-700/50"
                 >
                   <Zap className="w-5 h-5" />
                   <span className="text-xs font-medium">QR Tests</span>
@@ -329,7 +332,7 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
 
                 <button
                   onClick={() => (window.location.href = "/cube-demo")}
-                  className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors"
+                  className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors bg-slate-800/30 rounded-lg border border-slate-700/50"
                 >
                   <span className="text-base">📦</span>
                   <span className="text-xs font-medium">Cube Demo</span>
@@ -337,7 +340,7 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
 
                 <button
                   onClick={() => (window.location.href = "/camera-test")}
-                  className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors"
+                  className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors bg-slate-800/30 rounded-lg border border-slate-700/50"
                 >
                   <span className="text-base">📹</span>
                   <span className="text-xs font-medium">Camera Test</span>
@@ -347,6 +350,85 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
           </nav>
         </div>
       </footer>
+
+      {/* Bottom Credits Section */}
+      <div className="bg-slate-900/90 border-t border-white/10">
+        <div className="max-w-md mx-auto px-6 py-8 text-center">
+          {/* Logo and Brand */}
+          <div className="flex items-center justify-center space-x-2 mb-3">
+            <img
+              src="/cubepay_simple_cube.gif"
+              alt="CubePay"
+              className="w-6 h-6 rounded"
+            />
+            <span className="text-xl font-bold text-green-400">CubePay</span>
+          </div>
+
+          {/* Tagline */}
+          <p className="text-xs text-slate-400 mb-4">powered by blockchain</p>
+
+          {/* Social Icons */}
+          <div className="flex items-center justify-center space-x-4 mb-4">
+            <a
+              href="https://twitter.com/cubepay"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-400 hover:text-green-400 transition-colors"
+              aria-label="Twitter"
+            >
+              <Twitter className="w-5 h-5" />
+            </a>
+            <a
+              href="https://instagram.com/cubepay"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-400 hover:text-green-400 transition-colors"
+              aria-label="Instagram"
+            >
+              <Instagram className="w-5 h-5" />
+            </a>
+            <a
+              href="https://github.com/cubepay"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-400 hover:text-green-400 transition-colors"
+              aria-label="GitHub"
+            >
+              <Github className="w-5 h-5" />
+            </a>
+          </div>
+
+          {/* Divider */}
+          <div className="border-t border-white/10 mb-4"></div>
+
+          {/* Copyright and Links */}
+          <p className="text-[10px] text-slate-500 mb-2">
+            © 2025 CubePay. All rights reserved.
+          </p>
+          <div className="flex items-center justify-center space-x-3 text-[10px]">
+            <a
+              href="/privacy"
+              className="text-slate-400 hover:text-white transition-colors"
+            >
+              Privacy Policy
+            </a>
+            <span className="text-slate-600">•</span>
+            <a
+              href="/terms"
+              className="text-slate-400 hover:text-white transition-colors"
+            >
+              Terms of Service
+            </a>
+            <span className="text-slate-600">•</span>
+            <a
+              href="/cookie-policy"
+              className="text-slate-400 hover:text-white transition-colors"
+            >
+              Cookie Policy
+            </a>
+          </div>
+        </div>
+      </div>
 
       {/* Agents Marketplace Modal */}
       <NewNeARAgentsMarketplace
