@@ -134,9 +134,12 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
+    <div
+      className="min-h-screen text-white"
+      style={{ background: "rgb(15, 23, 42)" }}
+    >
       {/* Top Navigation Bar */}
-      <header className="flex flex-col items-center justify-center p-4 sm:p-6 border-b border-white/10 space-y-4">
+      <header className="flex flex-col items-center justify-center p-4 sm:p-6 space-y-4">
         {/* Row 1: Logo + CubePay + Wallet */}
         <div className="flex items-center justify-center space-x-4 sm:space-x-8">
           {/* Logo */}
@@ -155,7 +158,7 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
           {isMobile && isWalletConnected && walletAddress ? (
             <Button
               onClick={onShowWallet}
-              className="bg-purple-600 hover:bg-purple-700 text-white border border-purple-500/50 px-2 py-2"
+              className="bg-gradient-to-br from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 text-white font-semibold px-2 py-2 rounded-2xl transition-all duration-200 hover:scale-105 shadow-xl hover:shadow-2xl shadow-purple-500/30 border-b-4 border-purple-800"
             >
               <div className="flex items-center space-x-1">
                 <Wallet className="w-4 h-4" />
@@ -164,7 +167,7 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
                 </span>
                 <button
                   onClick={handleCopyAddress}
-                  className="ml-1 p-1 hover:bg-purple-800 rounded touch-manipulation"
+                  className="ml-1 p-1 hover:bg-purple-900/50 rounded touch-manipulation"
                   aria-label="Copy address"
                 >
                   {copiedAddress ? (
@@ -178,7 +181,7 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
           ) : (
             <Button
               onClick={onShowWallet}
-              className="bg-purple-600 hover:bg-purple-700 text-white border border-purple-500/50 px-3 sm:px-4 py-2"
+              className="bg-gradient-to-br from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 text-white font-semibold px-3 sm:px-4 py-2 rounded-2xl transition-all duration-200 hover:scale-105 shadow-xl hover:shadow-2xl shadow-purple-500/30 border-b-4 border-purple-800"
             >
               <Wallet className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">Wallet</span>
@@ -191,6 +194,33 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
           <NetworkDisplay />
           <div className="hidden md:block">
             <WalletAddressDisplay />
+          </div>
+        </div>
+
+        {/* Row 3: GEODNET RTK + Active Agents */}
+        <div className="flex items-center justify-center gap-4 flex-wrap">
+          {/* GEODNET RTK Precision */}
+          <div className="flex items-center space-x-2 px-3 py-2 bg-slate-800/50 backdrop-blur-sm rounded-lg border border-white/10">
+            <div className="relative">
+              <Satellite className="w-4 h-4 text-green-400" />
+              <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xs font-medium text-green-400">
+                RTK Precision: Active
+              </span>
+              <span className="text-[10px] text-slate-400">
+                GEODNET Enhanced GPS
+              </span>
+            </div>
+          </div>
+
+          {/* Active Agents Count */}
+          <div className="flex items-center space-x-2 px-3 py-2 bg-slate-800/50 backdrop-blur-sm rounded-lg border border-white/10">
+            <Users className="w-4 h-4 text-green-400" />
+            <span className="text-xs font-medium text-green-400">
+              Active Agents: {isLoading ? "..." : activeAgentCount}
+            </span>
           </div>
         </div>
       </header>
@@ -235,70 +265,11 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
         </div>
       </main>
 
-      {/* Network Status Panel */}
-      <div className="px-6 pb-6">
-        <div className="max-w-2xl mx-auto">
-          <div className="bg-slate-800/50 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
-            <h3 className="text-lg font-semibold text-green-400 mb-4 text-center">
-              CubePay Network Status
-            </h3>
-
-            <div className="grid grid-cols-1 gap-3">
-              {/* RTK Precision Status */}
-              <div className="flex items-center space-x-3 p-3 bg-slate-700/30 rounded-lg">
-                <div className="p-2 bg-green-500/20 rounded-lg">
-                  <Satellite className="w-5 h-5 text-green-400" />
-                </div>
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle className="w-4 h-4 text-green-400" />
-                    <span className="text-sm font-medium text-green-400">
-                      RTK Precision: Active
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-400">GEODNET Enhanced GPS</p>
-                </div>
-              </div>
-
-              {/* CubePay Network Status */}
-              <div className="flex items-center space-x-3 p-3 bg-slate-700/30 rounded-lg">
-                <div className="p-2 bg-green-500/20 rounded-lg">
-                  <Zap className="w-5 h-5 text-green-400" />
-                </div>
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle className="w-4 h-4 text-green-400" />
-                    <span className="text-sm font-medium text-green-400">
-                      CubePay Network: Connected
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Active Agents Count */}
-              <div className="flex items-center space-x-3 p-3 bg-slate-700/30 rounded-lg">
-                <div className="p-2 bg-green-500/20 rounded-lg">
-                  <Users className="w-5 h-5 text-green-400" />
-                </div>
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle className="w-4 h-4 text-green-400" />
-                    <span className="text-sm font-medium text-green-400">
-                      Active Agents: {isLoading ? "..." : activeAgentCount}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-400">Available in network</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom Navigation Bar */}
-      <footer className="border-t border-white/10 bg-slate-900/80 backdrop-blur-sm">
-        <div className="max-w-2xl mx-auto px-6 py-4">
-          <nav className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
+      {/* Network Status & Navigation */}
+      <footer className="bg-slate-900/80 backdrop-blur-sm">
+        <div className="max-w-md mx-auto px-6 py-6">
+          {/* Navigation Bar */}
+          <nav className="grid grid-cols-2 gap-3">
             <button className="flex flex-col items-center space-y-1 p-2 text-green-400 hover:text-green-300 transition-colors">
               <Camera className="w-5 h-5" />
               <span className="text-xs font-medium">CubePay</span>
