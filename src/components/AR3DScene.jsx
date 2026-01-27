@@ -76,7 +76,7 @@ const AR3DScene = ({
               k.includes("fee") ||
               k.includes("network") ||
               k.includes("chain") ||
-              k.includes("amount")
+              k.includes("amount"),
           )
         : [],
     });
@@ -93,7 +93,7 @@ const AR3DScene = ({
   const handlePaymentRequest = async (agent) => {
     console.log(
       "🎯 Payment requested for 3D agent - launching cube:",
-      agent.name
+      agent.name,
     );
 
     setSelectedAgent(agent);
@@ -106,7 +106,7 @@ const AR3DScene = ({
     console.log(
       "✅ Cube payment completed for 3D agent:",
       agent.name,
-      paymentData
+      paymentData,
     );
     setShowCubePayment(false);
 
@@ -118,14 +118,14 @@ const AR3DScene = ({
     if (isPaymentMode && paymentContext?.redirectUrl) {
       console.log(
         "🔄 Redirecting back to merchant:",
-        paymentContext.redirectUrl
+        paymentContext.redirectUrl,
       );
       window.location.href = `${paymentContext.redirectUrl}&status=success&payment_method=${paymentData.method}&amount=${paymentData.amount}`;
     } else if (paymentData?.closeAgentModal) {
       // 🔄 If closeAgentModal flag is set, don't reopen the agent modal
       // This prevents showing the same agent again after payment
       console.log(
-        "🔄 Payment complete, returning to AR viewer without agent modal"
+        "🔄 Payment complete, returning to AR viewer without agent modal",
       );
       setShowAgentModal(false);
       setSelectedAgent(null); // Clear selected agent
@@ -174,7 +174,7 @@ const AR3DScene = ({
     // Auto-remove notification after 5 seconds
     setTimeout(() => {
       setArQRNotifications((prev) =>
-        prev.filter((n) => n.id !== notification.id)
+        prev.filter((n) => n.id !== notification.id),
       );
     }, 5000);
 
@@ -253,7 +253,7 @@ const AR3DScene = ({
     // Auto-remove scan notification after 8 seconds
     setTimeout(() => {
       setArQRNotifications((prev) =>
-        prev.filter((n) => n.id !== scanNotification.id)
+        prev.filter((n) => n.id !== scanNotification.id),
       );
     }, 8000);
   };
@@ -275,7 +275,7 @@ const AR3DScene = ({
           // Fallback: show the URI for manual copying
           await navigator.clipboard.writeText(paymentUri);
           alert(
-            "Payment URI copied to clipboard. Open MetaMask and paste the URI."
+            "Payment URI copied to clipboard. Open MetaMask and paste the URI.",
           );
         }
 
@@ -313,7 +313,7 @@ const AR3DScene = ({
       console.log(
         `🎯 Using fallback 3D positioning for agent ${
           index + 1
-        }/${totalAgents}: ${agent.name}`
+        }/${totalAgents}: ${agent.name}`,
       );
 
       // Use circular distribution for better spread - MUCH CLOSER to camera
@@ -329,8 +329,8 @@ const AR3DScene = ({
 
       console.log(
         `📍 Agent ${agent.name} positioned at (${x.toFixed(1)}, ${y.toFixed(
-          1
-        )}, ${z.toFixed(1)})`
+          1,
+        )}, ${z.toFixed(1)})`,
       );
 
       return {
@@ -346,13 +346,13 @@ const AR3DScene = ({
 
     // Calculate actual distance
     const distanceKm = Math.sqrt(
-      Math.pow(latDiff * 111000, 2) + Math.pow(lonDiff * 111000, 2)
+      Math.pow(latDiff * 111000, 2) + Math.pow(lonDiff * 111000, 2),
     );
 
     console.log(
       `📡 GPS 3D positioning for ${agent.name}: distance=${distanceKm.toFixed(
-        0
-      )}m`
+        0,
+      )}m`,
     );
 
     // Convert to 3D world coordinates
@@ -392,7 +392,7 @@ const AR3DScene = ({
       console.log(
         `🎯 3D Agent ${agent.name} -> Position: (${position3D.position
           .map((p) => p.toFixed(1))
-          .join(", ")}) Distance: ${position3D.distance.toFixed(0)}m`
+          .join(", ")}) Distance: ${position3D.distance.toFixed(0)}m`,
       );
 
       return {
@@ -403,7 +403,7 @@ const AR3DScene = ({
 
     // Sort by distance (closest first)
     agentsWith3DPositions.sort(
-      (a, b) => a.position3D.distance - b.position3D.distance
+      (a, b) => a.position3D.distance - b.position3D.distance,
     );
 
     // Limit visible agents for performance
@@ -411,7 +411,7 @@ const AR3DScene = ({
     const limitedAgents = agentsWith3DPositions.slice(0, maxVisibleAgents);
 
     console.log(
-      `👁️ Setting ${limitedAgents.length} 3D agents visible out of ${agents.length} total`
+      `👁️ Setting ${limitedAgents.length} 3D agents visible out of ${agents.length} total`,
     );
 
     setAgents3D(limitedAgents);
@@ -457,8 +457,8 @@ const AR3DScene = ({
         camera={{
           position: [0, 1.6, 5], // Camera at human eye level (1.6m)
           fov: 75,
-          near: 0.1,
-          far: 100,
+          near: 0.01,
+          far: 1000,
         }}
         style={{
           background: "transparent", // True AR transparency
@@ -496,7 +496,7 @@ const AR3DScene = ({
               `🤖 Rendering Enhanced3DAgent ${index}:`,
               agent.name,
               "at position:",
-              position
+              position,
             );
 
             return (
@@ -587,7 +587,7 @@ const AR3DScene = ({
                   agentName: selectedAgent?.name,
                   feeType: selectedAgent?.fee_type,
                   paymentAmount: null,
-                }
+                },
               );
               return null;
             }
@@ -732,7 +732,7 @@ const AR3DScene = ({
 
               // Remove from persistent QRs
               setPersistentQRs((prev) =>
-                prev.filter((qr) => qr.id !== scanData.id)
+                prev.filter((qr) => qr.id !== scanData.id),
               );
 
               // Handle payment
@@ -749,7 +749,7 @@ const AR3DScene = ({
 
                 setTimeout(() => {
                   setArQRNotifications((prev) =>
-                    prev.filter((n) => n.id !== paymentNotification.id)
+                    prev.filter((n) => n.id !== paymentNotification.id),
                   );
                 }, 5000);
               }

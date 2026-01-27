@@ -5,6 +5,7 @@ import * as THREE from "three";
 
 // Preload 3D models for better performance
 useGLTF.preload("/models/terminals/humanoid_robot_face.glb");
+useGLTF.preload("/models/terminals/my_personal_terminal.glb");
 useGLTF.preload("/models/terminals/p-o-s_terminal.glb");
 useGLTF.preload("/models/terminals/atm_6_mb.glb");
 
@@ -19,17 +20,38 @@ useGLTF.preload("/models/agents/travel_agent.glb");
 // 3D Model Components
 const RoboticFaceModel = ({ hovered }) => {
   const { scene } = useGLTF("/models/terminals/humanoid_robot_face.glb");
-  return <primitive object={scene.clone()} scale={3.0} />;
+  return <primitive object={scene.clone()} scale={0.05} />;
+};
+
+const MyPersonalTerminalModel = ({ hovered }) => {
+  const { scene } = useGLTF("/models/terminals/my_personal_terminal.glb");
+  return (
+    <primitive
+      object={scene.clone()}
+      scale={3.0}
+      position={[0, -2, -3]}
+      rotation={[0, Math.PI / 4, 0]}
+    />
+  );
 };
 
 const PaymentTerminalPOSModel = ({ hovered }) => {
-  const { scene } = useGLTF("/models/terminals/p-o-s_terminal.glb");
-  return <primitive object={scene.clone()} scale={0.8} />;
+  const { scene } = useGLTF("/models/terminals/my_personal_terminal.glb");
+  return (
+    <primitive
+      object={scene.clone()}
+      scale={3.0}
+      position={[0, -2, -3]}
+      rotation={[0, Math.PI / 4, 0]}
+    />
+  );
 };
 
 const VirtualATMModel = ({ hovered }) => {
   const { scene } = useGLTF("/models/terminals/atm_6_mb.glb");
-  return <primitive object={scene.clone()} scale={0.6} />;
+  return (
+    <primitive object={scene.clone()} scale={0.15} position={[0, -3.0, 0]} />
+  );
 };
 
 // Agent GLB Model Loader with error handling
@@ -74,7 +96,7 @@ const AgentGLBModel = ({ modelPath, meshRef, targetSize = 1.5 }) => {
           "🔷 Mesh found:",
           child.name,
           "Material:",
-          child.material?.type
+          child.material?.type,
         );
       }
     });
@@ -83,7 +105,7 @@ const AgentGLBModel = ({ modelPath, meshRef, targetSize = 1.5 }) => {
       "🎨 AgentGLBModel loaded successfully:",
       modelPath,
       "Meshes:",
-      meshCount
+      meshCount,
     );
 
     // Calculate appropriate scale based on model size
@@ -95,7 +117,7 @@ const AgentGLBModel = ({ modelPath, meshRef, targetSize = 1.5 }) => {
       "🎯 Auto-calculated scale:",
       autoScale,
       "for max dimension:",
-      maxDimension
+      maxDimension,
     );
 
     return (
@@ -271,7 +293,7 @@ const Enhanced3DAgent = ({
       const customScale = 1.5;
 
       console.log(
-        `📏 Scaling agent ${agent.name} (${agentType}) to ${customScale}`
+        `📏 Scaling agent ${agent.name} (${agentType}) to ${customScale}`,
       );
 
       return (
@@ -295,39 +317,115 @@ const Enhanced3DAgent = ({
     }
 
     // Determine which model to use based on agent type
+    // My Payment Terminal (content_creator) - uses my_personal_terminal.glb
+    const isMyPaymentTerminal =
+      agent.agent_type === "content_creator" ||
+      agent.agent_type === "Content Creator" ||
+      agent.agent_type === "My Payment Terminal" ||
+      agent.agent_type?.toLowerCase() === "content creator" ||
+      agent.agent_type?.toLowerCase() === "my payment terminal" ||
+      agent.object_type === "content_creator";
+
+    // Payment Terminal POS (payment_terminal) - uses p-o-s_terminal.glb
     const isPaymentTerminalPOS =
       agent.agent_type === "payment_terminal" ||
       agent.agent_type === "trailing_payment_terminal" ||
       agent.agent_type === "Payment Terminal" ||
       agent.agent_type === "Payment Terminal - POS" ||
       agent.agent_type === "Trailing Payment Terminal" ||
+      agent.agent_type?.toLowerCase() === "payment terminal" ||
       agent.object_type === "payment_terminal" ||
       agent.object_type === "trailing_payment_terminal";
 
+    // Virtual ATM (home_security) - uses atm_6_mb.glb
     const isVirtualATM =
       agent.agent_type === "home_security" ||
       agent.agent_type === "Home Security" ||
       agent.agent_type === "Virtual ATM" ||
       agent.object_type === "home_security";
 
-    const isMyPaymentTerminal =
-      agent.agent_type === "content_creator" ||
-      agent.agent_type === "Content Creator" ||
-      agent.agent_type === "My Payment Terminal" ||
-      agent.object_type === "content_creator";
-
     console.log(`Model assignment check:`, {
       agent_type: agent.agent_type,
+      object_type: agent.object_type,
+      isMyPaymentTerminal,
       isPaymentTerminalPOS,
       isVirtualATM,
-      isMyPaymentTerminal,
     });
 
-    // Payment Terminal - POS
+    // My Payment Terminal (content_creator) - uses my_personal_terminal.glb
+    if (isMyPaymentTerminal) {
+      return (
+        <group ref={meshRef}>
+          <Suspense
+            fallback={
+              <mesh>
+                <sphereGeometry args={[0.5, 32, 32]} />
+                <meshStandardMaterial
+                  color="#00ff88"
+                  emissive="#00ff88"
+                  emissiveIntensity={0.5}
+                />
+              </mesh>
+            }
+          >
+            <MyPersonalTerminalModel hovered={hovered} />
+          </Suspense>
+
+          {/* Add ambient glow */}
+          <pointLight
+            position={[0, 0.5, 0]}
+            color="#00ff88"
+            intensity={hovered ? 1.2 : 0.6}
+            distance={3}
+          />
+
+          {/* Personal terminal particles when hovered */}
+          {hovered &&
+            [...Array(8)].map((_, i) => {
+              const angle = (i / 8) * Math.PI * 2 + animationTime.current * 2;
+              const radius = 1.5;
+              return (
+                <Sphere
+                  key={i}
+                  args={[0.05]}
+                  position={[
+                    Math.cos(angle) * radius,
+                    Math.sin(animationTime.current * 3 + i) * 0.3,
+                    Math.sin(angle) * radius,
+                  ]}
+                >
+                  <meshStandardMaterial
+                    color="#00ff88"
+                    emissive="#00ff88"
+                    emissiveIntensity={1.2}
+                    transparent
+                    opacity={0.8}
+                  />
+                </Sphere>
+              );
+            })}
+        </group>
+      );
+    }
+
+    // Payment Terminal - POS (payment_terminal) - uses p-o-s_terminal.glb
     if (isPaymentTerminalPOS) {
       return (
         <group ref={meshRef}>
-          <PaymentTerminalPOSModel hovered={hovered} />
+          <Suspense
+            fallback={
+              <mesh>
+                <sphereGeometry args={[0.5, 32, 32]} />
+                <meshStandardMaterial
+                  color="#ffa500"
+                  emissive="#ffa500"
+                  emissiveIntensity={0.5}
+                />
+              </mesh>
+            }
+          >
+            <PaymentTerminalPOSModel hovered={hovered} />
+          </Suspense>
 
           {/* Add ambient glow for payment terminals */}
           <pointLight
@@ -370,7 +468,20 @@ const Enhanced3DAgent = ({
     if (isVirtualATM) {
       return (
         <group ref={meshRef}>
-          <VirtualATMModel hovered={hovered} />
+          <Suspense
+            fallback={
+              <mesh>
+                <sphereGeometry args={[0.5, 32, 32]} />
+                <meshStandardMaterial
+                  color="#00ff00"
+                  emissive="#00ff00"
+                  emissiveIntensity={0.5}
+                />
+              </mesh>
+            }
+          >
+            <VirtualATMModel hovered={hovered} />
+          </Suspense>
 
           {/* Add ambient glow for ATM */}
           <pointLight
@@ -409,7 +520,7 @@ const Enhanced3DAgent = ({
       );
     }
 
-    // My Payment Terminal (content_creator) or other agents - use Robotic Face model
+    // Default fallback - use Robotic Face model for other agent types
     return (
       <group ref={meshRef}>
         <RoboticFaceModel hovered={hovered} />
@@ -426,38 +537,31 @@ const Enhanced3DAgent = ({
         {hovered &&
           [...Array(6)].map((_, i) => {
             const orbitAngle =
-                (i / 6) * Math.PI * 2 + animationTime.current * 0.5;
-              const orbitRadius = 1.2;
-              return (
-                <Sphere
-                  key={i}
-                  args={[0.06]}
-                  position={[
-                    Math.cos(orbitAngle) * orbitRadius,
-                    Math.sin(orbitAngle * 2) * 0.3,
-                    Math.sin(orbitAngle) * orbitRadius,
-                  ]}
-                >
-                  <meshStandardMaterial
-                    color={baseColor}
-                    emissive={baseColor}
-                    emissiveIntensity={0.9}
-                    transparent
-                    opacity={0.7}
-                  />
-                </Sphere>
-              );
-            })}
-        </group>
-      );
-    }
-  }, [
-    agent.agent_type,
-    agent.object_type,
-    agent.name,
-    hovered,
-    animationTime.current,
-  ]);
+              (i / 6) * Math.PI * 2 + animationTime.current * 0.5;
+            const orbitRadius = 1.2;
+            return (
+              <Sphere
+                key={i}
+                args={[0.06]}
+                position={[
+                  Math.cos(orbitAngle) * orbitRadius,
+                  Math.sin(orbitAngle * 2) * 0.3,
+                  Math.sin(orbitAngle) * orbitRadius,
+                ]}
+              >
+                <meshStandardMaterial
+                  color={baseColor}
+                  emissive={baseColor}
+                  emissiveIntensity={0.9}
+                  transparent
+                  opacity={0.7}
+                />
+              </Sphere>
+            );
+          })}
+      </group>
+    );
+  }, [agent.agent_type, agent.object_type, agent.name, hovered]);
 
   // Handle click event
   const handleClick = useCallback(
@@ -467,7 +571,7 @@ const Enhanced3DAgent = ({
         onAgentClick(agent);
       }
     },
-    [agent, onAgentClick]
+    [agent, onAgentClick],
   );
 
   // Distance-based scaling

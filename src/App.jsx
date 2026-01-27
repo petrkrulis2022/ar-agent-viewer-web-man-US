@@ -84,10 +84,13 @@ function AppContent() {
 
             return (
               <MainLandingScreen
-                onEnterAgentWorld={() => {
-                  // Preserve URL parameters when navigating to AR view
-                  const currentParams = window.location.search;
-                  navigate(`/ar-view${currentParams}`);
+                onEnterAgentWorld={(filter) => {
+                  // Preserve URL parameters and add filter when navigating to AR view
+                  const params = new URLSearchParams(window.location.search);
+                  if (filter) {
+                    params.set("filter", filter);
+                  }
+                  navigate(`/ar-view?${params.toString()}`);
                 }}
                 onShowWallet={handleShowWallet}
               />

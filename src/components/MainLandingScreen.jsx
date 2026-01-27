@@ -230,37 +230,41 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
 
       {/* Main Content */}
       <main className="flex-1 flex items-center justify-center px-6 py-12">
-        <div className="max-w-2xl mx-auto text-center space-y-6">
+        <div className="max-w-md mx-auto text-center space-y-6">
           {/* Primary CTA Buttons - 2x2 Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Button
-              onClick={onEnterAgentWorld}
+              onClick={() => onEnterAgentWorld("myPaymentTerminals")}
               size="lg"
-              className="bg-gradient-to-br from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-black font-semibold px-3 py-6 text-sm rounded-2xl transition-all duration-200 hover:scale-105 shadow-xl hover:shadow-2xl shadow-green-500/30 flex flex-col items-center justify-center min-h-[80px] sm:min-h-[100px] border-b-4 border-green-700"
+              className="bg-gradient-to-br from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-black font-semibold px-3 py-6 text-xs rounded-2xl transition-all duration-200 hover:scale-105 shadow-xl hover:shadow-2xl shadow-green-500/30 flex flex-col items-center justify-center min-h-[80px] border-b-4 border-green-700"
             >
-              Pay with your terminal
+              <span className="text-center leading-tight">
+                Online Payments
+                <br />
+                with your terminal
+              </span>
             </Button>
 
             <Button
-              onClick={onEnterAgentWorld}
+              onClick={() => onEnterAgentWorld("allAgents")}
               size="lg"
-              className="bg-gradient-to-br from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-black font-semibold px-3 py-6 text-sm rounded-2xl transition-all duration-200 hover:scale-105 shadow-xl hover:shadow-2xl shadow-green-500/30 flex flex-col items-center justify-center min-h-[80px] sm:min-h-[100px] border-b-4 border-green-700"
+              className="bg-gradient-to-br from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-black font-semibold px-3 py-6 text-xs rounded-2xl transition-all duration-200 hover:scale-105 shadow-xl hover:shadow-2xl shadow-green-500/30 flex flex-col items-center justify-center min-h-[80px] border-b-4 border-green-700"
             >
               Pay with CubePay
             </Button>
 
             <Button
-              onClick={onEnterAgentWorld}
+              onClick={() => onEnterAgentWorld("virtualATMs")}
               size="lg"
-              className="bg-gradient-to-br from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-black font-semibold px-3 py-6 text-sm rounded-2xl transition-all duration-200 hover:scale-105 shadow-xl hover:shadow-2xl shadow-green-500/30 flex flex-col items-center justify-center min-h-[80px] sm:min-h-[100px] border-b-4 border-green-700"
+              className="bg-gradient-to-br from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-black font-semibold px-3 py-6 text-xs rounded-2xl transition-all duration-200 hover:scale-105 shadow-xl hover:shadow-2xl shadow-green-500/30 flex flex-col items-center justify-center min-h-[80px] border-b-4 border-green-700"
             >
               Virtual ATMs
             </Button>
 
             <Button
-              onClick={onEnterAgentWorld}
+              onClick={() => onEnterAgentWorld("myPaymentTerminals")}
               size="lg"
-              className="bg-gradient-to-br from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-black font-semibold px-3 py-6 text-sm rounded-2xl transition-all duration-200 hover:scale-105 shadow-xl hover:shadow-2xl shadow-green-500/30 flex flex-col items-center justify-center min-h-[80px] sm:min-h-[100px] border-b-4 border-green-700"
+              className="bg-gradient-to-br from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-black font-semibold px-3 py-6 text-xs rounded-2xl transition-all duration-200 hover:scale-105 shadow-xl hover:shadow-2xl shadow-green-500/30 flex flex-col items-center justify-center min-h-[80px] border-b-4 border-green-700"
             >
               Deploy Terminal
             </Button>

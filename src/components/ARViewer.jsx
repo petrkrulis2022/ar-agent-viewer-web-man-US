@@ -120,6 +120,38 @@ const ARViewer = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const isPaymentMode = urlParams.get("payment") === "true";
     const encodedData = urlParams.get("data");
+    const filterParam = urlParams.get("filter"); // Get filter from URL
+
+    // 🔍 Apply filter from URL parameter if present
+    if (filterParam) {
+      console.log("🎯 Applying filter from URL:", filterParam);
+      const newFilters = { ...agentFilters };
+
+      // Reset all filters first
+      Object.keys(newFilters).forEach((key) => {
+        newFilters[key] = false;
+      });
+
+      // Set the requested filter
+      switch (filterParam) {
+        case "myPaymentTerminals":
+          newFilters.myPaymentTerminals = true;
+          console.log("🔒 Filter set to: My Payment Terminals");
+          break;
+        case "allAgents":
+          newFilters.allPaymentTerminals = true; // Show all non-my payment terminals
+          console.log("🌐 Filter set to: All Non-My Payment Terminals");
+          break;
+        case "virtualATMs":
+          newFilters.homeSecurity = true; // Virtual ATMs use home_security type
+          console.log("🏧 Filter set to: Virtual ATMs (home_security)");
+          break;
+        default:
+          console.log("⚠️ Unknown filter parameter:", filterParam);
+      }
+
+      setAgentFilters(newFilters);
+    }
 
     if (isPaymentMode && encodedData) {
       try {
@@ -572,7 +604,8 @@ const ARViewer = () => {
         }
 
         if (filters.myPaymentTerminals) {
-          return isMyAgent && isAnyPaymentTerminal;
+          // ONLY show content_creator type (My Personal Terminal)
+          return isMyAgent && agentType === "content_creator";
         }
 
         if (filters.allPaymentTerminals) {
@@ -1195,7 +1228,7 @@ const ARViewer = () => {
                           className="w-4 h-4 text-yellow-500 border-yellow-400 rounded focus:ring-yellow-500"
                         />
                         <span className="text-xs text-white">
-                          All payment terminals
+                          All Non-My Payment Terminals
                         </span>
                       </label>
                     </div>
@@ -1244,7 +1277,7 @@ const ARViewer = () => {
                         { key: "paymentTerminal", label: "Payment Terminal" },
                         { key: "gameAgent", label: "Game Agent" },
                         { key: "worldBuilder3D", label: "3D World Builder" },
-                        { key: "homeSecurity", label: "Home Security" },
+                        { key: "homeSecurity", label: "Virtual ATMs" },
                         { key: "contentCreator", label: "Content Creator" },
                         {
                           key: "realEstateBroker",
