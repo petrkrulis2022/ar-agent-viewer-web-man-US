@@ -5,7 +5,8 @@ import * as THREE from "three";
 
 // Preload 3D models for better performance
 useGLTF.preload("/models/terminals/humanoid_robot_face.glb");
-useGLTF.preload("/models/terminals/pax-a920_highpoly.glb");
+useGLTF.preload("/models/terminals/p-o-s_terminal.glb");
+useGLTF.preload("/models/terminals/atm_6_mb.glb");
 
 // Preload agent 3D models
 useGLTF.preload("/models/agents/bus_agent.glb");
@@ -18,20 +19,17 @@ useGLTF.preload("/models/agents/travel_agent.glb");
 // 3D Model Components
 const RoboticFaceModel = ({ hovered }) => {
   const { scene } = useGLTF("/models/terminals/humanoid_robot_face.glb");
-
   return <primitive object={scene.clone()} scale={3.0} />;
 };
 
-const PaymentTerminalModel = ({ hovered }) => {
-  const { scene } = useGLTF("/models/terminals/pax-a920_highpoly.glb");
+const PaymentTerminalPOSModel = ({ hovered }) => {
+  const { scene } = useGLTF("/models/terminals/p-o-s_terminal.glb");
+  return <primitive object={scene.clone()} scale={0.8} />;
+};
 
-  return (
-    <primitive
-      object={scene.clone()}
-      scale={0.6}
-      rotation={[Math.PI * 0.25, 0, 0]}
-    />
-  );
+const VirtualATMModel = ({ hovered }) => {
+  const { scene } = useGLTF("/models/terminals/atm_6_mb.glb");
+  return <primitive object={scene.clone()} scale={0.6} />;
 };
 
 // Agent GLB Model Loader with error handling
@@ -146,19 +144,23 @@ const Enhanced3DAgent = ({
   // Animation state
   const animationTime = useRef(0);
   const floatOffset = useRef(Math.random() * Math.PI * 2);
-  const spinSpeed = useRef(0.05 + Math.random() * 0.05); // Reduced from 0.3 to 0.05 for slower spin
 
-  // Animate the 3D model
+  // Animate the 3D model - float only, no rotation
   useFrame((state, delta) => {
     if (!groupRef.current) return;
 
     animationTime.current += delta;
 
-    // Slow spinning animation around Y axis (vertical rotation only)
-    groupRef.current.rotation.y += delta * spinSpeed.current;
+    // Remove rotation - models should face camera
+    // groupRef.current.rotation.y += delta * spinSpeed.current;
 
-    // Remove floating animation - keep agents stable on ground
-    groupRef.current.position.y = position[1];
+    // Gentle floating animation
+    const floatAmplitude = 0.15; // How much it floats up/down
+    const floatSpeed = 1.5; // Speed of floating
+    groupRef.current.position.y =
+      position[1] +
+      Math.sin(animationTime.current * floatSpeed + floatOffset.current) *
+        floatAmplitude;
 
     // Subtle pulse effect when hovered (only if meshRef exists)
     if (meshRef.current && hovered) {
@@ -292,28 +294,40 @@ const Enhanced3DAgent = ({
       );
     }
 
-    // Check if this is a payment terminal (use payment terminal model)
-    const isPaymentTerminal =
+    // Determine which model to use based on agent type
+    const isPaymentTerminalPOS =
       agent.agent_type === "payment_terminal" ||
       agent.agent_type === "trailing_payment_terminal" ||
       agent.agent_type === "Payment Terminal" ||
+      agent.agent_type === "Payment Terminal - POS" ||
       agent.agent_type === "Trailing Payment Terminal" ||
       agent.object_type === "payment_terminal" ||
       agent.object_type === "trailing_payment_terminal";
 
-    console.log(`Payment terminal check:`, {
-      isPaymentTerminal,
-      willUseModel: isPaymentTerminal
-        ? "pax-a920_highpoly"
-        : "humanoid_robot_face",
+    const isVirtualATM =
+      agent.agent_type === "home_security" ||
+      agent.agent_type === "Home Security" ||
+      agent.agent_type === "Virtual ATM" ||
+      agent.object_type === "home_security";
+
+    const isMyPaymentTerminal =
+      agent.agent_type === "content_creator" ||
+      agent.agent_type === "Content Creator" ||
+      agent.agent_type === "My Payment Terminal" ||
+      agent.object_type === "content_creator";
+
+    console.log(`Model assignment check:`, {
+      agent_type: agent.agent_type,
+      isPaymentTerminalPOS,
+      isVirtualATM,
+      isMyPaymentTerminal,
     });
 
-    // Use GLB models for all agents
-    if (isPaymentTerminal) {
-      // Payment Terminal - use PAX A920 model
+    // Payment Terminal - POS
+    if (isPaymentTerminalPOS) {
       return (
         <group ref={meshRef}>
-          <PaymentTerminalModel hovered={hovered} />
+          <PaymentTerminalPOSModel hovered={hovered} />
 
           {/* Add ambient glow for payment terminals */}
           <pointLight
@@ -350,24 +364,68 @@ const Enhanced3DAgent = ({
             })}
         </group>
       );
-    } else {
-      // All other agents - use Robotic Face model
+    }
+
+    // Virtual ATM
+    if (isVirtualATM) {
       return (
         <group ref={meshRef}>
-          <RoboticFaceModel hovered={hovered} />
+          <VirtualATMModel hovered={hovered} />
 
-          {/* Add ambient glow for robotic agents */}
+          {/* Add ambient glow for ATM */}
           <pointLight
             position={[0, 0.5, 0]}
-            color={baseColor}
-            intensity={hovered ? 1.0 : 0.5}
+            color="#00ff00"
+            intensity={hovered ? 1.2 : 0.6}
             distance={3}
           />
 
-          {/* Data particles orbiting when hovered */}
+          {/* Cash/money particles when hovered */}
           {hovered &&
-            [...Array(6)].map((_, i) => {
-              const orbitAngle =
+            [...Array(8)].map((_, i) => {
+              const angle = (i / 8) * Math.PI * 2 + animationTime.current * 2;
+              const radius = 1.5;
+              return (
+                <Sphere
+                  key={i}
+                  args={[0.05]}
+                  position={[
+                    Math.cos(angle) * radius,
+                    Math.sin(animationTime.current * 3 + i) * 0.3,
+                    Math.sin(angle) * radius,
+                  ]}
+                >
+                  <meshStandardMaterial
+                    color="#00ff00"
+                    emissive="#00ff00"
+                    emissiveIntensity={1.2}
+                    transparent
+                    opacity={0.8}
+                  />
+                </Sphere>
+              );
+            })}
+        </group>
+      );
+    }
+
+    // My Payment Terminal (content_creator) or other agents - use Robotic Face model
+    return (
+      <group ref={meshRef}>
+        <RoboticFaceModel hovered={hovered} />
+
+        {/* Add ambient glow for robotic agents */}
+        <pointLight
+          position={[0, 0.5, 0]}
+          color={baseColor}
+          intensity={hovered ? 1.0 : 0.5}
+          distance={3}
+        />
+
+        {/* Data particles orbiting when hovered */}
+        {hovered &&
+          [...Array(6)].map((_, i) => {
+            const orbitAngle =
                 (i / 6) * Math.PI * 2 + animationTime.current * 0.5;
               const orbitRadius = 1.2;
               return (
