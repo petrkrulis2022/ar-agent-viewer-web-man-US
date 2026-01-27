@@ -37,6 +37,13 @@ import ThirdWebWalletConnect from "./ThirdWebWalletConnect";
 import UnifiedWalletConnect from "./UnifiedWalletConnect";
 import { autoDetectWallet } from "../utils/mobileWalletDetection";
 import rtkLocationService from "../services/rtkLocation";
+import {
+  normalizeAgentType,
+  getAgentTypeLabel,
+  isPaymentAgent,
+  isHederaAgent,
+  getAgentTypeBadgeColor,
+} from "../utils/agentTypeMapping";
 
 const ARViewer = () => {
   const navigate = useNavigate();
@@ -524,10 +531,10 @@ const ARViewer = () => {
           agent.wallet_address ||
           agent.deployer_address;
 
-        // Normalize agent type - replace underscores with spaces
-        const agentType = (agent.agent_type || agent.object_type || "")
-          .toLowerCase()
-          .replace(/_/g, " ");
+        // Normalize agent type using the new mapping utility
+        const agentType = normalizeAgentType(
+          agent.agent_type || agent.object_type,
+        );
 
         // ⚠️ IMPORTANT: Solana addresses are case-sensitive (base58)
         // Only lowercase for EVM addresses (0x...)
@@ -554,25 +561,13 @@ const ARViewer = () => {
         if (filters.myAgents && !isMyAgent) return false;
         if (filters.allNonMyAgents && isMyAgent) return false;
 
-        // Payment terminal filters
-        const isPaymentTerminal = agentType === "payment terminal";
-        const isTrailingPaymentTerminal =
-          agentType === "trailing payment terminal";
-        const isAnyPaymentTerminal =
-          isPaymentTerminal || isTrailingPaymentTerminal;
+        // Payment terminal filters using new utility functions
+        const isAnyPaymentTerminal = isPaymentAgent(agentType);
 
         // Check for "All Hedera Agents" filter FIRST (before payment terminal filters)
-        const hederaTypes = [
-          "bus agent",
-          "train agent",
-          "hotel agent",
-          "flight agent",
-          "restaurant agent",
-          "travel agent",
-        ];
-        const isHederaAgent = hederaTypes.includes(agentType);
+        const isHederaAgentType = isHederaAgent(agentType);
 
-        if (filters.allHederaAgents && isHederaAgent) {
+        if (filters.allHederaAgents && isHederaAgentType) {
           return true; // Always show Hedera agents when filter is active
         }
 
@@ -584,20 +579,20 @@ const ARViewer = () => {
           return !isMyAgent && isAnyPaymentTerminal;
         }
 
-        // Individual type filters
+        // Individual type filters - now using normalized values
         const typeFilters = [
-          { key: "intelligentAssistant", value: "intelligent assistant" },
-          { key: "localServices", value: "local services" },
-          { key: "paymentTerminal", value: "payment terminal" },
-          { key: "gameAgent", value: "game agent" },
-          { key: "worldBuilder3D", value: "3d world builder" },
-          { key: "homeSecurity", value: "home security" },
-          { key: "contentCreator", value: "content creator" },
-          { key: "realEstateBroker", value: "real estate broker" },
-          { key: "busStopAgent", value: "bus stop agent" },
+          { key: "intelligentAssistant", value: "intelligent_assistant" },
+          { key: "localServices", value: "local_services" },
+          { key: "paymentTerminal", value: "payment_terminal" },
+          { key: "gameAgent", value: "game_agent" },
+          { key: "worldBuilder3D", value: "3d_world_builder" },
+          { key: "homeSecurity", value: "home_security" },
+          { key: "contentCreator", value: "content_creator" },
+          { key: "realEstateBroker", value: "real_estate_broker" },
+          { key: "busStopAgent", value: "bus_stop_agent" },
           {
             key: "trailingPaymentTerminal",
-            value: "trailing payment terminal",
+            value: "trailing_payment_terminal",
           },
           { key: "myGhost", value: "my ghost" },
           // 🆕 Hedera AI Agent Types
@@ -1478,7 +1473,9 @@ const ARViewer = () => {
                           </p>
                           <p className="text-xs text-slate-400 mt-1">
                             {obj.distance_meters?.toFixed(1)}m away •{" "}
-                            {obj.agent_type || obj.object_type}
+                            {getAgentTypeLabel(
+                              obj.agent_type || obj.object_type,
+                            )}
                           </p>
                         </div>
                         <Badge variant="secondary">Active</Badge>
