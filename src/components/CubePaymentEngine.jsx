@@ -40,7 +40,7 @@ const getAgentPaymentConfig = async (agentId) => {
     const { data, error } = await supabase
       .from("deployed_objects")
       .select(
-        "payment_methods, payment_config, agent_wallet_address, payment_recipient_address, fee_type, interaction_fee_amount, interaction_fee_token"
+        "payment_methods, payment_config, agent_wallet_address, payment_recipient_address, fee_type, interaction_fee_amount, interaction_fee_token",
       )
       .eq("id", agentId)
       .single();
@@ -48,7 +48,7 @@ const getAgentPaymentConfig = async (agentId) => {
     if (error) {
       console.warn(
         "⚠️ Failed to read payment config from AgentSphere:",
-        error.message
+        error.message,
       );
       return {
         enabledMethods: ["crypto_qr"], // Fallback to crypto QR only
@@ -179,7 +179,7 @@ const PaymentCube = ({
 
   // Get enabled payment methods
   const enabledFaces = Object.keys(paymentMethods).filter((method) =>
-    actualEnabledMethods.includes(method)
+    actualEnabledMethods.includes(method),
   );
 
   // Debug logging for BTC payments visibility
@@ -188,15 +188,15 @@ const PaymentCube = ({
     console.log("🔍 Cube Debug - enabledFaces:", enabledFaces);
     console.log(
       "🔍 Cube Debug - paymentMethods keys:",
-      Object.keys(paymentMethods)
+      Object.keys(paymentMethods),
     );
     console.log(
       "🔍 Cube Debug - BTC payments included:",
-      enabledFaces.includes("btc_payments")
+      enabledFaces.includes("btc_payments"),
     );
     console.log(
       "🔍 Cube Debug - Number of faces to render:",
-      enabledFaces.length
+      enabledFaces.length,
     );
   }, [actualEnabledMethods, enabledFaces]);
 
@@ -270,7 +270,7 @@ const PaymentCube = ({
       "🎯 Cube clicked! Active face:",
       activeFace,
       "Index:",
-      frontFaceIndex
+      frontFaceIndex,
     );
 
     setSelectedFace(frontFaceIndex);
@@ -289,7 +289,7 @@ const PaymentCube = ({
                 face: activeFace,
                 config: paymentMethods[activeFace],
               },
-            })
+            }),
           );
           break;
 
@@ -303,7 +303,7 @@ const PaymentCube = ({
                 face: activeFace,
                 config: paymentMethods[activeFace],
               },
-            })
+            }),
           );
           break;
 
@@ -317,7 +317,7 @@ const PaymentCube = ({
                 face: activeFace,
                 config: paymentMethods[activeFace],
               },
-            })
+            }),
           );
           break;
 
@@ -331,7 +331,7 @@ const PaymentCube = ({
                 face: activeFace,
                 config: paymentMethods[activeFace],
               },
-            })
+            }),
           );
           break;
 
@@ -345,7 +345,7 @@ const PaymentCube = ({
                 face: activeFace,
                 config: paymentMethods[activeFace],
               },
-            })
+            }),
           );
           break;
 
@@ -359,7 +359,7 @@ const PaymentCube = ({
                 face: activeFace,
                 config: paymentMethods[activeFace],
               },
-            })
+            }),
           );
           break;
 
@@ -382,7 +382,7 @@ const PaymentCube = ({
       setLastMousePos({ x: event.clientX, y: event.clientY });
       gl.domElement.style.cursor = "grabbing";
     },
-    [gl]
+    [gl],
   );
 
   const handlePointerMove = useCallback(
@@ -409,7 +409,7 @@ const PaymentCube = ({
 
       setLastMousePos({ x: event.clientX, y: event.clientY });
     },
-    [isDragging, lastMousePos]
+    [isDragging, lastMousePos],
   );
 
   const handlePointerUp = useCallback(() => {
@@ -456,7 +456,7 @@ const PaymentCube = ({
 
       setLastMousePos({ x: touch.clientX, y: touch.clientY });
     },
-    [isDragging, lastMousePos]
+    [isDragging, lastMousePos],
   );
 
   const handleTouchEnd = useCallback(() => {
@@ -776,7 +776,7 @@ const ARQRDisplay = ({
         detectedNetwork = "296"; // Hedera Testnet
         console.log(
           "🌐 Detected Hedera Testnet network for agent:",
-          agent.name
+          agent.name,
         );
       } else if (agentName.includes("solana")) {
         detectedNetwork = "solana-devnet"; // Solana Devnet
@@ -800,24 +800,24 @@ const ARQRDisplay = ({
 
         if (isHederaByName && deploymentChainId !== "296") {
           console.warn(
-            `⚠️ Agent has deployment_chain_id=${deploymentChainId} but network name="${agent.deployment_network_name}" - OVERRIDING to 296`
+            `⚠️ Agent has deployment_chain_id=${deploymentChainId} but network name="${agent.deployment_network_name}" - OVERRIDING to 296`,
           );
           detectedNetwork = "296";
         } else if (isPolygonByName && deploymentChainId !== "80002") {
           console.warn(
-            `⚠️ Agent has deployment_chain_id=${deploymentChainId} but network name="${agent.deployment_network_name}" - OVERRIDING to 80002`
+            `⚠️ Agent has deployment_chain_id=${deploymentChainId} but network name="${agent.deployment_network_name}" - OVERRIDING to 80002`,
           );
           detectedNetwork = "80002";
         } else if (isSolanaByName) {
           console.warn(
-            `⚠️ Agent has deployment_chain_id=${deploymentChainId} but network name="${agent.deployment_network_name}" - OVERRIDING to solana-devnet`
+            `⚠️ Agent has deployment_chain_id=${deploymentChainId} but network name="${agent.deployment_network_name}" - OVERRIDING to solana-devnet`,
           );
           detectedNetwork = "solana-devnet";
         } else if (supportedNetworks[deploymentChainId]) {
           detectedNetwork = deploymentChainId;
           console.log(
             "🌐 Using agent's deployment_chain_id (authoritative):",
-            deploymentChainId
+            deploymentChainId,
           );
         }
       } else if (
@@ -883,7 +883,7 @@ const ARQRDisplay = ({
           const crossChainDetection =
             await dynamicQRService.detectCrossChainNeed(
               agent,
-              currentUserNetwork
+              currentUserNetwork,
             );
 
           console.log("🌉 Cross-chain detection result:", crossChainDetection);
@@ -892,7 +892,7 @@ const ARQRDisplay = ({
             setShowCrossChainUI(true);
             const paymentOptions = dynamicQRService.getAvailablePaymentOptions(
               agent,
-              currentUserNetwork
+              currentUserNetwork,
             );
             setCrossChainOptions(paymentOptions.options || []);
             console.log("💳 Available payment options:", paymentOptions);
@@ -915,11 +915,11 @@ const ARQRDisplay = ({
 
       // Update selected network if different from current
       console.log(
-        `🔍 Current network: ${selectedNetwork}, Detected: ${detectedNetwork}`
+        `🔍 Current network: ${selectedNetwork}, Detected: ${detectedNetwork}`,
       );
       if (detectedNetwork !== selectedNetwork) {
         console.log(
-          `🔄 Auto-switching from ${supportedNetworks[selectedNetwork]?.name} to ${supportedNetworks[detectedNetwork]?.name}`
+          `🔄 Auto-switching from ${supportedNetworks[selectedNetwork]?.name} to ${supportedNetworks[detectedNetwork]?.name}`,
         );
         setSelectedNetwork(detectedNetwork);
       }
@@ -938,11 +938,11 @@ const ARQRDisplay = ({
           ? userNetwork
           : selectedNetwork;
         console.log(
-          `💰 Loading balance for network: ${networkForBalance} (cross-chain: ${showCrossChainUI})`
+          `💰 Loading balance for network: ${networkForBalance} (cross-chain: ${showCrossChainUI})`,
         );
 
         const balance = await dynamicQRService.getCurrentWalletBalance(
-          networkForBalance
+          networkForBalance,
         );
         setWalletBalance(balance);
       } catch (error) {
@@ -967,24 +967,24 @@ const ARQRDisplay = ({
       // Generate new QR for selected network
       const result = await dynamicQRService.generateDynamicQR(
         { ...agent, preferred_network: newNetwork },
-        agent?.interaction_fee_amount || "1.00"
+        agent?.interaction_fee_amount || "1.00",
       );
 
       if (result.success) {
         setCurrentQRData(result.eip681URI || result.qrData);
         console.log(
-          `✅ QR generated for ${supportedNetworks[newNetwork].name}`
+          `✅ QR generated for ${supportedNetworks[newNetwork].name}`,
         );
       } else {
         console.error("❌ QR generation failed:", result.error);
         alert(
-          `Failed to generate QR for ${supportedNetworks[newNetwork].name}: ${result.error}`
+          `Failed to generate QR for ${supportedNetworks[newNetwork].name}: ${result.error}`,
         );
       }
     } catch (error) {
       console.error("❌ Network switch error:", error);
       alert(
-        `Error switching to ${supportedNetworks[newNetwork].name}: ${error.message}`
+        `Error switching to ${supportedNetworks[newNetwork].name}: ${error.message}`,
       );
     } finally {
       setIsGeneratingQR(false);
@@ -1024,7 +1024,7 @@ const ARQRDisplay = ({
     console.log("📱 Generating same-chain payment QR");
     const result = await dynamicQRService.generateDynamicQR(
       agent,
-      agent?.interaction_fee_amount || "1.00"
+      agent?.interaction_fee_amount || "1.00",
     );
 
     if (result.success) {
@@ -1056,7 +1056,7 @@ const ARQRDisplay = ({
         agentNetwork,
         agent?.interaction_fee_amount || "1.00",
         agent.agent_wallet_address || agent.payment_recipient_address,
-        "native"
+        "native",
       );
 
       if (feeEstimate.success) {
@@ -1084,14 +1084,14 @@ const ARQRDisplay = ({
         if (transactionResult.success) {
           console.log(
             "✅ Cross-chain transaction successful:",
-            transactionResult.transactionHash
+            transactionResult.transactionHash,
           );
           alert(
             `✅ Cross-chain payment initiated!\n\n` +
               `Transaction: ${transactionResult.transactionHash}\n` +
               `From: ${transactionResult.sourceChain}\n` +
               `To: ${transactionResult.destinationChain}\n\n` +
-              `The transaction will be processed across chains. Please check the destination network for completion.`
+              `The transaction will be processed across chains. Please check the destination network for completion.`,
           );
         } else {
           throw new Error(transactionResult.error);
@@ -1105,7 +1105,7 @@ const ARQRDisplay = ({
           `🔄 Network Switch Required\n\n` +
             `Please switch your wallet to ${supportedNetworks[agentNetwork]?.name} ` +
             `to complete this payment.\n\n` +
-            `Once switched, the QR code will be generated automatically.`
+            `Once switched, the QR code will be generated automatically.`,
         );
         return;
       }
@@ -1119,11 +1119,11 @@ const ARQRDisplay = ({
       ) {
         // Data URL format - regenerate transaction data
         console.log(
-          "📱 QR data URL detected, regenerating transaction data..."
+          "📱 QR data URL detected, regenerating transaction data...",
         );
         const qrResult = await dynamicQRService.generateDynamicQR(
           agent,
-          paymentAmount || 1
+          paymentAmount || 1,
         );
         if (!qrResult.success) {
           throw new Error(qrResult.error);
@@ -1164,22 +1164,22 @@ const ARQRDisplay = ({
       // Use the click handler from dynamic service
       const transactionResult = await dynamicQRService.handleQRClick(
         { ...agent, preferred_network: selectedNetwork },
-        transactionData
+        transactionData,
       );
 
       if (transactionResult.success) {
         console.log(
           "✅ Transaction successful:",
-          transactionResult.transactionHash
+          transactionResult.transactionHash,
         );
         alert(
-          `🎉 Payment Sent Successfully!\n\n💳 Transaction Hash:\n${transactionResult.transactionHash}\n\n🔗 Network: ${supportedNetworks[selectedNetwork].name}\n\nYou can view this transaction on the blockchain explorer.`
+          `🎉 Payment Sent Successfully!\n\n💳 Transaction Hash:\n${transactionResult.transactionHash}\n\n🔗 Network: ${supportedNetworks[selectedNetwork].name}\n\nYou can view this transaction on the blockchain explorer.`,
         );
 
         // Refresh balance after successful transaction
         setTimeout(async () => {
           const newBalance = await dynamicQRService.getCurrentWalletBalance(
-            selectedNetwork
+            selectedNetwork,
           );
           setWalletBalance(newBalance);
         }, 2000);
@@ -1197,13 +1197,13 @@ const ARQRDisplay = ({
       } else {
         console.error("❌ Transaction failed:", transactionResult.error);
         alert(
-          `❌ Transaction Failed:\n${transactionResult.error}\n\nPlease check your wallet connection and try again.`
+          `❌ Transaction Failed:\n${transactionResult.error}\n\nPlease check your wallet connection and try again.`,
         );
       }
     } catch (error) {
       console.error("❌ QR click error:", error);
       alert(
-        `⚠️ Payment Error:\n${error.message}\n\nPlease ensure your wallet is installed and connected.`
+        `⚠️ Payment Error:\n${error.message}\n\nPlease ensure your wallet is installed and connected.`,
       );
     }
   };
@@ -1872,7 +1872,7 @@ const CubePaymentEngine = ({
     if (isOpen) {
       setIsInitializing(true);
       console.log(
-        "🔒 Cube initializing - blocking all interactions for 1500ms"
+        "🔒 Cube initializing - blocking all interactions for 1500ms",
       );
       const timer = setTimeout(() => {
         setIsInitializing(false);
@@ -1888,7 +1888,7 @@ const CubePaymentEngine = ({
     if (!isOpen || !agent) return;
 
     console.log(
-      "📋 Parsing URL payment data and calculating dynamic amount..."
+      "📋 Parsing URL payment data and calculating dynamic amount...",
     );
 
     // Parse URL parameters
@@ -1903,7 +1903,7 @@ const CubePaymentEngine = ({
     const configSummary = getPaymentConfigSummary(
       agent,
       paymentData,
-      finalAmount
+      finalAmount,
     );
     console.log("💳 Payment configuration:", configSummary);
 
@@ -1964,7 +1964,7 @@ const CubePaymentEngine = ({
     if (dynamicPaymentAmount !== null && dynamicPaymentAmount !== undefined) {
       console.log(
         "💰 getFinalPaymentAmount: Using dynamic amount from URL",
-        dynamicPaymentAmount
+        dynamicPaymentAmount,
       );
       return dynamicPaymentAmount;
     }
@@ -1980,7 +1980,7 @@ const CubePaymentEngine = ({
         {
           agent: agent?.name,
           fee_type: agent?.fee_type,
-        }
+        },
       );
       return null; // This will trigger "Dynamic Amount" display
     }
@@ -1992,7 +1992,7 @@ const CubePaymentEngine = ({
       // 10.0 is the default
       console.log(
         "💰 getFinalPaymentAmount: Using prop paymentAmount",
-        paymentAmount
+        paymentAmount,
       );
       return paymentAmount;
     }
@@ -2001,7 +2001,7 @@ const CubePaymentEngine = ({
     if (agent?.interaction_fee_amount) {
       console.log(
         "💰 getFinalPaymentAmount: Using agent.interaction_fee_amount",
-        agent.interaction_fee_amount
+        agent.interaction_fee_amount,
       );
       return agent.interaction_fee_amount;
     }
@@ -2010,7 +2010,7 @@ const CubePaymentEngine = ({
     if (agent?.interaction_fee) {
       console.log(
         "💰 getFinalPaymentAmount: Using agent.interaction_fee",
-        agent.interaction_fee
+        agent.interaction_fee,
       );
       return agent.interaction_fee;
     }
@@ -2049,7 +2049,7 @@ const CubePaymentEngine = ({
       console.log("📍 Showing Coming Soon alert for:", methodKey);
       // Show "Coming Soon" for other methods (voice_pay, sound_pay)
       alert(
-        `${methodConfig.text} - Coming Soon!\n\nThis payment method will be available in the next update.\n\nFor now, please use Crypto QR, Bank QR, or Virtual Card payments.`
+        `${methodConfig.text} - Coming Soon!\n\nThis payment method will be available in the next update.\n\nFor now, please use Crypto QR, Bank QR, or Virtual Card payments.`,
       );
     }
   };
@@ -2092,7 +2092,7 @@ const CubePaymentEngine = ({
       if (networkName && networkName.toLowerCase().includes("hedera")) {
         // Database has wrong chain_id, override with correct Hedera chain ID
         console.log(
-          "🔧 Hedera network detected from name - overriding chain ID to 296"
+          "🔧 Hedera network detected from name - overriding chain ID to 296",
         );
         agentNetworkNum = 296;
       }
@@ -2157,7 +2157,7 @@ const CubePaymentEngine = ({
               `• Arbitrum Sepolia (421614)\n` +
               `• OP Sepolia (11155420)\n` +
               `• Hedera Testnet (296)\n\n` +
-              `Then try again.`
+              `Then try again.`,
           );
           setIsGenerating(false);
           return;
@@ -2177,7 +2177,7 @@ const CubePaymentEngine = ({
               `• Base Sepolia (84532)\n` +
               `• Arbitrum Sepolia (421614)\n` +
               `• OP Sepolia (11155420)\n` +
-              `• Hedera Testnet (296)`
+              `• Hedera Testnet (296)`,
           );
           setIsGenerating(false);
           return;
@@ -2187,20 +2187,20 @@ const CubePaymentEngine = ({
       // STEP 2: Route to appropriate flow
       console.log("🚦 ROUTING DECISION:");
       console.log(
-        `  - userNetwork: ${userNetwork} (type: ${typeof userNetwork})`
+        `  - userNetwork: ${userNetwork} (type: ${typeof userNetwork})`,
       );
       console.log(
-        `  - agentNetworkNum: ${agentNetworkNum} (type: ${typeof agentNetworkNum})`
+        `  - agentNetworkNum: ${agentNetworkNum} (type: ${typeof agentNetworkNum})`,
       );
       console.log(
         `  - Is agentNetworkNum valid? ${
           agentNetworkNum !== null && !isNaN(agentNetworkNum)
-        }`
+        }`,
       );
       console.log(
         `  - Comparison result: ${userNetwork} !== ${agentNetworkNum} = ${
           userNetwork !== agentNetworkNum
-        }`
+        }`,
       );
       console.log(`  - isSolanaWallet: ${isSolanaWallet}`);
       console.log(`  - agentIsSolana: ${agentIsSolana}`);
@@ -2208,7 +2208,7 @@ const CubePaymentEngine = ({
       // For Solana wallets, always use direct QR generation (no cross-chain)
       if (isSolanaWallet && agentIsSolana) {
         console.log(
-          "🌟 Solana-to-Solana detected → Direct Solana QR generation"
+          "🌟 Solana-to-Solana detected → Direct Solana QR generation",
         );
 
         const finalAmount = getFinalPaymentAmount();
@@ -2216,7 +2216,7 @@ const CubePaymentEngine = ({
 
         const result = await dynamicQRService.generateDynamicQR(
           agent,
-          finalAmount
+          finalAmount,
         );
 
         console.log("✅ Solana QR generated:", result);
@@ -2230,7 +2230,7 @@ const CubePaymentEngine = ({
         // 🌉 CROSS-CHAIN (EVM only): Show intermediate modal first
         console.log("🌉 Cross-chain detected → Triggering intermediate modal");
         console.log(
-          `  - User on chain ${userNetwork}, agent on chain ${agentNetworkNum}`
+          `  - User on chain ${userNetwork}, agent on chain ${agentNetworkNum}`,
         );
         await handleCrossChainMode();
         return; // Exit here - modal will handle QR generation after confirmation
@@ -2245,7 +2245,7 @@ const CubePaymentEngine = ({
         // Generate QR code for payment (supports USDh and all custom stablecoins)
         const result = await dynamicQRService.generateDynamicQR(
           agent,
-          finalAmount
+          finalAmount,
         );
 
         console.log("✅ Same-chain QR generated:", result);
@@ -2287,7 +2287,7 @@ const CubePaymentEngine = ({
       `₿ ${btcPaymentInfo.title}\n\n` +
         `Upcoming Features:\n${btcPaymentInfo.features.join("\n")}\n\n` +
         `Supported Networks:\n${btcPaymentInfo.networks.join("\n")}\n\n` +
-        `For now, please use "Crypto QR" for USDC payments. Bitcoin integration is in active development!`
+        `For now, please use "Crypto QR" for USDC payments. Bitcoin integration is in active development!`,
     );
   };
 
@@ -2313,7 +2313,7 @@ const CubePaymentEngine = ({
       console.log(
         "💰 Creating Revolut Bank QR order for amount:",
         amount,
-        "USD"
+        "USD",
       );
       console.log("💰 Payment amount source:", {
         fromDynamicAmount: dynamicPaymentAmount,
@@ -2393,7 +2393,7 @@ const CubePaymentEngine = ({
   const handleModalConfirm = async (validatedTransactionData) => {
     try {
       console.log(
-        "✅ User confirmed transaction, proceeding with QR generation..."
+        "✅ User confirmed transaction, proceeding with QR generation...",
       );
       setShowIntermediateModal(false);
 
@@ -2403,14 +2403,14 @@ const CubePaymentEngine = ({
         validatedTransactionData.sourceChain,
         validatedTransactionData.destinationChain,
         validatedTransactionData.amount,
-        "native" // Fee token
+        "native", // Fee token
       );
 
       if (result.success) {
         setQrData(result.qrData);
         console.log(
           "✅ Cross-chain QR generated after modal confirmation",
-          result
+          result,
         );
         setCurrentView("qr");
         setSelectedMethod("crypto_qr");
@@ -2420,7 +2420,7 @@ const CubePaymentEngine = ({
     } catch (error) {
       console.error(
         "❌ Failed to generate QR after modal confirmation:",
-        error
+        error,
       );
       alert(`Error generating payment QR: ${error.message}`);
     }
@@ -2446,14 +2446,14 @@ const CubePaymentEngine = ({
     if (revolutOrderData?.orderId) {
       try {
         const cancelResult = await revolutBankService.cancelRevolutOrder(
-          revolutOrderData.orderId
+          revolutOrderData.orderId,
         );
         if (cancelResult.success) {
           console.log("✅ Revolut order cancelled successfully");
         } else {
           console.warn(
             "⚠️ Failed to cancel Revolut order:",
-            cancelResult.error
+            cancelResult.error,
           );
         }
       } catch (error) {
@@ -2474,7 +2474,7 @@ const CubePaymentEngine = ({
         `💳 Payment ID: ${paymentData.paymentId}\n` +
         `💰 Amount: ${paymentData.amount} ${paymentData.currency}\n` +
         `🏪 Merchant: ${agent?.name}\n\n` +
-        `Payment has been processed successfully via Revolut Bank QR.`
+        `Payment has been processed successfully via Revolut Bank QR.`,
     );
 
     // Call onPaymentComplete callback if provided
@@ -2511,7 +2511,7 @@ const CubePaymentEngine = ({
           `💳 Card: ****${cardData.cardNumber?.slice(-4) || "****"}\n` +
           `💰 Amount: $${cardData.amount}\n` +
           `🏪 Merchant: ${cardData.merchant || agent?.name}\n\n` +
-          `Payment has been processed successfully via Revolut Virtual Card.`
+          `Payment has been processed successfully via Revolut Virtual Card.`,
       );
 
       // Call onPaymentComplete callback if provided
@@ -2551,7 +2551,7 @@ const CubePaymentEngine = ({
     }
 
     console.log(
-      `🌉 Cross-chain transaction detected: ${userNetwork} → ${agentNetwork}`
+      `🌉 Cross-chain transaction detected: ${userNetwork} → ${agentNetwork}`,
     );
 
     // STEP 1: Build CCIP transaction data for inspection
@@ -2566,7 +2566,7 @@ const CubePaymentEngine = ({
         agentNetwork, // Destination chain
         finalAmount.toString(), // USDC amount
         agent?.agent_wallet_address || agent?.payment_recipient_address, // Recipient
-        "native" // Fee token (ETH)
+        "native", // Fee token (ETH)
       );
 
       if (!ccipTransactionData.success) {
@@ -2596,24 +2596,24 @@ const CubePaymentEngine = ({
         if (isAllowanceIssue) {
           console.log(
             "🔧 Allowance issue detected - showing modal for user to approve:",
-            ccipTransactionData.simulationError
+            ccipTransactionData.simulationError,
           );
           // Continue to show modal for allowance approval
         } else if (isBalanceIssue) {
           console.log(
             "💰 Insufficient balance detected - showing modal with balance error:",
-            ccipTransactionData.simulationError
+            ccipTransactionData.simulationError,
           );
           // Continue to show modal with balance information
         } else if (isGenericSimulationFailure) {
           console.log(
             "🚨 Generic simulation failure detected - showing modal with detailed error info:",
-            ccipTransactionData.simulationError
+            ccipTransactionData.simulationError,
           );
           // Continue to show modal with generic simulation error details
         } else {
           throw new Error(
-            `CCIP transaction build failed: ${ccipTransactionData.error}`
+            `CCIP transaction build failed: ${ccipTransactionData.error}`,
           );
         }
       }
@@ -2622,7 +2622,7 @@ const CubePaymentEngine = ({
         ccipTransactionData.success
           ? "✅ CCIP transaction built successfully:"
           : "⚠️ CCIP transaction has simulation issues (showing modal for review):",
-        ccipTransactionData
+        ccipTransactionData,
       );
 
       // STEP 2: Show Intermediate Payment Modal for Cross-Chain Review
@@ -2659,7 +2659,7 @@ const CubePaymentEngine = ({
 
       setShowIntermediateModal(true);
       console.log(
-        "🔍 Intermediate modal opened for cross-chain transaction review"
+        "🔍 Intermediate modal opened for cross-chain transaction review",
       );
     } catch (error) {
       console.error("❌ Failed to build CCIP transaction for modal:", error);
@@ -2725,8 +2725,8 @@ const CubePaymentEngine = ({
       className="fixed inset-0 z-50 flex items-center justify-center"
       style={{
         background:
-          "radial-gradient(circle at center, rgba(0, 30, 15, 0.9) 0%, rgba(0, 0, 0, 0.95) 100%)",
-        backdropFilter: "blur(8px)",
+          "radial-gradient(circle at center, rgba(0, 30, 15, 0.15) 0%, rgba(0, 0, 0, 0.2) 100%)",
+        backdropFilter: "blur(1px)",
       }}
     >
       {/* Close button */}
@@ -2882,7 +2882,7 @@ const CubePaymentEngine = ({
         {(() => {
           console.log(
             "🔍 RENDER CHECK - showVirtualCardModal:",
-            showVirtualCardModal
+            showVirtualCardModal,
           );
           return showVirtualCardModal;
         })() && (
@@ -2908,7 +2908,7 @@ const CubePaymentEngine = ({
               // If closeAgentModal flag is set, close everything and return to AR viewer
               if (result.closeAgentModal) {
                 console.log(
-                  "🔄 Closing cube payment engine and returning to AR viewer"
+                  "🔄 Closing cube payment engine and returning to AR viewer",
                 );
                 // Close the cube entirely
                 if (onClose) {

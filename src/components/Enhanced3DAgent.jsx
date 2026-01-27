@@ -29,7 +29,7 @@ const MyPersonalTerminalModel = ({ hovered }) => {
     <primitive
       object={scene.clone()}
       scale={3.0}
-      position={[0, -2, -3]}
+      position={[0, -4, -3]}
       rotation={[0, Math.PI / 4, 0]}
     />
   );
@@ -41,7 +41,7 @@ const PaymentTerminalPOSModel = ({ hovered }) => {
     <primitive
       object={scene.clone()}
       scale={3.0}
-      position={[0, -2, -3]}
+      position={[0, -4, -3]}
       rotation={[0, Math.PI / 4, 0]}
     />
   );
@@ -50,7 +50,7 @@ const PaymentTerminalPOSModel = ({ hovered }) => {
 const VirtualATMModel = ({ hovered }) => {
   const { scene } = useGLTF("/models/terminals/atm_6_mb.glb");
   return (
-    <primitive object={scene.clone()} scale={0.15} position={[0, -3.0, 0]} />
+    <primitive object={scene.clone()} scale={0.15} position={[0, -5.0, 0]} />
   );
 };
 

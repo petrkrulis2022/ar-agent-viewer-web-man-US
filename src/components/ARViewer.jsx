@@ -72,6 +72,9 @@ const ARViewer = () => {
   // 🌐 Network Filter State
   const [networkFilter, setNetworkFilter] = useState("all");
 
+  // 🎛️ Filter Modal State
+  const [showFiltersModal, setShowFiltersModal] = useState(false);
+
   // 🔍 Agent Filtering State - Default to "My Payment Terminals"
   const [agentFilters, setAgentFilters] = useState({
     allAgents: false,
@@ -1144,233 +1147,286 @@ const ARViewer = () => {
                 </Card>
               </div>
 
-              {/* Right Side - Filter Agents Tile */}
+              {/* Right Side - Compact Filter Button */}
               <Card className="bg-black/50 border-purple-500/30 backdrop-blur-sm">
                 <CardContent className="p-3">
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-semibold text-white flex items-center space-x-2">
-                      <span>🔍</span>
-                      <span>Filter Agents</span>
-                    </h3>
+                  <button
+                    onClick={() => setShowFiltersModal(true)}
+                    className="w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-lg text-white text-sm font-semibold shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center space-x-2"
+                  >
+                    <Settings className="w-5 h-5" />
+                    <span>Reset Filters</span>
+                  </button>
+                  <div className="mt-2 text-center">
+                    <p className="text-[10px] text-purple-300">
+                      {getFilteredAgents().length}/{nearAgents.length} agents
+                      shown
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
 
-                    {/* Primary Filters */}
-                    <div className="grid grid-cols-2 gap-2">
-                      <label className="flex items-center space-x-2 cursor-pointer hover:bg-purple-500/10 p-1.5 rounded transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={agentFilters.allAgents}
-                          onChange={() => handleFilterChange("allAgents")}
-                          className="w-4 h-4 text-purple-500 border-purple-400 rounded focus:ring-purple-500"
-                        />
-                        <span className="text-xs text-white font-medium">
-                          All agents
-                        </span>
-                      </label>
-
-                      <label className="flex items-center space-x-2 cursor-pointer hover:bg-red-500/10 p-1.5 rounded transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={agentFilters.noAgents}
-                          onChange={() => handleFilterChange("noAgents")}
-                          className="w-4 h-4 text-red-500 border-red-400 rounded focus:ring-red-500"
-                        />
-                        <span className="text-xs text-white font-medium">
-                          No Agents
-                        </span>
-                      </label>
+            {/* 🎛️ Filters Modal */}
+            {showFiltersModal && (
+              <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+                <Card className="bg-gradient-to-br from-purple-900/95 to-indigo-900/95 border-2 border-purple-500/50 backdrop-blur-md shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden">
+                  <CardHeader className="pb-3 border-b border-purple-500/30">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-xl font-bold text-white flex items-center space-x-2">
+                        <span>🔍</span>
+                        <span>Filter Agents</span>
+                      </CardTitle>
+                      <button
+                        onClick={() => setShowFiltersModal(false)}
+                        className="w-10 h-10 bg-red-500/80 hover:bg-red-600/90 rounded-full flex items-center justify-center text-white text-2xl font-bold transition-all duration-200 shadow-lg"
+                      >
+                        ×
+                      </button>
                     </div>
-
-                    {/* User-Based Filters */}
-                    <div className="grid grid-cols-2 gap-2 pt-1 border-t border-purple-500/20">
-                      <label className="flex items-center space-x-2 cursor-pointer hover:bg-blue-500/10 p-1.5 rounded transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={agentFilters.myAgents}
-                          onChange={() => handleFilterChange("myAgents")}
-                          className="w-4 h-4 text-blue-500 border-blue-400 rounded focus:ring-blue-500"
-                        />
-                        <span className="text-xs text-white">My agents</span>
-                      </label>
-
-                      <label className="flex items-center space-x-2 cursor-pointer hover:bg-green-500/10 p-1.5 rounded transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={agentFilters.myPaymentTerminals}
-                          onChange={() =>
-                            handleFilterChange("myPaymentTerminals")
-                          }
-                          className="w-4 h-4 text-green-500 border-green-400 rounded focus:ring-green-500"
-                        />
-                        <span className="text-xs text-white">
-                          My Payment terminals
-                        </span>
-                      </label>
-
-                      <label className="flex items-center space-x-2 cursor-pointer hover:bg-orange-500/10 p-1.5 rounded transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={agentFilters.allNonMyAgents}
-                          onChange={() => handleFilterChange("allNonMyAgents")}
-                          className="w-4 h-4 text-orange-500 border-orange-400 rounded focus:ring-orange-500"
-                        />
-                        <span className="text-xs text-white">
-                          All non-my agents
-                        </span>
-                      </label>
-
-                      <label className="flex items-center space-x-2 cursor-pointer hover:bg-yellow-500/10 p-1.5 rounded transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={agentFilters.allPaymentTerminals}
-                          onChange={() =>
-                            handleFilterChange("allPaymentTerminals")
-                          }
-                          className="w-4 h-4 text-yellow-500 border-yellow-400 rounded focus:ring-yellow-500"
-                        />
-                        <span className="text-xs text-white">
-                          All Non-My Payment Terminals
-                        </span>
-                      </label>
-                    </div>
-
-                    {/* 🌐 Network Filter */}
-                    <div className="pt-2 border-t border-purple-500/20">
-                      <label className="flex flex-col space-y-1.5">
-                        <span className="text-xs text-purple-200 font-medium">
-                          🌐 Filter by Network
-                        </span>
-                        <select
-                          value={networkFilter}
-                          onChange={(e) => setNetworkFilter(e.target.value)}
-                          className="w-full px-2 py-1.5 text-xs bg-purple-900/30 border border-purple-500/30 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                        >
-                          <option value="all">All Networks</option>
-                          <optgroup label="🔮 Non-EVM Testnets">
-                            <option value="solana-devnet">Solana Devnet</option>
-                            <option value="296">Hedera Testnet (296)</option>
-                          </optgroup>
-                          <optgroup label="⛓️ EVM Testnets">
-                            <option value="11155111">
-                              Ethereum Sepolia (11155111)
-                            </option>
-                            <option value="11155420">
-                              Optimism Sepolia (11155420)
-                            </option>
-                            <option value="84532">Base Sepolia (84532)</option>
-                            <option value="421614">
-                              Arbitrum Sepolia (421614)
-                            </option>
-                            <option value="80002">Polygon Amoy (80002)</option>
-                          </optgroup>
-                        </select>
-                      </label>
-                    </div>
-
-                    {/* Individual Agent Types */}
-                    <div className="grid grid-cols-2 gap-1 pt-1 border-t border-purple-500/20 max-h-32 overflow-y-auto">
-                      {[
-                        {
-                          key: "intelligentAssistant",
-                          label: "Intelligent Assistant",
-                        },
-                        { key: "localServices", label: "Local Services" },
-                        { key: "paymentTerminal", label: "Payment Terminal" },
-                        { key: "gameAgent", label: "Game Agent" },
-                        { key: "worldBuilder3D", label: "3D World Builder" },
-                        { key: "homeSecurity", label: "Virtual ATMs" },
-                        { key: "contentCreator", label: "Content Creator" },
-                        {
-                          key: "realEstateBroker",
-                          label: "Real Estate Broker",
-                        },
-                        { key: "busStopAgent", label: "Bus Stop Agent" },
-                        {
-                          key: "trailingPaymentTerminal",
-                          label: "Trailing Payment Terminal",
-                        },
-                        { key: "myGhost", label: "My Ghost" },
-                      ].map((filter) => (
-                        <label
-                          key={filter.key}
-                          className="flex items-center space-x-1.5 cursor-pointer hover:bg-purple-500/10 p-1 rounded transition-colors"
-                        >
+                    <CardDescription className="text-purple-200">
+                      Customize which agents appear in your AR view
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-4 overflow-y-auto max-h-[calc(90vh-120px)]">
+                    <div className="space-y-4">
+                      {/* Primary Filters */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <label className="flex items-center space-x-2 cursor-pointer hover:bg-purple-500/10 p-1.5 rounded transition-colors">
                           <input
                             type="checkbox"
-                            checked={agentFilters[filter.key]}
-                            onChange={() => handleFilterChange(filter.key)}
-                            className="w-3 h-3 text-purple-500 border-purple-400 rounded focus:ring-purple-500"
+                            checked={agentFilters.allAgents}
+                            onChange={() => handleFilterChange("allAgents")}
+                            className="w-4 h-4 text-purple-500 border-purple-400 rounded focus:ring-purple-500"
                           />
-                          <span className="text-[10px] text-purple-200">
-                            {filter.label}
+                          <span className="text-xs text-white font-medium">
+                            All agents
                           </span>
                         </label>
-                      ))}
-                    </div>
 
-                    {/* 🆕 Hedera AI Agents Section */}
-                    <div className="pt-2 border-t border-green-500/30">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <span className="text-xs text-green-300 font-semibold">
-                          🌟 Hedera AI Agents
-                        </span>
+                        <label className="flex items-center space-x-2 cursor-pointer hover:bg-red-500/10 p-1.5 rounded transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={agentFilters.noAgents}
+                            onChange={() => handleFilterChange("noAgents")}
+                            className="w-4 h-4 text-red-500 border-red-400 rounded focus:ring-red-500"
+                          />
+                          <span className="text-xs text-white font-medium">
+                            No Agents
+                          </span>
+                        </label>
                       </div>
 
-                      {/* All Hedera Agents Toggle */}
-                      <label className="flex items-center space-x-2 cursor-pointer hover:bg-green-500/10 p-1.5 rounded transition-colors mb-2">
-                        <input
-                          type="checkbox"
-                          checked={agentFilters.allHederaAgents}
-                          onChange={() => handleFilterChange("allHederaAgents")}
-                          className="w-4 h-4 text-green-500 border-green-400 rounded focus:ring-green-500"
-                        />
-                        <span className="text-xs text-green-200 font-medium">
-                          All Hedera Agents
-                        </span>
-                      </label>
+                      {/* User-Based Filters */}
+                      <div className="grid grid-cols-2 gap-2 pt-1 border-t border-purple-500/20">
+                        <label className="flex items-center space-x-2 cursor-pointer hover:bg-blue-500/10 p-1.5 rounded transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={agentFilters.myAgents}
+                            onChange={() => handleFilterChange("myAgents")}
+                            className="w-4 h-4 text-blue-500 border-blue-400 rounded focus:ring-blue-500"
+                          />
+                          <span className="text-xs text-white">My agents</span>
+                        </label>
 
-                      {/* Individual Hedera Agent Types */}
-                      <div className="grid grid-cols-2 gap-1">
+                        <label className="flex items-center space-x-2 cursor-pointer hover:bg-green-500/10 p-1.5 rounded transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={agentFilters.myPaymentTerminals}
+                            onChange={() =>
+                              handleFilterChange("myPaymentTerminals")
+                            }
+                            className="w-4 h-4 text-green-500 border-green-400 rounded focus:ring-green-500"
+                          />
+                          <span className="text-xs text-white">
+                            My Payment terminals
+                          </span>
+                        </label>
+
+                        <label className="flex items-center space-x-2 cursor-pointer hover:bg-orange-500/10 p-1.5 rounded transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={agentFilters.allNonMyAgents}
+                            onChange={() =>
+                              handleFilterChange("allNonMyAgents")
+                            }
+                            className="w-4 h-4 text-orange-500 border-orange-400 rounded focus:ring-orange-500"
+                          />
+                          <span className="text-xs text-white">
+                            All non-my agents
+                          </span>
+                        </label>
+
+                        <label className="flex items-center space-x-2 cursor-pointer hover:bg-yellow-500/10 p-1.5 rounded transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={agentFilters.allPaymentTerminals}
+                            onChange={() =>
+                              handleFilterChange("allPaymentTerminals")
+                            }
+                            className="w-4 h-4 text-yellow-500 border-yellow-400 rounded focus:ring-yellow-500"
+                          />
+                          <span className="text-xs text-white">
+                            All Non-My Payment Terminals
+                          </span>
+                        </label>
+                      </div>
+
+                      {/* 🌐 Network Filter */}
+                      <div className="pt-2 border-t border-purple-500/20">
+                        <label className="flex flex-col space-y-1.5">
+                          <span className="text-xs text-purple-200 font-medium">
+                            🌐 Filter by Network
+                          </span>
+                          <select
+                            value={networkFilter}
+                            onChange={(e) => setNetworkFilter(e.target.value)}
+                            className="w-full px-2 py-1.5 text-xs bg-purple-900/30 border border-purple-500/30 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                          >
+                            <option value="all">All Networks</option>
+                            <optgroup label="🔮 Non-EVM Testnets">
+                              <option value="solana-devnet">
+                                Solana Devnet
+                              </option>
+                              <option value="296">Hedera Testnet (296)</option>
+                            </optgroup>
+                            <optgroup label="⛓️ EVM Testnets">
+                              <option value="11155111">
+                                Ethereum Sepolia (11155111)
+                              </option>
+                              <option value="11155420">
+                                Optimism Sepolia (11155420)
+                              </option>
+                              <option value="84532">
+                                Base Sepolia (84532)
+                              </option>
+                              <option value="421614">
+                                Arbitrum Sepolia (421614)
+                              </option>
+                              <option value="80002">
+                                Polygon Amoy (80002)
+                              </option>
+                            </optgroup>
+                          </select>
+                        </label>
+                      </div>
+
+                      {/* Individual Agent Types */}
+                      <div className="grid grid-cols-2 gap-1 pt-1 border-t border-purple-500/20 max-h-32 overflow-y-auto">
                         {[
-                          { key: "busAgent", label: "🚌 Bus", emoji: "🚌" },
-                          { key: "trainAgent", label: "🚆 Train", emoji: "🚆" },
-                          { key: "hotelAgent", label: "🏨 Hotel", emoji: "🏨" },
                           {
-                            key: "flightAgent",
-                            label: "✈️ Flight",
-                            emoji: "✈️",
+                            key: "intelligentAssistant",
+                            label: "Intelligent Assistant",
                           },
+                          { key: "localServices", label: "Local Services" },
+                          { key: "paymentTerminal", label: "Payment Terminal" },
+                          { key: "gameAgent", label: "Game Agent" },
+                          { key: "worldBuilder3D", label: "3D World Builder" },
+                          { key: "homeSecurity", label: "Virtual ATMs" },
+                          { key: "contentCreator", label: "Content Creator" },
                           {
-                            key: "restaurantAgent",
-                            label: "🍽️ Restaurant",
-                            emoji: "🍽️",
+                            key: "realEstateBroker",
+                            label: "Real Estate Broker",
                           },
+                          { key: "busStopAgent", label: "Bus Stop Agent" },
                           {
-                            key: "travelAgent",
-                            label: "🌍 Travel",
-                            emoji: "🌍",
+                            key: "trailingPaymentTerminal",
+                            label: "Trailing Payment Terminal",
                           },
+                          { key: "myGhost", label: "My Ghost" },
                         ].map((filter) => (
                           <label
                             key={filter.key}
-                            className="flex items-center space-x-1.5 cursor-pointer hover:bg-green-500/10 p-1 rounded transition-colors"
+                            className="flex items-center space-x-1.5 cursor-pointer hover:bg-purple-500/10 p-1 rounded transition-colors"
                           >
                             <input
                               type="checkbox"
                               checked={agentFilters[filter.key]}
                               onChange={() => handleFilterChange(filter.key)}
-                              className="w-3 h-3 text-green-500 border-green-400 rounded focus:ring-green-500"
+                              className="w-3 h-3 text-purple-500 border-purple-400 rounded focus:ring-purple-500"
                             />
-                            <span className="text-[10px] text-green-200">
+                            <span className="text-[10px] text-purple-200">
                               {filter.label}
                             </span>
                           </label>
                         ))}
                       </div>
+
+                      {/* 🆕 Hedera AI Agents Section */}
+                      <div className="pt-2 border-t border-green-500/30">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <span className="text-xs text-green-300 font-semibold">
+                            🌟 Hedera AI Agents
+                          </span>
+                        </div>
+
+                        {/* All Hedera Agents Toggle */}
+                        <label className="flex items-center space-x-2 cursor-pointer hover:bg-green-500/10 p-1.5 rounded transition-colors mb-2">
+                          <input
+                            type="checkbox"
+                            checked={agentFilters.allHederaAgents}
+                            onChange={() =>
+                              handleFilterChange("allHederaAgents")
+                            }
+                            className="w-4 h-4 text-green-500 border-green-400 rounded focus:ring-green-500"
+                          />
+                          <span className="text-xs text-green-200 font-medium">
+                            All Hedera Agents
+                          </span>
+                        </label>
+
+                        {/* Individual Hedera Agent Types */}
+                        <div className="grid grid-cols-2 gap-1">
+                          {[
+                            { key: "busAgent", label: "🚌 Bus", emoji: "🚌" },
+                            {
+                              key: "trainAgent",
+                              label: "🚆 Train",
+                              emoji: "🚆",
+                            },
+                            {
+                              key: "hotelAgent",
+                              label: "🏨 Hotel",
+                              emoji: "🏨",
+                            },
+                            {
+                              key: "flightAgent",
+                              label: "✈️ Flight",
+                              emoji: "✈️",
+                            },
+                            {
+                              key: "restaurantAgent",
+                              label: "🍽️ Restaurant",
+                              emoji: "🍽️",
+                            },
+                            {
+                              key: "travelAgent",
+                              label: "🌍 Travel",
+                              emoji: "🌍",
+                            },
+                          ].map((filter) => (
+                            <label
+                              key={filter.key}
+                              className="flex items-center space-x-1.5 cursor-pointer hover:bg-green-500/10 p-1 rounded transition-colors"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={agentFilters[filter.key]}
+                                onChange={() => handleFilterChange(filter.key)}
+                                className="w-3 h-3 text-green-500 border-green-400 rounded focus:ring-green-500"
+                              />
+                              <span className="text-[10px] text-green-200">
+                                {filter.label}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
 
             {/* AR View Container */}
             <div className="relative">

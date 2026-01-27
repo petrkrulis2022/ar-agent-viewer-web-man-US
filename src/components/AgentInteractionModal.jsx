@@ -246,7 +246,7 @@ const getServiceFeeDisplay = (agent, paymentAmount = null) => {
     interaction_fee_token: agent?.interaction_fee_token,
     allKeys: agent
       ? Object.keys(agent).filter(
-          (k) => k.includes("fee") || k.includes("amount")
+          (k) => k.includes("fee") || k.includes("amount"),
         )
       : [],
     TRACKING:
@@ -329,7 +329,7 @@ const getNetworkDisplay = (agent) => {
       : "N/A",
     allKeys: agent
       ? Object.keys(agent).filter(
-          (k) => k.includes("network") || k.includes("chain")
+          (k) => k.includes("network") || k.includes("chain"),
         )
       : [],
   });
@@ -362,7 +362,7 @@ const getNetworkDisplay = (agent) => {
       finalChainId: chainId,
       networkSource: networkSource,
       note: "Now using agent.network like agent card - includes Polygon Amoy support",
-    }
+    },
   ); // 🔧 CRITICAL: Database network names are WRONG - always use chain_id
   // Don't trust: agent?.deployment_network_name || agent?.network
   let network = "Unknown Network";
@@ -392,7 +392,7 @@ const getNetworkDisplay = (agent) => {
         agent: agent?.name,
         skipped_db_network: agent?.deployment_network_name,
         note: "Database network names are incorrect",
-      }
+      },
     );
   }
 
@@ -477,7 +477,7 @@ const getTokenContractDisplay = (agent) => {
           (k) =>
             k.includes("chain") ||
             k.includes("contract") ||
-            k.includes("network")
+            k.includes("network"),
         )
       : [],
   });
@@ -503,7 +503,7 @@ const getTokenContractDisplay = (agent) => {
         agentName: agent?.name,
         chainId: chainId,
         source: "fallback chain_id/deployment_chain_id",
-      }
+      },
     );
   }
 
@@ -511,7 +511,7 @@ const getTokenContractDisplay = (agent) => {
   if (agent?.token_address && agent.token_address.length > 10) {
     const display = `${agent.token_address.substring(
       0,
-      8
+      8,
     )}...${agent.token_address.substring(agent.token_address.length - 8)}`;
     console.log("✅ Using agent.token_address:", {
       display,
@@ -525,7 +525,7 @@ const getTokenContractDisplay = (agent) => {
   if (!chainId) {
     console.log(
       "⚠️ AgentInteractionModal: No chain ID found for agent:",
-      agent?.name
+      agent?.name,
     );
     return "Contract not available";
   }
@@ -535,7 +535,7 @@ const getTokenContractDisplay = (agent) => {
   if (usdcContract) {
     // Format: 0x1c7D4B...79C7238
     const display = `${usdcContract.substring(0, 8)}...${usdcContract.substring(
-      34
+      34,
     )}`;
     console.log("✅ AgentInteractionModal: Token contract display:", {
       display,
@@ -630,7 +630,7 @@ const AgentInteractionModal = ({
       // ✈️ Travel Agent with MCP - SERVER-SIDE x402 payment via backend
       console.log(
         "✈️ Travel Agent MCP query (server-side x402):",
-        inputMessage
+        inputMessage,
       );
 
       // Call backend API - agent pays x402 from its own wallet
@@ -656,7 +656,7 @@ const AgentInteractionModal = ({
                 '• "flights from BUD to BCN" (shows live flights today)\n' +
                 '• "flights from JFK to LAX" (current flights)\n' +
                 '• "flights from LHR to CDG"\n\n' +
-                "Note: I search for LIVE flights currently in the air or departing today."
+                "Note: I search for LIVE flights currently in the air or departing today.",
             );
           }
 
@@ -688,13 +688,13 @@ const AgentInteractionModal = ({
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(requestPayload),
-            }
+            },
           );
 
           if (!response.ok) {
             const errorText = await response.text();
             throw new Error(
-              `Backend API error: ${response.status} - ${errorText}`
+              `Backend API error: ${response.status} - ${errorText}`,
             );
           }
 
@@ -868,8 +868,8 @@ const AgentInteractionModal = ({
   if (!isOpen || !agent) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl max-h-[90vh] bg-slate-900 border-purple-500/30 text-white overflow-hidden">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-2">
+      <Card className="w-full max-w-5xl h-[98vh] bg-slate-900 border-purple-500/30 text-white overflow-hidden">
         <CardHeader className="bg-gradient-to-r from-purple-600 to-blue-600 p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -877,13 +877,16 @@ const AgentInteractionModal = ({
                 <Bot className="w-6 h-6 text-white" />
               </div>
               <div>
+                <div className="text-xs font-mono text-purple-100 mb-1 tracking-wider">
+                  SECURE PAYMENT TERMINAL
+                </div>
                 <CardTitle className="text-xl text-white">
                   {agent.name}
                 </CardTitle>
-                <CardDescription className="text-purple-100">
-                  {agent.agent_type || agent.object_type} •{" "}
-                  {agent.distance_meters?.toFixed(0)}m away
-                </CardDescription>
+                <div className="text-xs text-purple-100 font-mono">
+                  TERMINAL ID:{" "}
+                  {agent.id?.toString().substring(0, 8).toUpperCase() || "XXXX"}
+                </div>
               </div>
             </div>
             <div className="flex items-center space-x-2">
@@ -960,7 +963,7 @@ const AgentInteractionModal = ({
           })}
         </div>
 
-        <CardContent className="p-0 h-96 overflow-hidden">
+        <CardContent className="p-0 flex-1 overflow-hidden">
           {activeTab === "chat" && (
             <div className="h-full flex flex-col">
               {/* Messages */}
@@ -1119,73 +1122,138 @@ const AgentInteractionModal = ({
           )}
 
           {activeTab === "payment" && (
-            <div className="h-full flex flex-col items-center justify-center p-8">
-              <div className="text-center space-y-6 max-w-sm">
-                <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
-                  <Wallet className="w-12 h-12 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-white mb-2">
-                    Agent Payment
-                  </h3>
-                  <p className="text-slate-400 mb-4">
-                    Pay for premium interactions with {agent.name}
-                  </p>
-                  <div className="bg-slate-800 rounded-lg p-4 mb-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-slate-400">Service Fee:</span>
-                      <span className="text-white font-semibold">
+            <div className="h-full flex flex-col bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
+              {/* Main Terminal Display */}
+              <div className="h-full px-4 py-2 flex flex-col">
+                <div className="flex-shrink-0">
+                  {/* Amount Display - Digital Style */}
+                  <div className="bg-black/60 border-2 border-cyan-400/40 rounded-lg p-2 mb-1.5 shadow-inner shadow-cyan-500/20">
+                    <div className="text-center">
+                      <div className="text-[10px] font-mono text-cyan-400 tracking-widest">
+                        AMOUNT DUE
+                      </div>
+                      <div className="text-2xl font-bold text-cyan-300 font-mono tracking-wider drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]">
                         {getServiceFeeDisplay(agent, paymentAmount)}
-                      </span>
+                      </div>
+                      <div className="text-[10px] text-cyan-400/70 font-mono">
+                        SERVICE FEE
+                      </div>
                     </div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-slate-400">Network:</span>
-                      <span className="text-purple-400">
-                        {getNetworkDisplay(agent)}
-                      </span>
+                  </div>
+
+                  {/* Transaction Details - LCD Style */}
+                  <div className="bg-gradient-to-b from-slate-900 to-slate-800 border border-slate-700 rounded-lg p-2 mb-1.5 shadow-lg">
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-center p-2 bg-black/30 rounded">
+                        <span className="text-xs font-mono text-slate-400 uppercase tracking-wide">
+                          Network:
+                        </span>
+                        <span className="text-sm font-mono text-emerald-400 font-semibold">
+                          {getNetworkDisplay(agent)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 bg-black/30 rounded">
+                        <span className="text-xs font-mono text-slate-400 uppercase tracking-wide">
+                          Wallet:
+                        </span>
+                        <span
+                          className="text-sm font-mono text-blue-400 font-semibold"
+                          title={getAgentWalletAddress(agent)}
+                        >
+                          {formatWalletAddress(getAgentWalletAddress(agent))}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 bg-black/30 rounded">
+                        <span className="text-xs font-mono text-slate-400 uppercase tracking-wide">
+                          Token:
+                        </span>
+                        <span className="text-sm font-mono text-green-400 font-semibold">
+                          {getTokenContractDisplay(agent)}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-slate-400">Receiving Wallet:</span>
-                      <span
-                        className="text-blue-400 font-mono text-sm"
-                        title={getAgentWalletAddress(agent)}
-                      >
-                        {formatWalletAddress(getAgentWalletAddress(agent))}
-                      </span>
+                  </div>
+
+                  {/* Terminal Status Footer */}
+                  <div className="flex justify-center items-center space-x-3 text-[10px] font-mono text-slate-500 py-1 mb-1.5">
+                    <div className="flex items-center space-x-1">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <span>ONLINE</span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-400">Token Contract:</span>
-                      <span className="text-green-400 font-mono text-sm">
-                        {getTokenContractDisplay(agent)}
-                      </span>
+                    <span>•</span>
+                    <span>SECURE CONNECTION</span>
+                    <span>•</span>
+                    <div className="flex items-center space-x-1">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <span>ENCRYPTED</span>
                     </div>
                   </div>
                 </div>
-                <div className="space-y-3">
-                  <Button
+
+                {/* Spacer to push buttons to bottom */}
+                <div className="flex-1 min-h-0"></div>
+
+                {/* Touch Action Buttons - 4 Buttons in 2x2 Grid at Bottom */}
+                <div className="grid grid-cols-2 gap-2 flex-shrink-0 pb-2">
+                  {/* Generate Payment QR Button */}
+                  <button
                     onClick={handlePayment}
-                    className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+                    className="group relative overflow-hidden bg-gradient-to-br from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold py-5 px-4 rounded-xl border-2 border-green-400/50 shadow-xl hover:shadow-2xl shadow-green-500/30 transition-all duration-200 hover:scale-105 active:scale-95 border-b-4 border-b-emerald-700"
                   >
-                    <QrCode className="w-4 h-4 mr-2" />
-                    Generate Payment
-                  </Button>
-                  {onQRScan && (
-                    <Button
-                      onClick={handleQRScan}
-                      variant="outline"
-                      className="w-full border-green-600 text-green-400 hover:bg-green-500/20 hover:border-green-500"
-                    >
-                      <QrCode className="w-4 h-4 mr-2" />
-                      Scan QR to Pay
-                    </Button>
-                  )}
-                  <Button
-                    variant="outline"
-                    className="w-full border-slate-600 text-slate-300 hover:bg-slate-800"
+                    <div className="relative z-10 flex flex-col items-center justify-center space-y-1">
+                      <QrCode className="w-7 h-7" />
+                      <span className="text-xs tracking-wide uppercase leading-tight text-center font-bold">
+                        Generate QR
+                      </span>
+                    </div>
+                    <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-200"></div>
+                    <div className="absolute top-1 right-1 w-2 h-2 bg-white/40 rounded-full blur-sm"></div>
+                  </button>
+
+                  {/* Scan QR to Pay Button */}
+                  <button
+                    onClick={onQRScan || handlePayment}
+                    className="group relative overflow-hidden bg-gradient-to-br from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white font-bold py-5 px-4 rounded-xl border-2 border-blue-400/50 shadow-xl hover:shadow-2xl shadow-blue-500/30 transition-all duration-200 hover:scale-105 active:scale-95 border-b-4 border-b-indigo-700"
                   >
-                    <Wallet className="w-4 h-4 mr-2" />
-                    Connect Wallet
-                  </Button>
+                    <div className="relative z-10 flex flex-col items-center justify-center space-y-1">
+                      <QrCode className="w-7 h-7" />
+                      <span className="text-xs tracking-wide uppercase leading-tight text-center font-bold">
+                        Scan QR
+                      </span>
+                    </div>
+                    <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-200"></div>
+                    <div className="absolute top-1 right-1 w-2 h-2 bg-white/40 rounded-full blur-sm"></div>
+                  </button>
+
+                  {/* XXX Button */}
+                  <button
+                    onClick={() => console.log("XXX action")}
+                    className="group relative overflow-hidden bg-gradient-to-br from-purple-500 to-violet-600 hover:from-purple-400 hover:to-violet-500 text-white font-bold py-5 px-4 rounded-xl border-2 border-purple-400/50 shadow-xl hover:shadow-2xl shadow-purple-500/30 transition-all duration-200 hover:scale-105 active:scale-95 border-b-4 border-b-violet-700"
+                  >
+                    <div className="relative z-10 flex flex-col items-center justify-center space-y-1">
+                      <Wallet className="w-7 h-7" />
+                      <span className="text-xs tracking-wide uppercase leading-tight text-center font-bold">
+                        XXX
+                      </span>
+                    </div>
+                    <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-200"></div>
+                    <div className="absolute top-1 right-1 w-2 h-2 bg-white/40 rounded-full blur-sm"></div>
+                  </button>
+
+                  {/* YYY Button */}
+                  <button
+                    onClick={() => console.log("YYY action")}
+                    className="group relative overflow-hidden bg-gradient-to-br from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500 text-white font-bold py-5 px-4 rounded-xl border-2 border-orange-400/50 shadow-xl hover:shadow-2xl shadow-orange-500/30 transition-all duration-200 hover:scale-105 active:scale-95 border-b-4 border-b-red-700"
+                  >
+                    <div className="relative z-10 flex flex-col items-center justify-center space-y-1">
+                      <Bot className="w-7 h-7" />
+                      <span className="text-xs tracking-wide uppercase leading-tight text-center font-bold">
+                        YYY
+                      </span>
+                    </div>
+                    <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-200"></div>
+                    <div className="absolute top-1 right-1 w-2 h-2 bg-white/40 rounded-full blur-sm"></div>
+                  </button>
                 </div>
               </div>
             </div>
