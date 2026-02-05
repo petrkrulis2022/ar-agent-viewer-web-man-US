@@ -27,8 +27,11 @@ const CardWithdrawalModal = ({
   const [amount, setAmount] = useState("");
   const [processing, setProcessing] = useState(false);
 
-  // Mock balance from config
-  const mockBalance = displayConfig?.mock_balance_eur || 2450.67;
+  // Mock balance from config (USD currency)
+  const mockBalance =
+    displayConfig?.mock_balance_usd ||
+    displayConfig?.mock_balance_eur ||
+    2450.67;
 
   // Step 1: Bank Selection
   const renderBankSelection = () => (
@@ -134,10 +137,10 @@ const CardWithdrawalModal = ({
           Available Balance
         </div>
         <div style={{ fontSize: "48px", fontWeight: "bold" }}>
-          €{mockBalance.toFixed(2)}
+          ${mockBalance.toFixed(2)}
         </div>
         <div style={{ fontSize: "13px", opacity: 0.8, marginTop: "8px" }}>
-          Revolut EUR Account
+          Revolut USD Account
         </div>
       </div>
 
@@ -195,7 +198,7 @@ const CardWithdrawalModal = ({
                 fontWeight: "bold",
               }}
             >
-              €
+              $
             </span>
             <input
               type="number"
@@ -224,7 +227,7 @@ const CardWithdrawalModal = ({
               color: parsedAmount > mockBalance ? "#ef4444" : "#666",
             }}
           >
-            Available: €{mockBalance.toFixed(2)}
+            Available: ${mockBalance.toFixed(2)}
           </div>
         </div>
 
@@ -255,7 +258,7 @@ const CardWithdrawalModal = ({
                 e.currentTarget.style.color = "#0066ff";
               }}
             >
-              €{quickAmount}
+              ${quickAmount}
             </button>
           ))}
         </div>
@@ -319,7 +322,7 @@ const CardWithdrawalModal = ({
             <div
               style={{ fontSize: "32px", fontWeight: "bold", color: "#1a1a1a" }}
             >
-              €{parsedAmount.toFixed(2)}
+              ${parsedAmount.toFixed(2)}
             </div>
           </div>
 
@@ -339,7 +342,7 @@ const CardWithdrawalModal = ({
                   color: "#1a1a1a",
                 }}
               >
-                Revolut EUR
+                Revolut USD
               </span>
             </div>
             <div
@@ -357,7 +360,7 @@ const CardWithdrawalModal = ({
                   color: "#10b981",
                 }}
               >
-                €0.00
+                $0.00
               </span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -507,7 +510,7 @@ const CardWithdrawalModal = ({
             >
               <span style={{ color: "#666" }}>Amount</span>
               <span style={{ fontWeight: "bold", color: "#1a1a1a" }}>
-                €{parsedAmount.toFixed(2)}
+                ${parsedAmount.toFixed(2)}
               </span>
             </div>
             <div

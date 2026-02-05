@@ -31,6 +31,8 @@ import {
 } from "../services/evmNetworkService";
 import { x402MCPService } from "../services/x402MCPService";
 import { hederaWalletService } from "../services/hederaWalletService";
+import ARTMDisplayModal from "./ARTMDisplayModal";
+import { isVirtualTerminal } from "../utils/agentTypeMapping";
 
 /**
  * Extract date from natural language in user message
@@ -866,6 +868,12 @@ const AgentInteractionModal = ({
   };
 
   if (!isOpen || !agent) return null;
+
+  // Check if this is a Virtual Terminal (ARTM) agent
+  if (isVirtualTerminal(agent.agent_type)) {
+    console.log("🏧 ARTM agent detected - opening ARTMDisplayModal");
+    return <ARTMDisplayModal agent={agent} onClose={onClose} />;
+  }
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-2">
