@@ -41,6 +41,7 @@ import {
   normalizeAgentType,
   getAgentTypeLabel,
   isPaymentAgent,
+  isVirtualTerminal,
   isHederaAgent,
   getAgentTypeBadgeColor,
 } from "../utils/agentTypeMapping";
@@ -92,7 +93,7 @@ const ARViewer = () => {
     paymentTerminal: false,
     gameAgent: false,
     worldBuilder3D: false,
-    homeSecurity: false,
+    virtualTerminal: false,
     contentCreator: false,
     realEstateBroker: false,
     busStopAgent: false,
@@ -149,8 +150,8 @@ const ARViewer = () => {
           console.log("🌐 Filter set to: All Non-My Payment Terminals");
           break;
         case "virtualATMs":
-          newFilters.homeSecurity = true; // Virtual ATMs use home_security type
-          console.log("🏧 Filter set to: Virtual ATMs (home_security)");
+          newFilters.virtualTerminal = true; // ARTM Virtual Terminals
+          console.log("🏧 Filter set to: ARTM Virtual Terminals");
           break;
         default:
           console.log("⚠️ Unknown filter parameter:", filterParam);
@@ -698,8 +699,15 @@ const ARViewer = () => {
           agent.deployer_address;
 
         // Normalize agent type using the new mapping utility
+        // Handle string "null", actual null, and convert legacy home_security to virtual_terminal
         const agentType = normalizeAgentType(
-          agent.agent_type || agent.object_type,
+          agent.agent_type &&
+            agent.agent_type !== "null" &&
+            agent.agent_type !== null
+            ? agent.agent_type
+            : agent.object_type === "home_security"
+            ? "virtual_terminal"
+            : agent.object_type,
         );
 
         // ⚠️ IMPORTANT: Solana addresses are case-sensitive (base58)
@@ -729,6 +737,7 @@ const ARViewer = () => {
 
         // Payment terminal filters using new utility functions
         const isAnyPaymentTerminal = isPaymentAgent(agentType);
+        const isVirtualTerminalType = isVirtualTerminal(agentType);
 
         // Check for "All Hedera Agents" filter FIRST (before payment terminal filters)
         const isHederaAgentType = isHederaAgent(agentType);
@@ -743,7 +752,8 @@ const ARViewer = () => {
         }
 
         if (filters.allPaymentTerminals) {
-          return !isMyAgent && isAnyPaymentTerminal;
+          // Show payment terminals but EXCLUDE Virtual Terminals (they have their own ARTM system)
+          return !isMyAgent && isAnyPaymentTerminal && !isVirtualTerminalType;
         }
 
         // Individual type filters - now using normalized values
@@ -753,7 +763,7 @@ const ARViewer = () => {
           { key: "paymentTerminal", value: "payment_terminal" },
           { key: "gameAgent", value: "game_agent" },
           { key: "worldBuilder3D", value: "3d_world_builder" },
-          { key: "homeSecurity", value: "home_security" },
+          { key: "virtualTerminal", value: "virtual_terminal" },
           { key: "contentCreator", value: "content_creator" },
           { key: "realEstateBroker", value: "real_estate_broker" },
           { key: "busStopAgent", value: "bus_stop_agent" },
@@ -761,14 +771,14 @@ const ARViewer = () => {
             key: "trailingPaymentTerminal",
             value: "trailing_payment_terminal",
           },
-          { key: "myGhost", value: "my ghost" },
+          { key: "myGhost", value: "my_ghost" },
           // 🆕 Hedera AI Agent Types
-          { key: "busAgent", value: "bus agent" },
-          { key: "trainAgent", value: "train agent" },
-          { key: "hotelAgent", value: "hotel agent" },
-          { key: "flightAgent", value: "flight agent" },
-          { key: "restaurantAgent", value: "restaurant agent" },
-          { key: "travelAgent", value: "travel agent" },
+          { key: "busAgent", value: "bus_agent" },
+          { key: "trainAgent", value: "train_agent" },
+          { key: "hotelAgent", value: "hotel_agent" },
+          { key: "flightAgent", value: "flight_agent" },
+          { key: "restaurantAgent", value: "restaurant_agent" },
+          { key: "travelAgent", value: "travel_agent" },
         ];
 
         // Check if any type filter is active
@@ -780,7 +790,28 @@ const ARViewer = () => {
         }
 
         // Check if agent matches any active type filter
-        return typeFilters.some((f) => filters[f.key] && agentType === f.value);
+        const matchesFilter = typeFilters.some((f) => {
+          if (filters[f.key]) {
+            const matches = agentType === f.value;
+            // Debug Virtual Terminal specifically
+            if (
+              f.key === "virtualTerminal" ||
+              agentType === "virtual_terminal"
+            ) {
+              console.log("🏧 Virtual Terminal Filter Check:", {
+                agentName: agent.name,
+                rawAgentType: agent.agent_type,
+                normalizedAgentType: agentType,
+                filterValue: f.value,
+                filterActive: filters[f.key],
+                matches: matches,
+              });
+            }
+            return matches;
+          }
+          return false;
+        });
+        return matchesFilter;
       });
     }
 
@@ -1521,7 +1552,7 @@ const ARViewer = () => {
                           { key: "paymentTerminal", label: "Payment Terminal" },
                           { key: "gameAgent", label: "Game Agent" },
                           { key: "worldBuilder3D", label: "3D World Builder" },
-                          { key: "homeSecurity", label: "Virtual ATMs" },
+                          { key: "virtualTerminal", label: "Virtual Terminal" },
                           { key: "contentCreator", label: "Content Creator" },
                           {
                             key: "realEstateBroker",
@@ -1663,6 +1694,8 @@ const ARViewer = () => {
                           "🔍 ALL agents before filter:",
                           allFiltered.map((a) => ({
                             name: a.name,
+                            agent_type: a.agent_type,
+                            object_type: a.object_type,
                             positioning_mode: a.positioning_mode,
                             positioning_mode_type: typeof a.positioning_mode,
                             screen_position_x: a.screen_position_x,

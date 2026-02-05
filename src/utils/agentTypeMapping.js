@@ -10,7 +10,8 @@ export const AGENT_TYPE_LABELS = {
   // Payment-focused agents (top priority)
   content_creator: "My Payment Terminal",
   payment_terminal: "Payment Terminal - POS",
-  home_security: "Virtual ATM",
+  virtual_terminal: "Virtual Terminal (ARTM)",
+  trailing_payment_terminal: "Trailing Payment Terminal",
 
   // Standard agent types
   intelligent_assistant: "Intelligent Assistant",
@@ -121,9 +122,18 @@ export const isPaymentAgent = (type) => {
   return [
     "content_creator",
     "payment_terminal",
-    "home_security",
     "trailing_payment_terminal",
   ].includes(normalized);
+};
+
+/**
+ * Check if agent type is a Virtual Terminal (ARTM)
+ * @param {string} type - Agent type (value or label)
+ * @returns {boolean}
+ */
+export const isVirtualTerminal = (type) => {
+  const normalized = normalizeAgentType(type);
+  return normalized === "virtual_terminal";
 };
 
 /**
@@ -176,7 +186,7 @@ export const getAgentTypeIcon = (type) => {
   const iconMap = {
     content_creator: "💳",
     payment_terminal: "🏪",
-    home_security: "🏧",
+    virtual_terminal: "🏧",
     trailing_payment_terminal: "📱",
     intelligent_assistant: "🤖",
     local_services: "🏘️",
@@ -207,7 +217,14 @@ export const getAgentTypeKeywords = (type) => {
   const keywordMap = {
     content_creator: ["my", "payment", "terminal", "personal", "wallet"],
     payment_terminal: ["payment", "terminal", "pos", "point", "sale"],
-    home_security: ["virtual", "atm", "cash", "withdrawal", "automated"],
+    virtual_terminal: [
+      "artm",
+      "atm",
+      "cash",
+      "withdrawal",
+      "terminal",
+      "revolut",
+    ],
     intelligent_assistant: ["ai", "assistant", "help", "intelligent"],
     local_services: ["local", "services", "neighborhood", "community"],
     game_agent: ["game", "gaming", "play", "entertainment"],

@@ -47,10 +47,20 @@ const PaymentTerminalPOSModel = ({ hovered }) => {
   );
 };
 
-const VirtualATMModel = ({ hovered }) => {
+const VirtualATMModel = ({
+  hovered,
+  scale = 0.4,
+  position = [0, 0, 0],
+  rotation = [0, 0, 0],
+}) => {
   const { scene } = useGLTF("/models/terminals/atm_6_mb.glb");
   return (
-    <primitive object={scene.clone()} scale={0.15} position={[0, -5.0, 0]} />
+    <primitive
+      object={scene.clone()}
+      scale={scale}
+      position={position}
+      rotation={rotation}
+    />
   );
 };
 
@@ -206,7 +216,7 @@ const Enhanced3DAgent = ({
       my_ghost: "#9370db", // Medium purple
       game_agent: "#9370db", // Medium purple
       world_builder_3d: "#00ced1", // Dark turquoise
-      home_security: "#dc143c", // Crimson
+      virtual_terminal: "#0066ff", // Blue for ARTM
       content_creator: "#ff1493", // Deep pink
       real_estate_broker: "#32cd32", // Lime green
       bus_stop_agent: "#00ff00", // Pure green
@@ -225,7 +235,8 @@ const Enhanced3DAgent = ({
       "Game Agent": "#9370db", // Medium purple
       "Bus Stop Agent": "#00ff00", // Pure green
       "Study Buddy": "#ffd700", // Gold
-      "Home Security": "#dc143c", // Crimson
+      "Virtual Terminal": "#0066ff", // Blue for ARTM
+      "Virtual Terminal (ARTM)": "#0066ff", // Blue for ARTM
       "Real Estate Broker": "#32cd32", // Lime green
       "Payment Terminal": "#ffa500", // Orange
       "World Builder 3D": "#00ced1", // Dark turquoise
@@ -337,20 +348,82 @@ const Enhanced3DAgent = ({
       agent.object_type === "payment_terminal" ||
       agent.object_type === "trailing_payment_terminal";
 
-    // Virtual ATM (home_security) - uses atm_6_mb.glb
-    const isVirtualATM =
-      agent.agent_type === "home_security" ||
-      agent.agent_type === "Home Security" ||
-      agent.agent_type === "Virtual ATM" ||
-      agent.object_type === "home_security";
+    // Virtual Terminal (ARTM) - uses atm_6_mb.glb
+    const isVirtualTerminal =
+      agent.agent_type === "Virtual Terminal" ||
+      agent.agent_type === "virtual_terminal" ||
+      agent.agent_type === "Virtual Terminal (ARTM)" ||
+      agent.object_type === "virtual_terminal";
 
     console.log(`Model assignment check:`, {
       agent_type: agent.agent_type,
       object_type: agent.object_type,
       isMyPaymentTerminal,
       isPaymentTerminalPOS,
-      isVirtualATM,
+      isVirtualTerminal,
     });
+
+    // Virtual Terminal (ARTM) - uses atm_6_mb.glb
+    if (isVirtualTerminal) {
+      return (
+        <group ref={meshRef}>
+          <Suspense
+            fallback={
+              <mesh>
+                <boxGeometry args={[0.5, 0.8, 0.3]} />
+                <meshStandardMaterial
+                  color="#0066ff"
+                  emissive="#0066ff"
+                  emissiveIntensity={0.5}
+                />
+              </mesh>
+            }
+          >
+            <VirtualATMModel
+              hovered={hovered}
+              scale={0.6}
+              position={[0, -0.5, 0]}
+              rotation={[0, 0, 0]}
+            />
+          </Suspense>
+
+          {/* Strong ambient lighting for full visibility */}
+          <ambientLight intensity={1.0} />
+          <directionalLight position={[0, 2, 2]} intensity={1.5} castShadow />
+          <pointLight
+            position={[0, 1, 1]}
+            color="#0066ff"
+            intensity={hovered ? 1.5 : 0.8}
+            distance={4}
+          />
+
+          {/* Virtual Terminal glow effect */}
+          {hovered &&
+            [...Array(12)].map((_, i) => {
+              const angle =
+                (i / 12) * Math.PI * 2 + animationTime.current * 1.5;
+              const radius = 1.8;
+              return (
+                <Sphere
+                  key={i}
+                  args={[0.06]}
+                  position={[
+                    Math.cos(angle) * radius,
+                    Math.sin(animationTime.current * 2 + i) * 0.4,
+                    Math.sin(angle) * radius,
+                  ]}
+                >
+                  <meshStandardMaterial
+                    color="#0066ff"
+                    emissive="#0066ff"
+                    emissiveIntensity={2}
+                  />
+                </Sphere>
+              );
+            })}
+        </group>
+      );
+    }
 
     // My Payment Terminal (content_creator) - uses my_personal_terminal.glb
     if (isMyPaymentTerminal) {

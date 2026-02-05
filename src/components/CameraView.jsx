@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import ARAgentOverlay from "./ARAgentOverlay";
 import AgentInteractionModal from "./AgentInteractionModal";
+import ARTMDisplayModal from "./ARTMDisplayModal";
 import CubePaymentEngine from "./CubePaymentEngine";
 import QRScannerOverlay from "./QRScannerOverlay";
 import ARQRViewer from "./ARQRViewer";
@@ -965,15 +966,19 @@ const CameraView = forwardRef(
           </CardContent>
         </Card>
 
-        {/* Agent Interaction Modal */}
-        <AgentInteractionModal
-          agent={selectedAgent}
-          isOpen={showAgentModal}
-          onClose={closeModals}
-          onPayment={handlePaymentRequest}
-          onQRScan={handleQRScanRequest}
-          isPaid={selectedAgent ? paidAgents.has(selectedAgent.id) : false} // 🔓 Pass paid status
-        />
+        {/* Agent Interaction Modal - Bypass for Virtual Terminals */}
+        {selectedAgent?.agent_type === "Virtual Terminal" ? (
+          <ARTMDisplayModal agent={selectedAgent} onClose={closeModals} />
+        ) : (
+          <AgentInteractionModal
+            agent={selectedAgent}
+            isOpen={showAgentModal}
+            onClose={closeModals}
+            onPayment={handlePaymentRequest}
+            onQRScan={handleQRScanRequest}
+            isPaid={selectedAgent ? paidAgents.has(selectedAgent.id) : false} // 🔓 Pass paid status
+          />
+        )}
 
         {/* Payment QR Modal - Legacy (being phased out) */}
         <EnhancedPaymentQRModal
