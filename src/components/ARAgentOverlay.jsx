@@ -72,17 +72,54 @@ const ARAgentOverlay = ({
     return colors[agentType] || "from-blue-500 to-purple-500";
   };
 
-  // Calculate agent position on screen based on GPS coordinates
+  // Calculate agent position on screen based on GPS coordinates OR screen percentage
   const calculateAgentPosition = (agent, userLoc) => {
     const index = agents.indexOf(agent);
     const totalAgents = agents.length;
+
+    // ===== DEBUG: Log agent data =====
+    console.log(`🔍 Processing agent: ${agent.name}`, {
+      positioning_mode: agent.positioning_mode,
+      screen_position_x: agent.screen_position_x,
+      screen_position_y: agent.screen_position_y,
+      has_lat: !!agent.latitude,
+      has_lng: !!agent.longitude,
+    });
+
+    // ===== NEW: Screen-based positioning mode =====
+    if (
+      agent.positioning_mode === "screen" &&
+      agent.screen_position_x != null &&
+      agent.screen_position_y != null
+    ) {
+      console.log(
+        `📺 Screen-positioned agent: ${
+          agent.name
+        } at (${agent.screen_position_x.toFixed(
+          1,
+        )}%, ${agent.screen_position_y.toFixed(1)}%)`,
+      );
+
+      return {
+        x: agent.screen_position_x,
+        y: agent.screen_position_y,
+        distance: 0, // Screen agents have no real-world distance
+        strategy: "screen-percentage",
+        isScreenMode: true,
+        debugInfo: `Screen: (${agent.screen_position_x.toFixed(
+          1,
+        )}%, ${agent.screen_position_y.toFixed(1)}%)`,
+      };
+    }
+
+    // ===== EXISTING: GPS-based positioning =====
 
     if (!userLoc || !agent.latitude || !agent.longitude) {
       // Enhanced distributed positioning for better coverage
       console.log(
         `🎯 Using fallback positioning for agent ${index + 1}/${totalAgents}: ${
           agent.name
-        }`
+        }`,
       );
 
       // Use circular distribution for better spread
@@ -107,11 +144,12 @@ const ARAgentOverlay = ({
         distance: agent.distance_meters || 50 + (index % 10) * 20, // Vary distances
         angle: angle * (180 / Math.PI), // Store angle for debugging
         strategy: "fallback-circular",
+        isScreenMode: false,
         debugInfo: `Agent ${index + 1}/${totalAgents}: angle=${(
           (angle * 180) /
           Math.PI
         ).toFixed(1)}°, radius=${radius}%, basePos=(${baseX.toFixed(
-          1
+          1,
         )}, ${baseY.toFixed(1)})`,
       };
     }
@@ -122,13 +160,13 @@ const ARAgentOverlay = ({
 
     // Calculate actual distance first
     const distanceKm = Math.sqrt(
-      Math.pow(latDiff * 111000, 2) + Math.pow(lonDiff * 111000, 2)
+      Math.pow(latDiff * 111000, 2) + Math.pow(lonDiff * 111000, 2),
     );
 
     console.log(
       `📡 GPS positioning for ${agent.name}: distance=${distanceKm.toFixed(
-        0
-      )}m, lat=${latDiff.toFixed(6)}, lon=${lonDiff.toFixed(6)}`
+        0,
+      )}m, lat=${latDiff.toFixed(6)}, lon=${lonDiff.toFixed(6)}`,
     );
 
     // Use a much smaller scale factor and normalize the distance
@@ -154,8 +192,8 @@ const ARAgentOverlay = ({
 
     console.log(
       `📍 Final position for ${agent.name}: (${x.toFixed(1)}%, ${y.toFixed(
-        1
-      )}%)`
+        1,
+      )}%)`,
     );
 
     return {
@@ -165,10 +203,11 @@ const ARAgentOverlay = ({
       bearing: bearing * (180 / Math.PI),
       normalizedDistance,
       strategy: "gps-based",
+      isScreenMode: false,
       debugInfo: `GPS: bearing=${((bearing * 180) / Math.PI).toFixed(
-        1
+        1,
       )}°, dist=${distanceKm.toFixed(0)}m, display=(${x.toFixed(
-        1
+        1,
       )}, ${y.toFixed(1)})`,
     };
   };
@@ -190,8 +229,8 @@ const ARAgentOverlay = ({
         `🎯 Agent ${index + 1}: ${
           agent.name
         } -> Position: (${position.x.toFixed(1)}%, ${position.y.toFixed(
-          1
-        )}%) Distance: ${position.distance.toFixed(0)}m`
+          1,
+        )}%) Distance: ${position.distance.toFixed(0)}m`,
       );
 
       return {
@@ -202,12 +241,12 @@ const ARAgentOverlay = ({
 
     console.log(
       "🎯 All agents with positions calculated:",
-      agentsWithPositions.length
+      agentsWithPositions.length,
     );
 
     // Sort by distance (closest first) but keep all agents within reasonable range
     agentsWithPositions.sort(
-      (a, b) => a.position.distance - b.position.distance
+      (a, b) => a.position.distance - b.position.distance,
     );
 
     // Show more agents and ensure better distribution
@@ -215,7 +254,7 @@ const ARAgentOverlay = ({
     const limitedAgents = agentsWithPositions.slice(0, maxVisibleAgents);
 
     console.log(
-      `👁️ Setting ${limitedAgents.length} visible agents out of ${agents.length} total`
+      `👁️ Setting ${limitedAgents.length} visible agents out of ${agents.length} total`,
     );
     console.log(
       "� Visible agents summary:",
@@ -223,7 +262,7 @@ const ARAgentOverlay = ({
         name: a.name,
         position: `(${a.position.x.toFixed(1)}%, ${a.position.y.toFixed(1)}%)`,
         distance: `${a.position.distance.toFixed(0)}m`,
-      }))
+      })),
     );
 
     setVisibleAgents(limitedAgents);
@@ -240,7 +279,7 @@ const ARAgentOverlay = ({
     <div className="absolute inset-0 pointer-events-none">
       {visibleAgents.map((agent, index) => {
         const IconComponent = getAgentIcon(
-          agent.agent_type || agent.object_type
+          agent.agent_type || agent.object_type,
         );
         const colorClass = getAgentColor(agent.agent_type || agent.object_type);
 
@@ -274,9 +313,29 @@ const ARAgentOverlay = ({
               {/* Distance Badge */}
               <div className="absolute -top-2 -right-2">
                 <Badge className="bg-black/70 text-white text-xs px-1 py-0.5">
-                  {agent.position.distance < 1000
+                  {agent.position.isScreenMode
+                    ? "📺"
+                    : agent.position.distance < 1000
                     ? `${Math.round(agent.position.distance)}m`
                     : `${(agent.position.distance / 1000).toFixed(1)}km`}
+                </Badge>
+              </div>
+
+              {/* Positioning Mode Badge */}
+              <div className="absolute -top-2 -left-2">
+                <Badge
+                  className={`text-xs px-1 py-0.5 ${
+                    agent.position.isScreenMode
+                      ? "bg-blue-500/80 text-white"
+                      : "bg-green-500/80 text-white"
+                  }`}
+                  title={
+                    agent.position.isScreenMode
+                      ? "Screen-positioned agent"
+                      : "GPS-positioned agent"
+                  }
+                >
+                  {agent.position.isScreenMode ? "📺" : "🌍"}
                 </Badge>
               </div>
 
@@ -293,6 +352,21 @@ const ARAgentOverlay = ({
                     <p className="text-slate-300 text-xs mb-3 line-clamp-2">
                       {agent.description}
                     </p>
+
+                    {/* Positioning Mode Info */}
+                    <div className="mb-2 flex items-center justify-center space-x-1">
+                      <Badge
+                        className={`text-xs ${
+                          agent.position.isScreenMode
+                            ? "bg-blue-500/80"
+                            : "bg-green-500/80"
+                        }`}
+                      >
+                        {agent.position.isScreenMode
+                          ? "📺 Screen Position"
+                          : "🌍 GPS Position"}
+                      </Badge>
+                    </div>
 
                     <div className="flex items-center justify-center space-x-4 text-xs">
                       <div className="flex items-center space-x-1 text-green-400">

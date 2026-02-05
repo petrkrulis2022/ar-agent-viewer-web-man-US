@@ -16,6 +16,8 @@ export default defineConfig({
       stream: "stream-browserify",
       util: "util",
       path: "path-browserify",
+      // Compatibility shim for thirdweb (needs ethers v5 APIs)
+      "ethers/lib/utils": path.resolve(__dirname, "./ethers-v5-shim.js"),
     },
   },
   define: {
@@ -45,7 +47,7 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
+    port: 5176,
     strictPort: true,
     host: true,
     allowedHosts: [
@@ -60,6 +62,7 @@ export default defineConfig({
         "http://localhost:5174",
         "https://ce9c2121aa0a.ngrok-free.app",
         "https://jair-unrenunciatory-pseudozealously.ngrok-free.app",
+        "https://jair-unrenunciatory-pseudozealously.ngrok-free.dev",
       ],
       credentials: true,
     },

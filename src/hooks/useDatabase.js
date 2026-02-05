@@ -176,10 +176,10 @@ const generateMockObjects = (location) => {
   }
 
   console.log(
-    `✅ Generated ${mockObjects.length} enhanced mock agent objects with REALISTIC PAYMENT DATA`
+    `✅ Generated ${mockObjects.length} enhanced mock agent objects with REALISTIC PAYMENT DATA`,
   );
   console.log(
-    "🚨 MOCK DATA DEBUG: Using mock data with proper payment fields!"
+    "🚨 MOCK DATA DEBUG: Using mock data with proper payment fields!",
   );
   console.log(
     "📊 Mock Agent payment data sample:",
@@ -189,7 +189,7 @@ const generateMockObjects = (location) => {
       deployment_network_name: a.deployment_network_name,
       deployment_chain_id: a.deployment_chain_id,
       distance: `${a.distance_meters}m`,
-    }))
+    })),
   );
 
   return mockObjects
@@ -230,32 +230,32 @@ export const useDatabase = () => {
       const supabaseData = await getNearAgentsFromSupabase(
         location.latitude,
         location.longitude,
-        location.radius_meters || 100000 // Use 100km default radius for wide coverage
+        location.radius_meters || 100000, // Use 100km default radius for wide coverage
       );
 
       console.log(
         "🗄️ DATABASE HOOK DEBUG: Supabase raw response:",
-        supabaseData
+        supabaseData,
       );
       console.log(
         "🗄️ DATABASE HOOK DEBUG: Supabase data type:",
-        typeof supabaseData
+        typeof supabaseData,
       );
       console.log(
         "🗄️ DATABASE HOOK DEBUG: Supabase data length:",
-        supabaseData?.length
+        supabaseData?.length,
       );
       console.log(
         "🗄️ DATABASE HOOK DEBUG: Array.isArray(supabaseData):",
-        Array.isArray(supabaseData)
+        Array.isArray(supabaseData),
       );
       console.log(
         "🗄️ DATABASE HOOK DEBUG: supabaseData === null:",
-        supabaseData === null
+        supabaseData === null,
       );
       console.log(
         "🗄️ DATABASE HOOK DEBUG: supabaseData === undefined:",
-        supabaseData === undefined
+        supabaseData === undefined,
       );
 
       // Use enhanced mock data as fallback when database is empty or unavailable
@@ -265,7 +265,7 @@ export const useDatabase = () => {
         console.log("✅ DATABASE HOOK: Using Supabase data");
         console.log(
           "🗄️ DATABASE HOOK DEBUG: First raw object:",
-          supabaseData[0]
+          supabaseData[0],
         );
 
         // Debug: Show all available payment-related fields in your real data
@@ -277,18 +277,18 @@ export const useDatabase = () => {
               key.includes("network") ||
               key.includes("chain") ||
               key.includes("contract") ||
-              key.includes("deployment")
+              key.includes("deployment"),
           );
           console.log(
             "💰 Available payment fields in your real data:",
-            paymentFields
+            paymentFields,
           );
           console.log(
             "💰 Payment field values:",
             paymentFields.reduce((obj, key) => {
               obj[key] = supabaseData[0][key];
               return obj;
-            }, {})
+            }, {}),
           );
         }
 
@@ -319,7 +319,7 @@ export const useDatabase = () => {
             rotation_z: parseFloat(obj.rotation_z || 0),
             is_active: obj.is_active !== false,
             visibility_radius: parseInt(
-              obj.visibility_radius || obj.interaction_range || 100
+              obj.visibility_radius || obj.interaction_range || 100,
             ),
             created_at: obj.created_at || new Date().toISOString(),
             updated_at:
@@ -578,6 +578,16 @@ export const useDatabase = () => {
               : undefined,
             accuracy: obj.accuracy ? parseFloat(obj.accuracy) : undefined,
             correctionapplied: obj.correctionapplied || false,
+            // Screen positioning fields
+            screen_position_x:
+              obj.screen_position_x != null
+                ? parseFloat(obj.screen_position_x)
+                : undefined,
+            screen_position_y:
+              obj.screen_position_y != null
+                ? parseFloat(obj.screen_position_y)
+                : undefined,
+            positioning_mode: obj.positioning_mode || "gps",
           };
 
           // Log payment fields for debugging for first object
@@ -594,11 +604,11 @@ export const useDatabase = () => {
                   processedObj.deployment_token_contract_address,
                 network: processedObj.network,
                 chain_id: processedObj.chain_id,
-              }
+              },
             );
             console.log(
               "🎯 ENHANCED PAYMENT DATA APPLIED FOR:",
-              processedObj.name
+              processedObj.name,
             );
             console.log("🌐 NETWORK DEBUG:", {
               original_network: obj.network,
@@ -614,32 +624,32 @@ export const useDatabase = () => {
 
         console.log(
           `✅ Loaded ${objects.length} objects from Supabase:`,
-          objects
+          objects,
         );
       } else if (supabaseData === null && isSupabaseConfigured) {
         console.warn(
-          "⚠️ Supabase returned null data but is configured - check your connection"
+          "⚠️ Supabase returned null data but is configured - check your connection",
         );
         console.log(
-          "🗄️ DATABASE HOOK DEBUG: Falling back to mock data (null response)"
+          "🗄️ DATABASE HOOK DEBUG: Falling back to mock data (null response)",
         );
         objects = generateMockObjects(location);
         console.log(
-          `🔄 Using ${objects.length} mock objects due to Supabase data issue`
+          `🔄 Using ${objects.length} mock objects due to Supabase data issue`,
         );
         if (objects.length > 0) {
           console.log("Sample object:", objects[0]);
         }
       } else if (Array.isArray(supabaseData) && supabaseData.length === 0) {
         console.warn(
-          "⚠️ Supabase returned empty array - no agents found in database"
+          "⚠️ Supabase returned empty array - no agents found in database",
         );
         console.log(
-          "🗄️ DATABASE HOOK DEBUG: Falling back to mock data (empty array response)"
+          "🗄️ DATABASE HOOK DEBUG: Falling back to mock data (empty array response)",
         );
         objects = generateMockObjects(location);
         console.log(
-          `🔄 Using ${objects.length} ENHANCED mock objects due to empty database`
+          `🔄 Using ${objects.length} ENHANCED mock objects due to empty database`,
         );
         console.log(
           "🚨 MOCK DATA SAMPLE:",
@@ -650,24 +660,24 @@ export const useDatabase = () => {
                 deployment_network_name: objects[0].deployment_network_name,
                 deployment_chain_id: objects[0].deployment_chain_id,
               }
-            : "No mock objects generated"
+            : "No mock objects generated",
         );
       } else {
         console.log(
-          "🚨 DATABASE HOOK: USING MOCK DATA - Supabase not available"
+          "🚨 DATABASE HOOK: USING MOCK DATA - Supabase not available",
         );
         console.log(
-          "🗄️ DATABASE HOOK DEBUG: Falling back to mock data (not configured)"
+          "🗄️ DATABASE HOOK DEBUG: Falling back to mock data (not configured)",
         );
         console.log(
           "🗄️ DATABASE HOOK DEBUG: isSupabaseConfigured:",
-          isSupabaseConfigured
+          isSupabaseConfigured,
         );
 
         // Generate mock data with proper payment fields
         objects = generateMockObjects(location);
         console.log(
-          `🔄 Using ${objects.length} ENHANCED mock objects with realistic payment data`
+          `🔄 Using ${objects.length} ENHANCED mock objects with realistic payment data`,
         );
         console.log(
           "🚨 MOCK DATA SAMPLE:",
@@ -678,7 +688,7 @@ export const useDatabase = () => {
                 deployment_network_name: objects[0].deployment_network_name,
                 deployment_chain_id: objects[0].deployment_chain_id,
               }
-            : "No mock objects generated"
+            : "No mock objects generated",
         );
       }
 
@@ -706,7 +716,7 @@ export const useDatabase = () => {
 
       const fallbackObjects = generateMockObjects(location);
       console.log(
-        `🔄 Returning ${fallbackObjects.length} fallback mock objects due to error`
+        `🔄 Returning ${fallbackObjects.length} fallback mock objects due to error`,
       );
       return fallbackObjects;
     }
@@ -745,7 +755,7 @@ export const useDatabase = () => {
         return null;
       }
     },
-    [getNearAgents]
+    [getNearAgents],
   );
 
   // Refresh connection
@@ -812,7 +822,7 @@ export const useDatabase = () => {
     } catch (error) {
       console.warn(
         "⚠️ Failed to get device location, using default:",
-        error.message
+        error.message,
       );
       // Fallback to a default location with wide radius
       return {

@@ -7,6 +7,8 @@ import solanaPaymentService from "../services/solanaPaymentService";
 import { dynamicQRService } from "../services/dynamicQRService"; // Add dynamic QR service
 import ccipConfigService from "../services/ccipConfigService"; // CCIP transaction building (default export)
 import { hederaWalletService } from "../services/hederaWalletService";
+import { ensService, ensServiceSepolia } from "../services/ensService"; // ENS resolution service
+import ensPaymentService from "../services/ensPaymentService"; // ENS payment service
 import * as revolutBankService from "../services/revolutBankService"; // Revolut Bank QR service
 import * as revolutVirtualCardService from "../services/revolutVirtualCardService"; // Revolut Virtual Card service
 import { supabase } from "../lib/supabase";
@@ -36,11 +38,11 @@ const getAgentPaymentConfig = async (agentId) => {
       };
     }
 
-    // Query AgentSphere database for payment configuration
+    // Query AgentSphere database for payment configuration INCLUDING ENS fields
     const { data, error } = await supabase
       .from("deployed_objects")
       .select(
-        "payment_methods, payment_config, agent_wallet_address, payment_recipient_address, fee_type, interaction_fee_amount, interaction_fee_token",
+        "payment_methods, payment_config, agent_wallet_address, payment_recipient_address, fee_type, interaction_fee_amount, interaction_fee_token, ens_payment_enabled, ens_domain, ens_resolved_address, ens_resolver_network, ens_avatar_url",
       )
       .eq("id", agentId)
       .single();
@@ -65,6 +67,46 @@ const getAgentPaymentConfig = async (agentId) => {
     }
 
     console.log("✅ Payment configuration loaded:", data);
+
+    // Determine recipient address (ENS or regular wallet)
+    let recipientAddress =
+      data.agent_wallet_address || data.payment_recipient_address;
+    let ensInfo = null;
+
+    // ENS Resolution if enabled
+    if (data.ens_payment_enabled && data.ens_domain) {
+      console.log("🌐 ENS payment enabled, resolving:", data.ens_domain);
+
+      // Use cached address if available (from database)
+      if (data.ens_resolved_address) {
+        recipientAddress = data.ens_resolved_address;
+        ensInfo = {
+          domain: data.ens_domain,
+          address: data.ens_resolved_address,
+          network: data.ens_resolver_network || "mainnet",
+          avatar: data.ens_avatar_url,
+        };
+        console.log("✅ Using cached ENS address:", recipientAddress);
+      } else {
+        // Resolve ENS domain dynamically
+        const network = data.ens_resolver_network || "mainnet";
+        const service = network === "mainnet" ? ensService : ensServiceSepolia;
+        const result = await service.resolveENS(data.ens_domain);
+
+        if (result.success) {
+          recipientAddress = result.address;
+          ensInfo = {
+            domain: data.ens_domain,
+            address: result.address,
+            network: network,
+          };
+          console.log("✅ ENS resolved dynamically:", recipientAddress);
+        } else {
+          console.error("❌ ENS resolution failed:", result.error);
+          // Fall back to regular wallet address
+        }
+      }
+    }
 
     // Parse payment methods configuration
     const paymentMethods = data.payment_methods || {};
@@ -91,16 +133,25 @@ const getAgentPaymentConfig = async (agentId) => {
       enabledMethods.push("sound_pay");
     }
 
-    // Always show BTC payments for users
-    enabledMethods.push("btc_payments");
+    // ENS Payments - only show if configured in database
+    if (data.ens_payment_enabled && data.ens_domain) {
+      enabledMethods.push("ens_payments");
+    }
 
     return {
       enabledMethods,
       config: {
         paymentMethods,
         paymentConfig: data.payment_config || {},
-        walletAddress: data.agent_wallet_address,
-        recipientAddress: data.payment_recipient_address,
+        walletAddress: recipientAddress, // Use ENS-resolved address
+        recipientAddress: recipientAddress,
+        ensInfo: ensInfo, // Include ENS info
+        // Include raw ENS fields from database
+        ens_payment_enabled: data.ens_payment_enabled,
+        ens_domain: data.ens_domain,
+        ens_resolved_address: data.ens_resolved_address,
+        ens_resolver_network: data.ens_resolver_network,
+        ens_avatar_url: data.ens_avatar_url,
       },
     };
   } catch (error) {
@@ -169,11 +220,11 @@ const PaymentCube = ({
       color: "#00ff66", // Unified green for all faces
       description: "Tap to Pay",
     },
-    btc_payments: {
-      icon: "₿", // Bitcoin symbol
-      text: "BTC Payments",
-      color: "#00ff66", // Unified green for all faces
-      description: "Tap to Select",
+    ens_payments: {
+      icon: "🌐", // Globe icon for ENS
+      text: "ENS Payments",
+      color: "#5298ff", // ENS blue
+      description: "Tap to Pay",
     },
   };
 
@@ -191,8 +242,8 @@ const PaymentCube = ({
       Object.keys(paymentMethods),
     );
     console.log(
-      "🔍 Cube Debug - BTC payments included:",
-      enabledFaces.includes("btc_payments"),
+      "🔍 Cube Debug - ENS payments included:",
+      enabledFaces.includes("ens_payments"),
     );
     console.log(
       "🔍 Cube Debug - Number of faces to render:",
@@ -349,12 +400,12 @@ const PaymentCube = ({
           );
           break;
 
-        case "btc_payments":
-          console.log("₿ Dispatching btc-payments-selected event");
+        case "ens_payments":
+          console.log("🌐 Dispatching ens-payments-selected event");
           document.dispatchEvent(
-            new CustomEvent("btc-payments-selected", {
+            new CustomEvent("ens-payments-selected", {
               detail: {
-                method: "btc_payments",
+                method: "ens_payments",
                 agent: agent,
                 face: activeFace,
                 config: paymentMethods[activeFace],
@@ -588,17 +639,11 @@ const PaymentCube = ({
               >
                 <boxGeometry args={[2.4, 2.4, 0.15]} />
                 <meshStandardMaterial
-                  color={method === "btc_payments" ? "#f7931a" : config.color}
+                  color={config.color}
                   transparent
                   opacity={0.3}
-                  emissive={
-                    method === "btc_payments"
-                      ? "#803d00"
-                      : isActiveFace
-                      ? "#003300"
-                      : "#001100"
-                  }
-                  emissiveIntensity={method === "btc_payments" ? 0.5 : 0.3}
+                  emissive={isActiveFace ? "#003300" : "#001100"}
+                  emissiveIntensity={0.3}
                   roughness={0.3}
                   metalness={0.1}
                 />
@@ -706,6 +751,8 @@ const ARQRDisplay = ({
   paymentAmount,
   urlPaymentData,
   onPaymentComplete,
+  ensPaymentInfo, // ENS payment details
+  selectedMethod, // Payment method type
 }) => {
   const [selectedNetwork, setSelectedNetwork] = useState("11155111"); // Default to Ethereum Sepolia
   const [isGeneratingQR, setIsGeneratingQR] = useState(false);
@@ -730,6 +777,7 @@ const ARQRDisplay = ({
 
   // Network configuration for dropdown
   const supportedNetworks = {
+    1: { name: "Ethereum Mainnet", color: "#627EEA", symbol: "ETH" }, // ENS Mainnet
     11155111: { name: "Ethereum Sepolia", color: "#627EEA", symbol: "USDC" },
     421614: { name: "Arbitrum Sepolia", color: "#28A0F0", symbol: "USDC" },
     84532: { name: "Base Sepolia", color: "#0052FF", symbol: "USDC" },
@@ -742,6 +790,8 @@ const ARQRDisplay = ({
       color: "#9945FF",
       symbol: "USDC",
     },
+    "ens-mainnet": { name: "ENS (Mainnet)", color: "#5298ff", symbol: "ETH" },
+    "ens-sepolia": { name: "ENS (Sepolia)", color: "#5298ff", symbol: "ETH" },
   };
 
   // Initialize network based on agent deployment and detect cross-chain needs
@@ -780,6 +830,18 @@ const ARQRDisplay = ({
         );
       } else if (agentName.includes("solana")) {
         detectedNetwork = "solana-devnet"; // Solana Devnet
+      } else if (agent.ens_payment_enabled && agent.ens_resolver_network) {
+        // ENS payment detection
+        detectedNetwork =
+          agent.ens_resolver_network === "mainnet"
+            ? "ens-mainnet"
+            : "ens-sepolia";
+        console.log(
+          "🌐 Detected ENS payment network for agent:",
+          agent.name,
+          "Network:",
+          detectedNetwork,
+        );
       }
 
       // 🔧 CRITICAL: Check deployment_chain_id but OVERRIDE if network name contradicts it
@@ -1071,6 +1133,53 @@ const ARQRDisplay = ({
     console.log("🔥 QR Code clicked! Triggering transaction...");
 
     try {
+      // Handle ENS payments
+      if (selectedMethod === "ens_payments" && ensPaymentInfo) {
+        console.log("🌐 Handling ENS payment:", ensPaymentInfo);
+
+        const paymentResult = await ensPaymentService.sendENSPayment({
+          ...ensPaymentInfo,
+          networkKey:
+            ensPaymentInfo.network === "Ethereum Mainnet"
+              ? "mainnet"
+              : "sepolia",
+        });
+
+        if (paymentResult.success) {
+          console.log("✅ ENS payment successful:", paymentResult.txHash);
+          alert(
+            `🎉 ENS Payment Sent Successfully!\n\n` +
+              `🌐 ENS Domain: ${
+                ensPaymentInfo.domain || paymentResult.ensDomain
+              }\n` +
+              `💳 Resolved Address: ${paymentResult.resolvedAddress.slice(
+                0,
+                10,
+              )}...${paymentResult.resolvedAddress.slice(-8)}\n` +
+              `💰 Amount: ${paymentResult.amount} ${
+                paymentResult.token || ensPaymentInfo.token || "USDC"
+              }\n` +
+              `🔗 Transaction Hash:\n${paymentResult.txHash}\n\n` +
+              `Network: ${paymentResult.network}\n\n` +
+              `You can view this transaction on the blockchain explorer.`,
+          );
+
+          if (onPaymentComplete) {
+            onPaymentComplete(agent, {
+              success: true,
+              transactionHash: paymentResult.txHash,
+              network: paymentResult.network,
+              method: "ens_payments",
+              amount: paymentResult.amount,
+              ensDomain: paymentResult.ensDomain,
+            });
+          }
+        } else {
+          throw new Error("ENS payment failed");
+        }
+        return;
+      }
+
       // Check if this is a cross-chain transaction
       if (
         paymentMode === "cross-chain" &&
@@ -1457,27 +1566,60 @@ const ARQRDisplay = ({
               style={{
                 fontSize: "14px",
                 fontWeight: "bold",
-                color: isLoadingBalance
-                  ? "#999"
-                  : walletBalance?.success
-                  ? "#007c00"
-                  : "#cc0000",
+                color: walletBalance !== null ? "#00aa00" : "#666",
               }}
             >
               {isLoadingBalance
-                ? "🔄 Loading..."
-                : walletBalance?.success
-                ? walletBalance.formatted
-                : "❌ Unable to fetch balance"}
+                ? "Loading..."
+                : walletBalance !== null
+                ? `${parseFloat(walletBalance).toFixed(4)} ${
+                    supportedNetworks[selectedNetwork]?.symbol || "tokens"
+                  }`
+                : "Connect wallet to view"}
             </div>
-            {walletBalance?.note && (
-              <div
-                style={{ fontSize: "10px", color: "#888", marginTop: "2px" }}
-              >
-                {walletBalance.note}
-              </div>
-            )}
           </div>
+
+          {/* ENS Payment Info Display */}
+          {selectedMethod === "ens_payments" && ensPaymentInfo && (
+            <div
+              style={{
+                marginBottom: "15px",
+                width: "100%",
+                padding: "12px",
+                backgroundColor: "#f0f7ff",
+                borderRadius: "10px",
+                border: "2px solid #5298ff",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "14px",
+                  fontWeight: "bold",
+                  color: "#5298ff",
+                  marginBottom: "8px",
+                  textAlign: "center",
+                }}
+              >
+                🌐 ENS Payment
+              </div>
+              <div style={{ fontSize: "12px", color: "#333" }}>
+                <div style={{ marginBottom: "4px" }}>
+                  <strong>Domain:</strong> {ensPaymentInfo.domain}
+                </div>
+                <div style={{ marginBottom: "4px" }}>
+                  <strong>Resolves to:</strong>{" "}
+                  {ensPaymentInfo.resolvedAddress.slice(0, 10)}...
+                  {ensPaymentInfo.resolvedAddress.slice(-8)}
+                </div>
+                <div style={{ marginBottom: "4px" }}>
+                  <strong>Amount:</strong> {ensPaymentInfo.amount} ETH
+                </div>
+                <div>
+                  <strong>Network:</strong> {ensPaymentInfo.network}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Agent Payment Info */}
           <div
@@ -1830,17 +1972,18 @@ const CubePaymentEngine = ({
   enabledMethods = [
     "crypto_qr", // Front face
     "virtual_card", // Right face
-    "btc_payments", // Top face (switched with bank_qr)
+    "ens_payments", // Top face (ENS payments)
     "sound_pay", // Bottom face (switched with voice_pay)
     "voice_pay", // Back face (switched with sound_pay)
-    "bank_qr", // Left face (switched with btc_payments)
+    "bank_qr", // Left face (switched with ens_payments)
   ],
 }) => {
   const [currentView, setCurrentView] = useState("cube"); // 'cube' or 'qr'
   const [selectedMethod, setSelectedMethod] = useState(null);
-  const [qrData, setQrData] = useState(null);
+  const [qrData, setQRData] = useState(null);
   const [transactionHash, setTransactionHash] = useState(null); // For Hedera transaction links
   const [isGenerating, setIsGenerating] = useState(false);
+  const [ensPaymentInfo, setEnsPaymentInfo] = useState(null); // ENS payment details
   const [agentPaymentConfig, setAgentPaymentConfig] = useState(null);
   const [actualEnabledMethods, setActualEnabledMethods] =
     useState(enabledMethods);
@@ -1928,16 +2071,16 @@ const CubePaymentEngine = ({
       try {
         const config = await getAgentPaymentConfig(agent.id);
         setAgentPaymentConfig(config);
-        // Use the passed enabledMethods prop instead of database config
-        setActualEnabledMethods(enabledMethods);
+        // Use the database-configured enabledMethods from the config
+        setActualEnabledMethods(config.enabledMethods);
 
         console.log("✅ Payment configuration loaded:", {
-          enabledMethods: enabledMethods,
+          enabledMethods: config.enabledMethods,
           hasWallet: !!config.config.walletAddress,
         });
       } catch (error) {
         console.error("❌ Failed to load payment configuration:", error);
-        // Use passed enabledMethods as fallback instead of limited subset
+        // Use passed enabledMethods as fallback when database config fails
         setActualEnabledMethods(enabledMethods);
       } finally {
         setIsLoadingConfig(false);
@@ -2036,9 +2179,9 @@ const CubePaymentEngine = ({
     if (methodKey === "crypto_qr") {
       console.log("📍 Routing to: handleCryptoQRSelection");
       await handleCryptoQRSelection();
-    } else if (methodKey === "btc_payments") {
-      console.log("📍 Routing to: handleBTCPayments");
-      handleBTCPayments();
+    } else if (methodKey === "ens_payments") {
+      console.log("📍 Routing to: handleENSPayments");
+      handleENSPayments();
     } else if (methodKey === "bank_qr") {
       console.log("📍 Routing to: handleBankQRSelection");
       await handleBankQRSelection();
@@ -2220,7 +2363,7 @@ const CubePaymentEngine = ({
         );
 
         console.log("✅ Solana QR generated:", result);
-        setQrData(result.paymentUri);
+        setQRData(result.paymentUri);
         setCurrentView("qr");
       } else if (
         userNetwork &&
@@ -2251,7 +2394,7 @@ const CubePaymentEngine = ({
         console.log("✅ Same-chain QR generated:", result);
 
         // Simple flow that works for Sepolia - just set QR data and show it
-        setQrData(result.qrData);
+        setQRData(result.qrData);
         setCurrentView("qr");
       }
     } catch (error) {
@@ -2263,32 +2406,72 @@ const CubePaymentEngine = ({
   };
 
   // Handle BTC Payments
-  const handleBTCPayments = () => {
-    console.log("₿ Launching BTC payments...");
+  const handleENSPayments = async () => {
+    console.log("🌐 Launching ENS payments...");
 
-    // Create BTC payment information
-    const btcPaymentInfo = {
-      title: "Bitcoin Payments Coming Soon",
-      features: [
-        "1. Direct Bitcoin network transactions",
-        "2. Lightning Network support for instant payments",
-        "3. Cross-chain Bitcoin bridge integration",
-        "4. Native SegWit and Taproot compatibility",
-      ],
-      networks: [
-        "Bitcoin Mainnet",
-        "Lightning Network",
-        "Bitcoin Testnet (for development)",
-        "Cross-chain bridges (BTC → EVM)",
-      ],
-    };
+    // Prevent execution during initialization
+    if (isInitializing) {
+      console.log("⏳ Cube initializing, ignoring ENS payment");
+      return;
+    }
 
-    alert(
-      `₿ ${btcPaymentInfo.title}\n\n` +
-        `Upcoming Features:\n${btcPaymentInfo.features.join("\n")}\n\n` +
-        `Supported Networks:\n${btcPaymentInfo.networks.join("\n")}\n\n` +
-        `For now, please use "Crypto QR" for USDC payments. Bitcoin integration is in active development!`,
-    );
+    setIsGenerating(true);
+
+    try {
+      // Build agent object with ENS fields from config
+      const agentWithENS = {
+        ...agent,
+        ens_domain: agentPaymentConfig?.config?.ens_domain,
+        ens_resolved_address: agentPaymentConfig?.config?.ens_resolved_address,
+        ens_resolver_network: agentPaymentConfig?.config?.ens_resolver_network,
+        // Include fee info for USDC payments
+        interaction_fee_amount:
+          agentPaymentConfig?.config?.interaction_fee_amount ||
+          agent?.interaction_fee_amount ||
+          10,
+        interaction_fee_token:
+          agentPaymentConfig?.config?.interaction_fee_token ||
+          agent?.interaction_fee_token ||
+          "USDC",
+      };
+
+      // Generate ENS payment data with fresh resolution
+      const ensPaymentData = await ensPaymentService.generateENSAgentPayment(
+        agentWithENS,
+        null, // Use agent's interaction_fee
+      );
+
+      console.log("✅ ENS payment data generated:", ensPaymentData);
+
+      // Generate EIP-681 QR code URI
+      const qrData = ensPaymentService.generateENSPaymentQRData(ensPaymentData);
+
+      console.log("📱 ENS payment QR data:", qrData);
+
+      // Set QR data and show modal (reuse existing ARQRDisplay)
+      setQRData(qrData);
+      setCurrentView("qr");
+      setSelectedMethod("ens_payments");
+
+      // Store ENS payment info for display
+      setEnsPaymentInfo({
+        domain: ensPaymentData.ensDomain,
+        resolvedAddress: ensPaymentData.resolvedAddress,
+        amount: ensPaymentData.amount,
+        token: ensPaymentData.token,
+        network: ensPaymentData.network,
+        chainId: ensPaymentData.chainId,
+        isTokenPayment: ensPaymentData.isTokenPayment,
+        tokenContract: ensPaymentData.tokenContract,
+      });
+    } catch (error) {
+      console.error("❌ ENS payment generation failed:", error);
+      alert(
+        `Failed to generate ENS payment:\n${error.message}\n\nPlease ensure:\n• ENS domain is configured\n• Network is accessible\n• MetaMask is installed`,
+      );
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   // Handle Revolut Bank QR Selection
@@ -2407,7 +2590,7 @@ const CubePaymentEngine = ({
       );
 
       if (result.success) {
-        setQrData(result.qrData);
+        setQRData(result.qrData);
         console.log(
           "✅ Cross-chain QR generated after modal confirmation",
           result,
@@ -2671,7 +2854,7 @@ const CubePaymentEngine = ({
   const handleBackToCube = () => {
     setCurrentView("cube");
     setSelectedMethod(null);
-    setQrData(null);
+    setQRData(null);
   };
 
   // Handle individual face clicks - for button-style interactions
@@ -2705,7 +2888,7 @@ const CubePaymentEngine = ({
   const handleClose = () => {
     setCurrentView("cube");
     setSelectedMethod(null);
-    setQrData(null);
+    setQRData(null);
     setAgentPaymentConfig(null);
     setActualEnabledMethods(enabledMethods);
     setIsLoadingConfig(false);
@@ -2797,6 +2980,8 @@ const CubePaymentEngine = ({
               paymentAmount={getFinalPaymentAmount()}
               urlPaymentData={urlPaymentData}
               onPaymentComplete={onPaymentComplete}
+              ensPaymentInfo={ensPaymentInfo}
+              selectedMethod={selectedMethod}
             />
           )}
 

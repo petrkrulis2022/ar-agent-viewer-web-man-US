@@ -53,6 +53,9 @@ const ARViewer = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [nearAgents, setNearAgents] = useState([]);
   const [cameraActive, setCameraActive] = useState(true); // 🎥 Camera ON by default
+  const [cameraFacing, setCameraFacing] = useState("environment"); // Track camera facing mode
+  const [hasMultipleCameras, setHasMultipleCameras] = useState(true); // Assume multiple cameras by default
+  const cameraViewRef = useRef(null); // Ref to control CameraView
   const [selectedTab, setSelectedTab] = useState("viewer");
   const [viewMode, setViewMode] = useState("3d"); // "2d" or "3d" - Default to 3D for immersive experience
   const [rtkStatus, setRtkStatus] = useState({
@@ -294,10 +297,10 @@ const ARViewer = () => {
       console.error("❌ RTK Location error:", error);
       setLocationError(error.message);
 
-      // Use fallback location (San Francisco) as last resort
+      // Use fallback location (YOUR ACTUAL LOCATION - Czech Republic)
       const fallbackLocation = {
-        latitude: 37.7749,
-        longitude: -122.4194,
+        latitude: 50.64741,
+        longitude: 13.835543,
         altitude: 52.0,
         accuracy: 1000,
         timestamp: Date.now(),
@@ -317,6 +320,134 @@ const ARViewer = () => {
       return fallbackLocation;
     }
   };
+
+  // 📺 Screen Positioning System - Convert percentage coordinates to 3D AR space
+  /**
+   * Convert screen percentage coordinates (0-100%) to 3D AR space coordinates
+   * @param {number} xPercent - Horizontal position (0 = left, 50 = center, 100 = right)
+   * @param {number} yPercent - Vertical position (0 = top, 50 = center, 100 = bottom)
+   * @param {number} index - Agent index for slight offset to prevent overlap
+   * @returns {{x: number, y: number, z: number}} 3D position in AR coordinate space
+   */
+  const convertScreenPercentToAR = (xPercent, yPercent, index = 0) => {
+    // Get current viewport dimensions
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    // Convert percentage to pixel position
+    const screenX = (xPercent / 100) * viewportWidth;
+    const screenY = (yPercent / 100) * viewportHeight;
+
+    // Convert to normalized device coordinates (NDC: -1 to 1)
+    // X: -1 = left edge, 0 = center, 1 = right edge
+    // Y: 1 = top edge, 0 = center, -1 = bottom edge (inverted for screen coords)
+    const ndcX = (screenX / viewportWidth) * 2 - 1;
+    const ndcY = -(screenY / viewportHeight) * 2 + 1;
+
+    // Camera settings (matching AR camera configuration)
+    const distance = 5; // Distance from camera in meters
+    const fov = 60; // Field of view in degrees
+    const aspect = viewportWidth / viewportHeight;
+
+    // Calculate visible dimensions at the given distance
+    const vFOV = (fov * Math.PI) / 180; // Vertical FOV in radians
+    const hFOV = 2 * Math.atan(Math.tan(vFOV / 2) * aspect); // Horizontal FOV
+
+    // Project NDC coordinates into 3D space
+    const x = ndcX * distance * Math.tan(hFOV / 2);
+    const y = ndcY * distance * Math.tan(vFOV / 2);
+    const z = -distance;
+
+    // Add small offset per agent to prevent exact overlap
+    const offset = index * 0.05;
+
+    const position = {
+      x: x + offset,
+      y: y + offset * 0.5,
+      z: z - offset,
+    };
+
+    console.log(
+      `📺 Screen → AR conversion: (${xPercent.toFixed(1)}%, ${yPercent.toFixed(
+        1,
+      )}%) → 3D(${position.x.toFixed(2)}, ${position.y.toFixed(
+        2,
+      )}, ${position.z.toFixed(2)})`,
+    );
+
+    return position;
+  };
+
+  // 📱 Responsive resize handler for screen-positioned agents
+  const [viewportDimensions, setViewportDimensions] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  });
+
+  useEffect(() => {
+    let resizeTimeout;
+
+    const handleResize = () => {
+      // Debounce resize events for performance
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        const newDimensions = {
+          width: window.innerWidth,
+          height: window.innerHeight,
+        };
+        setViewportDimensions(newDimensions);
+        console.log("📱 Viewport resized:", newDimensions);
+
+        // Force re-render of screen-positioned agents
+        const screenAgents = nearAgents.filter(
+          (agent) => agent.positioning_mode === "screen",
+        );
+        if (screenAgents.length > 0) {
+          console.log(
+            `🔄 Recalculating positions for ${screenAgents.length} screen-positioned agents`,
+          );
+        }
+      }, 150); // 150ms debounce
+    };
+
+    window.addEventListener("resize", handleResize);
+    window.addEventListener("orientationchange", handleResize);
+
+    return () => {
+      clearTimeout(resizeTimeout);
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("orientationchange", handleResize);
+    };
+  }, [nearAgents]);
+
+  // Handle camera switch from UI button
+  const handleSwitchCamera = () => {
+    if (cameraViewRef.current) {
+      // Update hasMultipleCameras state
+      if (cameraViewRef.current.getHasMultipleCameras) {
+        setHasMultipleCameras(cameraViewRef.current.getHasMultipleCameras());
+      }
+
+      // Switch camera if available
+      if (cameraViewRef.current.switchCamera) {
+        cameraViewRef.current.switchCamera();
+      }
+    }
+  };
+
+  // Poll camera capabilities
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (
+        cameraViewRef.current &&
+        cameraViewRef.current.getHasMultipleCameras
+      ) {
+        setHasMultipleCameras(cameraViewRef.current.getHasMultipleCameras());
+      }
+    }, 2000); // Check every 2 seconds
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Initialize camera
   const initializeCamera = async () => {
@@ -655,7 +786,24 @@ const ARViewer = () => {
 
     // 🌐 Apply Network Filter (after agent type/ownership filters)
     if (networkFilter !== "all") {
-      console.log("🌐 Applying network filter:", networkFilter);
+      console.log(
+        "🌐 Applying network filter:",
+        networkFilter,
+        "to",
+        agentsToFilter.length,
+        "agents",
+      );
+      console.log(
+        "🌐 Agents before network filter:",
+        agentsToFilter.map((a) => ({
+          name: a.name,
+          type: a.agent_type || a.object_type,
+          deployment_chain_id: a.deployment_chain_id,
+          chain_id: a.chain_id,
+          network: a.deployment_network_name,
+          owner: a.owner_wallet,
+        })),
+      );
       const beforeNetworkFilter = agentsToFilter.length;
 
       agentsToFilter = agentsToFilter.filter((agent) => {
@@ -757,7 +905,25 @@ const ARViewer = () => {
       console.log(
         `🌐 Network filtered: ${beforeNetworkFilter} → ${agentsToFilter.length} agents`,
       );
+      console.log(
+        "🌐 Agents after network filter:",
+        agentsToFilter.map((a) => ({
+          name: a.name,
+          type: a.agent_type || a.object_type,
+          owner: a.owner_wallet,
+        })),
+      );
     }
+
+    console.log(
+      "✅ Final filtered agents:",
+      agentsToFilter.length,
+      agentsToFilter.map((a) => ({
+        name: a.name,
+        type: a.agent_type || a.object_type,
+        owner: a.owner_wallet,
+      })),
+    );
 
     return agentsToFilter;
   };
@@ -1147,24 +1313,57 @@ const ARViewer = () => {
                 </Card>
               </div>
 
-              {/* Right Side - Compact Filter Button */}
-              <Card className="bg-black/50 border-purple-500/30 backdrop-blur-sm">
-                <CardContent className="p-3">
-                  <button
-                    onClick={() => setShowFiltersModal(true)}
-                    className="w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-lg text-white text-sm font-semibold shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center space-x-2"
-                  >
-                    <Settings className="w-5 h-5" />
-                    <span>Reset Filters</span>
-                  </button>
-                  <div className="mt-2 text-center">
-                    <p className="text-[10px] text-purple-300">
-                      {getFilteredAgents().length}/{nearAgents.length} agents
-                      shown
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Right Side - Compact Filter Button + Camera Controls */}
+              <div
+                className={`grid gap-2 ${
+                  hasMultipleCameras ? "grid-cols-3" : "grid-cols-2"
+                }`}
+              >
+                <Card className="bg-black/50 border-purple-500/30 backdrop-blur-sm">
+                  <CardContent className="p-2">
+                    <button
+                      onClick={() => setShowFiltersModal(true)}
+                      className="w-full py-2 px-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-lg text-white text-xs font-semibold shadow-lg hover:shadow-xl transition-all duration-200 flex flex-col items-center justify-center"
+                    >
+                      <Settings className="w-4 h-4 mb-1" />
+                      <span className="text-[10px]">Filters</span>
+                    </button>
+                    <div className="mt-1 text-center">
+                      <p className="text-[9px] text-purple-300">
+                        {getFilteredAgents().length}/{nearAgents.length}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-black/50 border-purple-500/30 backdrop-blur-sm">
+                  <CardContent className="p-2 flex items-center justify-center h-full">
+                    <Badge
+                      variant="secondary"
+                      className="bg-black/70 text-white border border-white/20 px-3 py-1"
+                    >
+                      <Camera className="w-4 h-4 mr-1" />
+                      <span className="text-xs">
+                        {cameraFacing === "environment" ? "Back" : "Front"}
+                      </span>
+                    </Badge>
+                  </CardContent>
+                </Card>
+
+                {hasMultipleCameras && (
+                  <Card className="bg-black/50 border-purple-500/30 backdrop-blur-sm">
+                    <CardContent className="p-2 flex items-center justify-center h-full">
+                      <button
+                        onClick={handleSwitchCamera}
+                        className="w-full py-2 px-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white text-xs font-semibold shadow-lg transition-all duration-200 flex flex-col items-center justify-center"
+                      >
+                        <RotateCcw className="w-5 h-5 mb-1" />
+                        <span className="text-[10px]">Switch</span>
+                      </button>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
             </div>
 
             {/* 🎛️ Filters Modal */}
@@ -1433,9 +1632,11 @@ const ARViewer = () => {
               {viewMode === "2d" ? (
                 /* Traditional 2D Camera View */
                 <CameraView
+                  ref={cameraViewRef}
                   isActive={cameraActive}
                   onToggle={setCameraActive}
                   onError={(err) => console.error("Camera error:", err)}
+                  onCameraFacingChange={setCameraFacing}
                   agents={getFilteredAgents()}
                   userLocation={currentLocation}
                   onAgentInteraction={(agent, action, data) => {
@@ -1451,12 +1652,51 @@ const ARViewer = () => {
                   {/* Background Camera Feed for 3D AR - Lower priority */}
                   <div className="absolute inset-0 z-0">
                     <CameraView
+                      ref={cameraViewRef}
                       isActive={cameraActive}
                       onToggle={setCameraActive}
                       onError={(err) => console.error("Camera error:", err)}
-                      agents={[]} // Don't show 2D agents in 3D mode
+                      onCameraFacingChange={setCameraFacing}
+                      agents={(() => {
+                        const allFiltered = getFilteredAgents();
+                        console.log(
+                          "🔍 ALL agents before filter:",
+                          allFiltered.map((a) => ({
+                            name: a.name,
+                            positioning_mode: a.positioning_mode,
+                            positioning_mode_type: typeof a.positioning_mode,
+                            screen_position_x: a.screen_position_x,
+                            screen_position_y: a.screen_position_y,
+                          })),
+                        );
+                        const screenAgents = allFiltered.filter(
+                          (agent) => agent.positioning_mode === "screen",
+                        );
+                        console.log(
+                          "🖥️ Screen-positioned agents for 2D overlay:",
+                          {
+                            total: allFiltered.length,
+                            screenAgents: screenAgents.length,
+                            agents: screenAgents.map((a) => ({
+                              name: a.name,
+                              mode: a.positioning_mode,
+                              x: a.screen_position_x,
+                              y: a.screen_position_y,
+                            })),
+                          },
+                        );
+                        return screenAgents;
+                      })()} // Show screen-positioned agents in 2D overlay
                       userLocation={currentLocation}
-                      onAgentInteraction={() => {}} // Disable 2D interactions
+                      onAgentInteraction={(agent, action, data) => {
+                        console.log(
+                          "Agent interaction:",
+                          agent.name,
+                          action,
+                          data,
+                        );
+                        // Handle agent interactions here
+                      }}
                       showControls={false} // Hide 2D controls
                       connectedWallet={walletConnection.address}
                     />

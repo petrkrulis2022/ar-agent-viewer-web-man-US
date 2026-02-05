@@ -37,7 +37,7 @@ export const testConnection = async () => {
   try {
     if (!hasValidCredentials) {
       console.warn(
-        "⚠️ Supabase environment variables not set or invalid, using demo mode"
+        "⚠️ Supabase environment variables not set or invalid, using demo mode",
       );
       return false;
     }
@@ -67,10 +67,10 @@ export const testConnection = async () => {
       // Check if it's a table missing error
       if (error.message && error.message.includes("does not exist")) {
         console.warn(
-          "⚠️ Database table missing. Using fallback mode with mock data."
+          "⚠️ Database table missing. Using fallback mode with mock data.",
         );
         console.info(
-          "📋 To fix this, create the required tables in your Supabase project:"
+          "📋 To fix this, create the required tables in your Supabase project:",
         );
         console.info("   1. Go to https://supabase.com/dashboard");
         console.info("   2. Open SQL Editor");
@@ -91,17 +91,17 @@ export const testConnection = async () => {
 
       if (qrError) {
         console.warn(
-          "⚠️ ar_qr_codes table missing - QR features will use local storage"
+          "⚠️ ar_qr_codes table missing - QR features will use local storage",
         );
         console.info(
-          "💡 To enable full QR functionality, run sql/ar_qr_codes_schema.sql in Supabase"
+          "💡 To enable full QR functionality, run sql/ar_qr_codes_schema.sql in Supabase",
         );
       } else {
         console.log("✅ ar_qr_codes table verified");
       }
     } catch (qrTestError) {
       console.warn(
-        "⚠️ QR table test failed, continuing with basic functionality"
+        "⚠️ QR table test failed, continuing with basic functionality",
       );
     }
 
@@ -117,14 +117,14 @@ export const testConnection = async () => {
 export const getNearAgentsFromSupabase = async (
   latitude,
   longitude,
-  radius = 100
+  radius = 100,
 ) => {
   try {
     if (!hasValidCredentials || !supabase) {
       console.warn("⚠️ No valid Supabase credentials, returning null");
       console.log(
         "🚨 SUPABASE DEBUG: hasValidCredentials =",
-        hasValidCredentials
+        hasValidCredentials,
       );
       console.log("🚨 SUPABASE DEBUG: supabase client =", !!supabase);
       return null;
@@ -132,8 +132,8 @@ export const getNearAgentsFromSupabase = async (
 
     console.log(
       `🔍 Querying Supabase for NeAR agents near ${latitude.toFixed(
-        6
-      )}, ${longitude.toFixed(6)} within ${radius}m`
+        6,
+      )}, ${longitude.toFixed(6)} within ${radius}m`,
     );
 
     // First, let's try a simple query to see if we can get any data at all
@@ -150,7 +150,7 @@ export const getNearAgentsFromSupabase = async (
 
     console.log(
       "✅ Basic query successful, found records:",
-      basicData?.length || 0
+      basicData?.length || 0,
     );
     if (basicData && basicData.length > 0) {
       console.log("📊 Sample records:", basicData);
@@ -158,7 +158,7 @@ export const getNearAgentsFromSupabase = async (
 
     // Now try the full query with enhanced field selector
     console.log(
-      "🔍 Step 2: Full query with all fields including interaction_fee_amount..."
+      "🔍 Step 2: Full query with all fields including interaction_fee_amount...",
     );
     const { data, error } = await supabase
       .from("deployed_objects")
@@ -195,8 +195,11 @@ export const getNearAgentsFromSupabase = async (
         deployment_network_name,
         deployment_chain_id,
         mcp_services,
-        features
-      `
+        features,
+        screen_position_x,
+        screen_position_y,
+        positioning_mode
+      `,
       )
       .limit(100);
 
@@ -226,7 +229,7 @@ export const getNearAgentsFromSupabase = async (
             agent_type,
             user_id,
             created_at
-            `
+            `,
           )
           .limit(100);
 
@@ -263,7 +266,7 @@ export const getNearAgentsFromSupabase = async (
           }));
 
           console.log(
-            `✅ Processed ${processedData.length} objects with defaults`
+            `✅ Processed ${processedData.length} objects with defaults`,
           );
           return processedData.length > 0 ? processedData : null;
         }
@@ -279,7 +282,7 @@ export const getNearAgentsFromSupabase = async (
         console.warn("📋 Database schema issue detected:");
         console.warn("   - Table or columns may be missing");
         console.warn(
-          "   - Check that deployed_objects table has all required columns"
+          "   - Check that deployed_objects table has all required columns",
         );
         console.warn("   - Run database migration scripts if needed");
       }
@@ -301,22 +304,30 @@ export const getNearAgentsFromSupabase = async (
 
     // Log first agent's fee data for debugging
     if (data && data.length > 0) {
-      console.log("🐛 DEBUG: First agent fee data:");
+      console.log("🐛 DEBUG: First agent data:");
       const firstAgent = data[0];
+      console.log("📺 Screen Positioning Data:", {
+        name: firstAgent.name,
+        positioning_mode: firstAgent.positioning_mode,
+        screen_position_x: firstAgent.screen_position_x,
+        screen_position_y: firstAgent.screen_position_y,
+        latitude: firstAgent.latitude,
+        longitude: firstAgent.longitude,
+      });
       console.log(
         "- interaction_fee_amount:",
         firstAgent.interaction_fee_amount,
-        typeof firstAgent.interaction_fee_amount
+        typeof firstAgent.interaction_fee_amount,
       );
       console.log(
         "- interaction_fee:",
         firstAgent.interaction_fee,
-        typeof firstAgent.interaction_fee
+        typeof firstAgent.interaction_fee,
       );
       console.log(
         "- interaction_fee_usdfc:",
         firstAgent.interaction_fee_usdfc,
-        typeof firstAgent.interaction_fee_usdfc
+        typeof firstAgent.interaction_fee_usdfc,
       );
       console.log("- Raw agent object:", JSON.stringify(firstAgent, null, 2));
     }
@@ -329,7 +340,7 @@ export const getNearAgentsFromSupabase = async (
             latitude,
             longitude,
             obj.latitude,
-            obj.longitude
+            obj.longitude,
           );
           return {
             ...obj,
@@ -352,7 +363,7 @@ export const getNearAgentsFromSupabase = async (
       [];
 
     console.log(
-      `✅ Found ${objectsWithDistance.length} objects using direct query`
+      `✅ Found ${objectsWithDistance.length} objects using direct query`,
     );
 
     if (objectsWithDistance.length > 0) {

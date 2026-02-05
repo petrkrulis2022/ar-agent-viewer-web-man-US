@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Query Agents Database</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+      body {
+        font-family: monospace;
+        padding: 20px;
+        background: #1e1e1e;
+        color: #d4d4d4;
+      }
+      .agent {
+        background: #2d2d2d;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 5px;
+        border-left: 3px solid #007acc;
+      }
+      .field {
+        margin: 5px 0;
+      }
+      .label {
+        color: #4ec9b0;
+        font-weight: bold;
+      }
+      .value {
+        color: #ce9178;
+      }
+      h1 {
+        color: #4fc3f7;
+      }
+      #loading {
+        color: #dcdcaa;
+      }
+      .error {
+        color: #f48771;
+        background: #5a1d1d;
+        padding: 10px;
+        border-radius: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>AgentSphere Database Query</h1>
+    <div id="loading">Loading agents from database...</div>
+    <div id="results"></div>
+
+    <script type="module">
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "YOUR_URL_HERE";
+      const SUPABASE_ANON_KEY =
+        import.meta.env.VITE_SUPABASE_ANON_KEY || "YOUR_KEY_HERE";
+
+      // For direct testing, you can hardcode credentials here temporarily
+      // const SUPABASE_URL = 'your-project.supabase.co';
+      // const SUPABASE_ANON_KEY = 'your-anon-key';
+
+      const { createClient } = supabase;
+      const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+      async function queryAgents() {
+        const loadingEl = document.getElementById("loading");
+        const resultsEl = document.getElementById("results");
+
+        try {
+          const { data, error } = await supabaseClient
+            .from("deployed_objects")
+            .select(
+              "id, name, position, ens_payment_enabled, ens_domain, ens_resolved_address, ens_resolver_network, created_at",
+            )
+            .order("created_at", { ascending: false })
+            .limit(20);
+
+          loadingEl.style.display = "none";
+
+          if (error) {
+            resultsEl.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            return;
+          }
+
+          if (!data || data.length === 0) {
+            resultsEl.innerHTML = "<p>No agents found in database.</p>";
+            return;
+          }
+
+          resultsEl.innerHTML = `<h2>Found ${data.length} agent(s):</h2>`;
+
+          data.forEach((agent, idx) => {
+            const agentDiv = document.createElement("div");
+            agentDiv.className = "agent";
+            agentDiv.innerHTML = `
+                        <h3>${idx + 1}. ${agent.name || "Unnamed Agent"}</h3>
+                        <div class="field"><span class="label">ID:</span> <span class="value">${
+                          agent.id
+                        }</span></div>
+                        <div class="field"><span class="label">Position:</span> <span class="value">${
+                          agent.position
+                        }</span></div>
+                        <div class="field"><span class="label">ENS Enabled:</span> <span class="value">${
+                          agent.ens_payment_enabled || false
+                        }</span></div>
+                        <div class="field"><span class="label">ENS Domain:</span> <span class="value">${
+                          agent.ens_domain || "N/A"
+                        }</span></div>
+                        <div class="field"><span class="label">ENS Address:</span> <span class="value">${
+                          agent.ens_resolved_address || "N/A"
+                        }</span></div>
+                        <div class="field"><span class="label">ENS Network:</span> <span class="value">${
+                          agent.ens_resolver_network || "N/A"
+                        }</span></div>
+                        <div class="field"><span class="label">Created:</span> <span class="value">${new Date(
+                          agent.created_at,
+                        ).toLocaleString()}</span></div>
+                    `;
+            resultsEl.appendChild(agentDiv);
+          });
+
+          // Look for POS 4
+          const pos4 = data.find(
+            (a) => a.name && a.name.toLowerCase().includes("pos 4"),
+          );
+          if (pos4) {
+            console.log("POS 4 Found:", pos4);
+            alert("POS 4 agent found! Check console or page for details.");
+          } else {
+            console.log("No POS 4 agent found in results");
+          }
+        } catch (err) {
+          loadingEl.style.display = "none";
+          resultsEl.innerHTML = `<div class="error">Unexpected error: ${err.message}</div>`;
+          console.error(err);
+        }
+      }
+
+      queryAgents();
+    </script>
+  </body>
+</html>
