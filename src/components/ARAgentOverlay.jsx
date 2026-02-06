@@ -26,8 +26,9 @@ const ARAgentOverlay = ({
       // Enhanced AgentSphere types
       intelligent_assistant: Bot,
       local_services: Wrench,
-      payment_terminal: Bot,
-      content_creator: User,
+      pos_terminal: Bot,
+      my_payment_terminal: User,
+      artm_terminal: Bot,
       tutor_teacher: GraduationCap,
       game_agent: Gamepad2,
       threed_world_modelling: Briefcase,
@@ -52,8 +53,9 @@ const ARAgentOverlay = ({
       // Enhanced AgentSphere types
       intelligent_assistant: "from-blue-500 to-purple-500",
       local_services: "from-green-500 to-teal-500",
-      payment_terminal: "from-yellow-500 to-orange-500",
-      content_creator: "from-pink-500 to-red-500",
+      pos_terminal: "from-yellow-500 to-orange-500",
+      my_payment_terminal: "from-pink-500 to-red-500",
+      artm_terminal: "from-blue-500 to-cyan-500",
       tutor_teacher: "from-yellow-500 to-orange-500",
       game_agent: "from-purple-500 to-indigo-500",
       threed_world_modelling: "from-cyan-500 to-blue-500",
@@ -223,7 +225,12 @@ const ARAgentOverlay = ({
       return;
     }
 
-    const agentsWithPositions = agents.map((agent, index) => {
+    // Filter: Only GPS-positioned agents (screen-positioned are handled by AR3DScene)
+    const gpsAgents = agents.filter(
+      (agent) => agent.positioning_mode !== "screen",
+    );
+
+    const agentsWithPositions = gpsAgents.map((agent, index) => {
       const position = calculateAgentPosition(agent, userLocation);
       console.log(
         `🎯 Agent ${index + 1}: ${
@@ -240,8 +247,9 @@ const ARAgentOverlay = ({
     });
 
     console.log(
-      "🎯 All agents with positions calculated:",
+      "🎯 All GPS agents with positions calculated:",
       agentsWithPositions.length,
+      "(Screen-positioned agents handled by AR3DScene)",
     );
 
     // Sort by distance (closest first) but keep all agents within reasonable range

@@ -28,8 +28,8 @@ const MyPersonalTerminalModel = ({ hovered }) => {
   return (
     <primitive
       object={scene.clone()}
-      scale={3.0}
-      position={[0, -4, -3]}
+      scale={0.8}
+      position={[0, -1, -0.8]}
       rotation={[0, Math.PI / 4, 0]}
     />
   );
@@ -40,8 +40,8 @@ const PaymentTerminalPOSModel = ({ hovered }) => {
   return (
     <primitive
       object={scene.clone()}
-      scale={3.0}
-      position={[0, -4, -3]}
+      scale={0.8}
+      position={[0, -1, -0.8]}
       rotation={[0, Math.PI / 4, 0]}
     />
   );
@@ -53,7 +53,9 @@ const VirtualATMModel = ({
   position = [0, 0, 0],
   rotation = [0, 0, 0],
 }) => {
+  console.log("🏧 VirtualATMModel: Loading ATM model...");
   const { scene } = useGLTF("/models/terminals/atm_6_mb.glb");
+  console.log("🏧 VirtualATMModel: ATM model loaded successfully!");
   return (
     <primitive
       object={scene.clone()}
@@ -173,6 +175,20 @@ const Enhanced3DAgent = ({
   const groupRef = useRef();
   const [hovered, setHovered] = useState(false);
 
+  // DEBUG: Log position for ARTM agents
+  if (
+    agent?.agent_type === "artm_terminal" ||
+    agent?.object_type === "virtual_terminal"
+  ) {
+    console.log("🏧 ARTM Position received:", {
+      agent_name: agent?.name,
+      position_x: position?.[0],
+      position_y: position?.[1],
+      position_z: position?.[2],
+      full_position: position,
+    });
+  }
+
   // Animation state
   const animationTime = useRef(0);
   const floatOffset = useRef(Math.random() * Math.PI * 2);
@@ -212,11 +228,13 @@ const Enhanced3DAgent = ({
       intelligent_assistant: "#1e90ff", // Modern shining blue (DodgerBlue)
       local_services: "#32cd32", // Lime green
       payment_terminal: "#ffa500", // Orange
+      pos_terminal: "#ffa500", // Orange
       trailing_payment_terminal: "#ffa500", // Orange
       my_ghost: "#9370db", // Medium purple
       game_agent: "#9370db", // Medium purple
       world_builder_3d: "#00ced1", // Dark turquoise
       virtual_terminal: "#0066ff", // Blue for ARTM
+      my_payment_terminal: "#ff1493", // Deep pink
       content_creator: "#ff1493", // Deep pink
       real_estate_broker: "#32cd32", // Lime green
       bus_stop_agent: "#00ff00", // Pure green
@@ -235,6 +253,7 @@ const Enhanced3DAgent = ({
       "Game Agent": "#9370db", // Medium purple
       "Bus Stop Agent": "#00ff00", // Pure green
       "Study Buddy": "#ffd700", // Gold
+      artm_terminal: "#0066ff", // Blue for ARTM
       "Virtual Terminal": "#0066ff", // Blue for ARTM
       "Virtual Terminal (ARTM)": "#0066ff", // Blue for ARTM
       "Real Estate Broker": "#32cd32", // Lime green
@@ -328,32 +347,22 @@ const Enhanced3DAgent = ({
     }
 
     // Determine which model to use based on agent type
-    // My Payment Terminal (content_creator) - uses my_personal_terminal.glb
+    // My Payment Terminal (my_payment_terminal) - uses my_personal_terminal.glb
     const isMyPaymentTerminal =
-      agent.agent_type === "content_creator" ||
-      agent.agent_type === "Content Creator" ||
-      agent.agent_type === "My Payment Terminal" ||
-      agent.agent_type?.toLowerCase() === "content creator" ||
-      agent.agent_type?.toLowerCase() === "my payment terminal" ||
-      agent.object_type === "content_creator";
+      agent.agent_type === "my_payment_terminal" ||
+      agent.object_type === "my_payment_terminal";
 
-    // Payment Terminal POS (payment_terminal) - uses p-o-s_terminal.glb
+    // Payment Terminal POS (pos_terminal) - uses p-o-s_terminal.glb
     const isPaymentTerminalPOS =
-      agent.agent_type === "payment_terminal" ||
+      agent.agent_type === "pos_terminal" ||
       agent.agent_type === "trailing_payment_terminal" ||
-      agent.agent_type === "Payment Terminal" ||
-      agent.agent_type === "Payment Terminal - POS" ||
-      agent.agent_type === "Trailing Payment Terminal" ||
-      agent.agent_type?.toLowerCase() === "payment terminal" ||
-      agent.object_type === "payment_terminal" ||
+      agent.object_type === "pos_terminal" ||
       agent.object_type === "trailing_payment_terminal";
 
-    // Virtual Terminal (ARTM) - uses atm_6_mb.glb
+    // Virtual Terminal ARTM (artm_terminal) - uses atm_6_mb.glb
     const isVirtualTerminal =
-      agent.agent_type === "Virtual Terminal" ||
-      agent.agent_type === "virtual_terminal" ||
-      agent.agent_type === "Virtual Terminal (ARTM)" ||
-      agent.object_type === "virtual_terminal";
+      agent.agent_type === "artm_terminal" ||
+      agent.object_type === "artm_terminal";
 
     console.log(`Model assignment check:`, {
       agent_type: agent.agent_type,
@@ -363,8 +372,9 @@ const Enhanced3DAgent = ({
       isVirtualTerminal,
     });
 
-    // Virtual Terminal (ARTM) - uses atm_6_mb.glb
+    // Virtual Terminal ARTM (artm_terminal) - uses atm_6_mb.glb
     if (isVirtualTerminal) {
+      console.log("🏧 ARTM: Rendering ARTM Terminal model");
       return (
         <group ref={meshRef}>
           <Suspense
@@ -381,8 +391,8 @@ const Enhanced3DAgent = ({
           >
             <VirtualATMModel
               hovered={hovered}
-              scale={0.6}
-              position={[0, -0.5, 0]}
+              scale={0.18}
+              position={[0, 0, 0]}
               rotation={[0, 0, 0]}
             />
           </Suspense>
@@ -397,7 +407,7 @@ const Enhanced3DAgent = ({
             distance={4}
           />
 
-          {/* Virtual Terminal glow effect */}
+          {/* ARTM Terminal glow effect */}
           {hovered &&
             [...Array(12)].map((_, i) => {
               const angle =
@@ -425,7 +435,7 @@ const Enhanced3DAgent = ({
       );
     }
 
-    // My Payment Terminal (content_creator) - uses my_personal_terminal.glb
+    // My Payment Terminal (my_payment_terminal) - uses my_personal_terminal.glb
     if (isMyPaymentTerminal) {
       return (
         <group ref={meshRef}>
@@ -481,7 +491,7 @@ const Enhanced3DAgent = ({
       );
     }
 
-    // Payment Terminal - POS (payment_terminal) - uses p-o-s_terminal.glb
+    // Payment Terminal - POS (pos_terminal) - uses p-o-s_terminal.glb
     if (isPaymentTerminalPOS) {
       return (
         <group ref={meshRef}>

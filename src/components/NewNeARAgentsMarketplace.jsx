@@ -25,7 +25,7 @@ const NewNeARAgentsMarketplace = ({ isOpen, onClose, userLocation }) => {
       count: 0,
     },
     { id: "local_services", label: "🏪 Local Services", count: 0 },
-    { id: "payment_terminal", label: "💳 Payment Terminal", count: 0 },
+    { id: "pos_terminal", label: "💳 Payment Terminal", count: 0 },
     {
       id: "trailing_payment_terminal",
       label: "📱 Trailing Payment Terminal",
@@ -34,8 +34,8 @@ const NewNeARAgentsMarketplace = ({ isOpen, onClose, userLocation }) => {
     { id: "my_ghost", label: "👻 My Ghost", count: 0 },
     { id: "game_agent", label: "🎮 Game Agent", count: 0 },
     { id: "world_builder_3d", label: "🏗️ 3D World Builder", count: 0 },
-    { id: "home_security", label: "🔒 Home Security", count: 0 },
-    { id: "content_creator", label: "🎨 Content Creator", count: 0 },
+    { id: "my_payment_terminal", label: "💰 My Payment Terminal", count: 0 },
+    { id: "artm_terminal", label: "🏧 ARTM Terminal", count: 0 },
     { id: "real_estate_broker", label: "🏠 Real Estate Broker", count: 0 },
     { id: "bus_stop_agent", label: "🚌 Bus Stop Agent", count: 0 },
     // Legacy types for backward compatibility
@@ -59,7 +59,7 @@ const NewNeARAgentsMarketplace = ({ isOpen, onClose, userLocation }) => {
       const agentsData = await AgentService.fetchAllAgents();
       console.log(
         "📦 NewNeARAgentsMarketplace: Received agents:",
-        agentsData?.length
+        agentsData?.length,
       );
 
       if (agentsData && agentsData.length > 0) {
@@ -88,14 +88,14 @@ const NewNeARAgentsMarketplace = ({ isOpen, onClose, userLocation }) => {
           agent.name?.toLowerCase().includes(searchLower) ||
           agent.description?.toLowerCase().includes(searchLower) ||
           agent.agent_type?.toLowerCase().includes(searchLower) ||
-          agent.deployment_network_name?.toLowerCase().includes(searchLower)
+          agent.deployment_network_name?.toLowerCase().includes(searchLower),
       );
     }
 
     // Apply type filter
     if (selectedFilter !== "all") {
       filtered = filtered.filter(
-        (agent) => agent.agent_type === selectedFilter
+        (agent) => agent.agent_type === selectedFilter,
       );
     }
 

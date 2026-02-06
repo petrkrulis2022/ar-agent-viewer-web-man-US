@@ -112,7 +112,7 @@ const Agent3DModel = ({
     console.log(
       "⚠️ No 3D model found for agent type:",
       agentType,
-      "Using geometric fallback"
+      "Using geometric fallback",
     );
 
     // Fallback to geometric shapes for other agent types
@@ -140,8 +140,8 @@ const Agent3DModel = ({
           </group>
         );
 
-      case "content_creator":
-      case "Content Creator":
+      case "my_payment_terminal":
+      case "My Payment Terminal":
         return (
           <group>
             {/* Crystalline structure */}
@@ -225,7 +225,7 @@ const Agent3DModel = ({
           </group>
         );
 
-      case "payment_terminal":
+      case "pos_terminal":
       case "trailing_payment_terminal":
       case "Payment Terminal":
         return (
@@ -264,7 +264,8 @@ const Agent3DModel = ({
           </group>
         );
 
-      case "home_security":
+      // home_security type removed - use my_payment_terminal instead
+      case "deprecated_home_security":
       case "Home Security":
         return (
           <group>
@@ -395,7 +396,7 @@ const Agent3DModel = ({
         onAgentClick(agent);
       }
     },
-    [agent, onAgentClick]
+    [agent, onAgentClick],
   );
 
   // Distance-based scaling (closer = larger)

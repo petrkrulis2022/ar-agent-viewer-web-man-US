@@ -661,8 +661,8 @@ const ARViewer = () => {
         ? userWalletRaw.toLowerCase()
         : userWalletRaw;
 
-      // Debug logging
-      console.log("🔍 Filter Debug:", {
+      // Debug logging - in copiable JSON format
+      const filterDebugInfo = {
         userWallet,
         userWalletRaw,
         walletConnectionKeys: Object.keys(walletConnection || {}),
@@ -677,17 +677,35 @@ const ARViewer = () => {
               deployer_address: nearAgents[0].deployer_address,
               type: nearAgents[0].agent_type,
               object_type: nearAgents[0].object_type,
+              positioning_mode: nearAgents[0].positioning_mode,
+              screen_position_x: nearAgents[0].screen_position_x,
+              screen_position_y: nearAgents[0].screen_position_y,
+              latitude: nearAgents[0].latitude,
+              longitude: nearAgents[0].longitude,
             }
           : null,
-      });
+      };
+
+      console.log("🔍 Filter Debug (JSON):");
+      console.log(JSON.stringify(filterDebugInfo, null, 2));
+      console.log("🔍 Filter Debug (Object):", filterDebugInfo);
 
       console.log(
-        "📊 All nearAgents:",
-        nearAgents.map((a) => ({
-          name: a.name,
-          owner_wallet: a.owner_wallet,
-          type: a.agent_type || a.object_type,
-        })),
+        "📊 All nearAgents (JSON):",
+        JSON.stringify(
+          nearAgents.map((a) => ({
+            name: a.name,
+            owner_wallet: a.owner_wallet,
+            type: a.agent_type || a.object_type,
+            positioning_mode: a.positioning_mode,
+            screen_x: a.screen_position_x,
+            screen_y: a.screen_position_y,
+            lat: a.latitude,
+            lon: a.longitude,
+          })),
+          null,
+          2,
+        ),
       );
 
       agentsToFilter = nearAgents.filter((agent) => {
@@ -956,7 +974,36 @@ const ARViewer = () => {
       })),
     );
 
-    return agentsToFilter;
+    // Normalize agent types before returning (convert home_security to virtual_terminal, etc)
+    const normalizedAgents = agentsToFilter.map((agent) => ({
+      ...agent,
+      agent_type: normalizeAgentType(
+        agent.agent_type &&
+          agent.agent_type !== "null" &&
+          agent.agent_type !== null
+          ? agent.agent_type
+          : agent.object_type === "home_security"
+          ? "virtual_terminal"
+          : agent.object_type,
+      ),
+      object_type:
+        agent.object_type === "home_security"
+          ? "virtual_terminal"
+          : agent.object_type,
+    }));
+
+    console.log(
+      "🎯 getFilteredAgents RETURNING:",
+      normalizedAgents.length,
+      "agents",
+    );
+    normalizedAgents.forEach((a) => {
+      console.log(
+        `  - ${a.name} (ID: ${a.id}, positioning_mode: ${a.positioning_mode})`,
+      );
+    });
+
+    return normalizedAgents;
   };
 
   // Full initialization sequence
@@ -1679,7 +1726,7 @@ const ARViewer = () => {
                 />
               ) : (
                 /* New 3D Immersive View */
-                <div className="relative" style={{ minHeight: "500px" }}>
+                <div className="relative" style={{ height: "100vh", width: "100%" }}>
                   {/* Background Camera Feed for 3D AR - Lower priority */}
                   <div className="absolute inset-0 z-0">
                     <CameraView

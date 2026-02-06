@@ -308,27 +308,92 @@ const AR3DScene = ({
     const index = agents.indexOf(agent);
     const totalAgents = agents.length;
 
+    // Check if agent uses screen positioning mode
+    if (
+      agent.positioning_mode === "screen" &&
+      agent.screen_position_x !== undefined &&
+      agent.screen_position_y !== undefined
+    ) {
+      console.log(`   ✅ SCREEN MODE BRANCH TAKEN for ${agent.name}`);
+      console.log(
+        `📺 Screen positioning for agent ${agent.name}: x=${agent.screen_position_x}%, y=${agent.screen_position_y}%`,
+      );
+
+      // Convert screen percentages to 3D coordinates
+      // With camera at [0, 1.6, 5], FOV=75°
+      const distance = 2; // Distance in front of camera
+      const screenZ = 5 - distance; // = 3 (objects at Z=3)
+
+      // Calculate frustum dimensions using ACTUAL viewport dimensions
+      // This ensures proper conversion from screen % to 3D world coords
+      const vFOV = (75 * Math.PI) / 180; // 75° FOV in radians
+      
+      // Get actual canvas/viewport aspect ratio - use window dimensions
+      const canvasAspect = window.innerWidth / window.innerHeight;
+      
+      // Calculate frustum height and width at the object's Z distance
+      const frustumHeight = 2 * Math.tan(vFOV / 2) * distance;
+      const frustumWidth = frustumHeight * canvasAspect;
+      
+      // Convert screen percentages (0-100) to world coordinates
+      // X: 0% = left (-frustumWidth/2), 100% = right (+frustumWidth/2)
+      // Y: 0% = top (+frustumHeight/2), 100% = bottom (-frustumHeight/2)
+      const screenX =
+        -frustumWidth / 2 +
+        (agent.screen_position_x / 100) * frustumWidth;
+      const screenY =
+        frustumHeight / 2 -
+        (agent.screen_position_y / 100) * frustumHeight;
+
+      console.log(
+        `📐 Screen→3D: Input(${agent.screen_position_x.toFixed(
+          1,
+        )}%, ${agent.screen_position_y.toFixed(1)}%) → World(${screenX.toFixed(
+          2,
+        )}, ${screenY.toFixed(2)}, ${screenZ.toFixed(
+          1,
+        )}) [aspect=${canvasAspect.toFixed(2)}, frustum=${frustumWidth.toFixed(2)}×${frustumHeight.toFixed(2)}]`,
+      );
+
+      return {
+        position: [screenX, screenY, screenZ],
+        distance,
+        strategy: "screen-based",
+      };
+    }
+
     if (!userLoc || !agent.latitude || !agent.longitude) {
       // Enhanced distributed positioning for better coverage
+      console.log(
+        `   ✅ FALLBACK MODE BRANCH TAKEN for ${
+          agent.name
+        } (userLoc=${!!userLoc}, lat=${agent.latitude}, lon=${
+          agent.longitude
+        })`,
+      );
       console.log(
         `🎯 Using fallback 3D positioning for agent ${
           index + 1
         }/${totalAgents}: ${agent.name}`,
       );
 
-      // Use circular distribution for better spread - MUCH CLOSER to camera
-      const angle = (index / totalAgents) * 2 * Math.PI;
-      const radius = 1.5; // Fixed close radius - all agents at same distance from camera
+      // Use grid distribution for better spread when no GPS data
+      // Instead of circular, arrange in a grid pattern on screen
+      const agentsPerRow = Math.ceil(Math.sqrt(totalAgents));
+      const row = Math.floor(index / agentsPerRow);
+      const col = index % agentsPerRow;
 
-      // Calculate position in 3D space - at eye level, stationary
-      const x = Math.cos(angle) * radius;
-      const z = Math.sin(angle) * radius;
-      const y = 1.2; // Fixed eye level height
+      // Spread agents across the view (left-right, top-bottom)
+      const x = (col - (agentsPerRow - 1) / 2) * 1.5; // Spread horizontally
+      const y = 1.2 - row * 0.8; // Spread vertically
+      const z = -2; // Consistent depth
 
-      const distance = agent.distance_meters || 3; // Very close distance
+      const distance = 3; // Close distance for fallback positioning
 
       console.log(
-        `📍 Agent ${agent.name} positioned at (${x.toFixed(1)}, ${y.toFixed(
+        `📍 GRID FALLBACK: Agent ${
+          agent.name
+        } at grid[${row},${col}] → (${x.toFixed(1)}, ${y.toFixed(
           1,
         )}, ${z.toFixed(1)})`,
       );
@@ -336,11 +401,12 @@ const AR3DScene = ({
       return {
         position: [x, y, z],
         distance,
-        strategy: "fallback-circular-3d",
+        strategy: "fallback-grid-3d",
       };
     }
 
     // GPS-based 3D positioning
+    console.log(`   ✅ GPS MODE BRANCH TAKEN for ${agent.name}`);
     const latDiff = agent.latitude - userLoc.latitude;
     const lonDiff = agent.longitude - userLoc.longitude;
 
@@ -379,7 +445,20 @@ const AR3DScene = ({
   // Update 3D agents with positions
   useEffect(() => {
     console.log("🤖 AR3DScene received agents:", agents.length, "agents");
-    console.log("🤖 Full agents data:", agents);
+    
+    const agentsData = agents.map((a) => ({
+      name: a.name,
+      type: a.agent_type || a.object_type,
+      positioning_mode: a.positioning_mode,
+      screen_x: a.screen_position_x,
+      screen_y: a.screen_position_y,
+      lat: a.latitude,
+      lon: a.longitude,
+    }));
+    
+    console.log("🤖 Full agents data (JSON):");
+    console.log(JSON.stringify(agentsData, null, 2));
+    console.log("🤖 Full agents data (Object):", agentsData);
 
     if (agents.length === 0) {
       console.log("🤖 No agents to render - setting empty array");
@@ -387,12 +466,27 @@ const AR3DScene = ({
       return;
     }
 
-    const agentsWith3DPositions = agents.map((agent) => {
+    console.log(
+      `📍 USER LOCATION:`,
+      userLocation
+        ? `Lat=${userLocation.latitude.toFixed(
+            5,
+          )}, Lon=${userLocation.longitude.toFixed(5)}`
+        : "NO USER LOCATION",
+    );
+
+    const agentsWith3DPositions = agents.map((agent, idx) => {
+      console.log(
+        `🔍 [${idx}] Processing agent "${agent.name}" - positioning_mode="${agent.positioning_mode}" screen_x=${agent.screen_position_x} screen_y=${agent.screen_position_y} lat=${agent.latitude} lon=${agent.longitude}`,
+      );
+
       const position3D = convertTo3DPosition(agent, userLocation);
       console.log(
-        `🎯 3D Agent ${agent.name} -> Position: (${position3D.position
-          .map((p) => p.toFixed(1))
-          .join(", ")}) Distance: ${position3D.distance.toFixed(0)}m`,
+        `🎯 [${idx}] Agent "${agent.name}" -> Position: (${position3D.position
+          .map((p) => p.toFixed(2))
+          .join(", ")}) Strategy: ${
+          position3D.strategy
+        } Distance: ${position3D.distance.toFixed(1)}`,
       );
 
       return {
@@ -400,6 +494,23 @@ const AR3DScene = ({
         position3D,
       };
     });
+
+    // Log positioning results in JSON format
+    try {
+      const positioningResults = agentsWith3DPositions.map((a) => ({
+        name: a.name,
+        positioning_mode: a.positioning_mode,
+        position3D: a.position3D.position.map((p) => parseFloat(p.toFixed(2))),
+        strategy: a.position3D.strategy,
+        distance: parseFloat(a.position3D.distance.toFixed(1)),
+      }));
+      
+      console.log("📊 Agent Positioning Results (JSON):");
+      console.log(JSON.stringify(positioningResults, null, 2));
+      console.log("📊 Positioning Results (Object):", positioningResults);
+    } catch (e) {
+      console.error("❌ Error logging positioning results:", e);
+    }
 
     // Sort by distance (closest first)
     agentsWith3DPositions.sort(
@@ -480,10 +591,11 @@ const AR3DScene = ({
         <directionalLight position={[10, 10, 5]} intensity={1.5} />
         <pointLight position={[0, 5, 0]} intensity={0.8} color="#ffffff" />
 
-        {/* Enhanced 3D Agents using proper positioning */}
+        {/* Enhanced 3D Agents using proper positioning - GPS AND SCREEN MODES */}
         <Suspense fallback={<LoadingFallback />}>
           {agents3D.map((agent, index) => {
             // Use the calculated 3D position from convertTo3DPosition
+            // The positioning logic already handles both GPS and screen positioning modes
             const position = agent.position3D
               ? agent.position3D.position
               : [
@@ -493,7 +605,9 @@ const AR3DScene = ({
                 ];
 
             console.log(
-              `🤖 Rendering Enhanced3DAgent ${index}:`,
+              `🤖 Rendering Enhanced3DAgent (${
+                agent.positioning_mode || "gps"
+              } mode) ${index}:`,
               agent.name,
               "at position:",
               position,
@@ -524,6 +638,8 @@ const AR3DScene = ({
           </mesh>
         )}
       </Canvas>
+
+      {/* Screen agents now render as 3D models, not HTML overlays */}
 
       {/* Agent Interaction Modal */}
       <AgentInteractionModal

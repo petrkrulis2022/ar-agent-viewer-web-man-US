@@ -32,7 +32,7 @@ const NeARAgentsMarketplace = ({ isOpen, onClose, userLocation }) => {
       count: 0,
     },
     { id: "local_services", label: "🏪 Local Services", count: 0 },
-    { id: "payment_terminal", label: "💳 Payment Terminal", count: 0 },
+    { id: "pos_terminal", label: "💳 Payment Terminal", count: 0 },
     {
       id: "trailing_payment_terminal",
       label: "📱 Trailing Payment Terminal",
@@ -41,8 +41,8 @@ const NeARAgentsMarketplace = ({ isOpen, onClose, userLocation }) => {
     { id: "my_ghost", label: "👻 My Ghost", count: 0 },
     { id: "game_agent", label: "🎮 Game Agent", count: 0 },
     { id: "world_builder_3d", label: "🏗️ 3D World Builder", count: 0 },
-    { id: "home_security", label: "🔒 Home Security", count: 0 },
-    { id: "content_creator", label: "🎨 Content Creator", count: 0 },
+    { id: "my_payment_terminal", label: "💰 My Payment Terminal", count: 0 },
+    { id: "artm_terminal", label: "🏧 ARTM Terminal", count: 0 },
     { id: "real_estate_broker", label: "🏠 Real Estate Broker", count: 0 },
     { id: "bus_stop_agent", label: "🚌 Bus Stop Agent", count: 0 },
     // Legacy types for backward compatibility
@@ -82,7 +82,7 @@ const NeARAgentsMarketplace = ({ isOpen, onClose, userLocation }) => {
         } catch (error) {
           console.warn(
             "⚠️ Could not get device location, using default:",
-            error.message
+            error.message,
           );
           // Fallback to default location with wide radius for global coverage
           location = {
@@ -157,7 +157,7 @@ const NeARAgentsMarketplace = ({ isOpen, onClose, userLocation }) => {
       filtered = filtered.filter(
         (agent) =>
           agent.agent_type === selectedFilter || // Enhanced AgentSphere field
-          agent.object_type === selectedFilter // Legacy field
+          agent.object_type === selectedFilter, // Legacy field
       );
     }
 
@@ -171,7 +171,7 @@ const NeARAgentsMarketplace = ({ isOpen, onClose, userLocation }) => {
           agent.agent_type?.toLowerCase().includes(searchLower) ||
           agent.object_type?.toLowerCase().includes(searchLower) ||
           agent.location_type?.toLowerCase().includes(searchLower) ||
-          agent.capabilities?.toLowerCase().includes(searchLower)
+          agent.capabilities?.toLowerCase().includes(searchLower),
       );
     }
 
@@ -187,7 +187,7 @@ const NeARAgentsMarketplace = ({ isOpen, onClose, userLocation }) => {
         : agents.filter(
             (agent) =>
               agent.agent_type === filter.id || // Enhanced AgentSphere field
-              agent.object_type === filter.id // Legacy field
+              agent.object_type === filter.id, // Legacy field
           ).length,
   }));
 

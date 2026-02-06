@@ -702,10 +702,10 @@ const CameraView = forwardRef(
     };
 
     return (
-      <div className={`relative ${className}`}>
-        <Card className="bg-black/50 border-purple-500/30 backdrop-blur-sm overflow-hidden">
-          <CardContent className="p-0">
-            <div className="relative aspect-video bg-slate-900 overflow-hidden">
+      <div className={`relative h-full ${className}`}>
+        <Card className="bg-black/50 border-purple-500/30 backdrop-blur-sm overflow-hidden h-full">
+          <CardContent className="p-0 h-full">
+            <div className="relative w-full h-full bg-slate-900 overflow-hidden">
               {/* Video Element */}
               <video
                 ref={videoRef}
@@ -966,8 +966,8 @@ const CameraView = forwardRef(
           </CardContent>
         </Card>
 
-        {/* Agent Interaction Modal - Bypass for Virtual Terminals */}
-        {selectedAgent?.agent_type === "Virtual Terminal" ? (
+        {/* Agent Interaction Modal - Bypass for ARTM Terminals */}
+        {selectedAgent?.agent_type === "artm_terminal" ? (
           <ARTMDisplayModal agent={selectedAgent} onClose={closeModals} />
         ) : (
           <AgentInteractionModal

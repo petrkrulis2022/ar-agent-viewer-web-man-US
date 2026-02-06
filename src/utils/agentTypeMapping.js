@@ -7,10 +7,10 @@
 
 // Database value to display label mapping
 export const AGENT_TYPE_LABELS = {
-  // Payment-focused agents (top priority)
-  content_creator: "My Payment Terminal",
-  payment_terminal: "Payment Terminal - POS",
-  virtual_terminal: "Virtual Terminal (ARTM)",
+  // Payment-focused agents (NEW CLEAN TYPES)
+  my_payment_terminal: "My Payment Terminal",
+  pos_terminal: "Payment Terminal - POS",
+  artm_terminal: "ARTM Terminal",
   trailing_payment_terminal: "Trailing Payment Terminal",
 
   // Standard agent types
@@ -29,11 +29,10 @@ export const AGENT_TYPE_LABELS = {
   restaurant_agent: "🍽️ Restaurant Agent (Hedera AI)",
   travel_agent: "🌍 Travel Coordinator (Hedera AI)",
 
-  // Conditional/Special types
-  trailing_payment_terminal: "Trailing Payment Terminal",
+  // Other types
   my_ghost: "My Ghost",
 
-  // Legacy support
+  // Legacy support (deprecated)
   ai_agent: "AI Agent",
   study_buddy: "Study Buddy",
   tutor: "Tutor",
@@ -120,8 +119,9 @@ export const normalizeAgentType = (type) => {
 export const isPaymentAgent = (type) => {
   const normalized = normalizeAgentType(type);
   return [
-    "content_creator",
-    "payment_terminal",
+    "my_payment_terminal",
+    "pos_terminal",
+    "artm_terminal",
     "trailing_payment_terminal",
   ].includes(normalized);
 };
@@ -133,7 +133,7 @@ export const isPaymentAgent = (type) => {
  */
 export const isVirtualTerminal = (type) => {
   const normalized = normalizeAgentType(type);
-  return normalized === "virtual_terminal";
+  return normalized === "artm_terminal";
 };
 
 /**
@@ -184,9 +184,9 @@ export const getAgentTypeIcon = (type) => {
   const normalized = normalizeAgentType(type);
 
   const iconMap = {
-    content_creator: "💳",
-    payment_terminal: "🏪",
-    virtual_terminal: "🏧",
+    my_payment_terminal: "💳",
+    pos_terminal: "🏪",
+    artm_terminal: "🏧",
     trailing_payment_terminal: "📱",
     intelligent_assistant: "🤖",
     local_services: "🏘️",
@@ -215,16 +215,9 @@ export const getAgentTypeKeywords = (type) => {
   const normalized = normalizeAgentType(type);
 
   const keywordMap = {
-    content_creator: ["my", "payment", "terminal", "personal", "wallet"],
-    payment_terminal: ["payment", "terminal", "pos", "point", "sale"],
-    virtual_terminal: [
-      "artm",
-      "atm",
-      "cash",
-      "withdrawal",
-      "terminal",
-      "revolut",
-    ],
+    my_payment_terminal: ["my", "payment", "terminal", "personal", "wallet"],
+    pos_terminal: ["payment", "terminal", "pos", "point", "sale"],
+    artm_terminal: ["artm", "atm", "cash", "withdrawal", "terminal", "revolut"],
     intelligent_assistant: ["ai", "assistant", "help", "intelligent"],
     local_services: ["local", "services", "neighborhood", "community"],
     game_agent: ["game", "gaming", "play", "entertainment"],

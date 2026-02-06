@@ -98,7 +98,7 @@ if (import.meta.env.DEV) {
 }
 
 createRoot(document.getElementById("root")).render(
-  <StrictMode>
-    <App />
-  </StrictMode>
+  // Disabled StrictMode to prevent double-rendering in development
+  // It was causing agents to appear twice in AR scene (React dev-only behavior)
+  <App />,
 );
