@@ -1706,7 +1706,7 @@ const ARViewer = () => {
             )}
 
             {/* AR View Container */}
-            <div className="relative">
+            <div className="relative" style={{ height: "100vh" }}>
               {viewMode === "2d" ? (
                 /* Traditional 2D Camera View */
                 <CameraView
@@ -1726,7 +1726,10 @@ const ARViewer = () => {
                 />
               ) : (
                 /* New 3D Immersive View */
-                <div className="relative" style={{ height: "100vh", width: "100%" }}>
+                <div
+                  className="relative"
+                  style={{ height: "100vh", width: "100%" }}
+                >
                   {/* Background Camera Feed for 3D AR - Lower priority */}
                   <div className="absolute inset-0 z-0">
                     <CameraView

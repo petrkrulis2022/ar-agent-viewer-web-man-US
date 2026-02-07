@@ -709,7 +709,7 @@ const CameraView = forwardRef(
               {/* Video Element */}
               <video
                 ref={videoRef}
-                className={`w-full h-full object-cover ${
+                className={`absolute inset-0 w-full h-full object-cover ${
                   isStreaming ? "block" : "hidden"
                 }`}
                 autoPlay
