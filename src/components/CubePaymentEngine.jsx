@@ -1363,418 +1363,554 @@ const ARQRDisplay = ({
         />
       </mesh>
 
-      {/* Network Selection & QR Code */}
-      <Html position={position} transform>
+      {/* Network Selection & QR Code - ARTM Metallic Style */}
+      <Html
+        position={position}
+        center
+        distanceFactor={10}
+        style={{
+          transform: "translate(-50%, -50%)",
+          pointerEvents: "auto",
+        }}
+      >
+        {/* Outer metallic ATM body */}
         <div
           style={{
-            width: "400px",
-            height: "500px",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "white",
-            borderRadius: "20px",
-            padding: "20px",
-            border: "3px solid #00ff00",
-            boxShadow: "0 0 30px #00ff0080",
-            transform: "translate(-50%, -50%)",
-            cursor: "pointer",
+            background:
+              "linear-gradient(170deg, #3a3a3a 0%, #1a1a1a 40%, #0d0d0d 100%)",
+            borderRadius: "18px",
+            padding: "14px",
+            width: "440px",
+            boxShadow:
+              "0 30px 80px rgba(0,0,0,0.6), " +
+              "0 0 0 1px rgba(255,255,255,0.08), " +
+              "inset 0 1px 0 rgba(255,255,255,0.12), " +
+              "inset 0 -2px 0 rgba(0,0,0,0.4)",
+            position: "relative",
           }}
         >
-          {/* Network Selection Dropdown */}
-          <div style={{ marginBottom: "15px", width: "100%" }}>
-            <label
+          {/* Top bezel — brand strip + LED */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "6px 10px 10px",
+            }}
+          >
+            <span
               style={{
-                display: "block",
-                fontSize: "14px",
-                color: "#333",
-                marginBottom: "8px",
-                fontWeight: "bold",
+                color: "rgba(255,255,255,0.35)",
+                fontSize: "10px",
+                fontWeight: "700",
+                letterSpacing: "3px",
+                textTransform: "uppercase",
               }}
             >
-              🌐 Select Network:
-            </label>
-            <select
-              value={selectedNetwork}
-              onChange={(e) => handleNetworkChange(e.target.value)}
-              disabled={isGeneratingQR}
+              {selectedMethod === "ens_payments"
+                ? "ENS PAYMENT"
+                : "CRYPTO PAYMENT"}
+            </span>
+            {/* LED indicator */}
+            <div
               style={{
-                width: "100%",
-                padding: "8px 12px",
-                borderRadius: "8px",
-                border: "2px solid #00ff00",
-                backgroundColor: "#f8f9fa",
-                fontSize: "14px",
-                fontWeight: "bold",
-                color: "#333",
-                cursor: isGeneratingQR ? "wait" : "pointer",
+                width: "8px",
+                height: "8px",
+                borderRadius: "50%",
+                backgroundColor:
+                  selectedMethod === "ens_payments" ? "#5298ff" : "#00ff66",
+                boxShadow:
+                  selectedMethod === "ens_payments"
+                    ? "0 0 6px #5298ff"
+                    : "0 0 6px #00ff66",
+                animation: "ledPulse 2s ease-in-out infinite",
               }}
-            >
-              {Object.entries(supportedNetworks).map(([chainId, network]) => (
-                <option key={chainId} value={chainId}>
-                  {network.name} ({network.symbol})
-                </option>
-              ))}
-            </select>
+            />
           </div>
 
-          {/* CCIP Cross-Chain Payment Options */}
-          {showCrossChainUI && (
-            <div style={{ marginBottom: "15px", width: "100%" }}>
-              <label
+          {/* Inner screen area */}
+          <div
+            style={{
+              background: "linear-gradient(180deg, #f5f5f7 0%, #e8e8ec 100%)",
+              borderRadius: "10px",
+              padding: "24px 20px",
+              position: "relative",
+              overflow: "hidden",
+              maxHeight: "75vh",
+              overflowY: "auto",
+              // Recessed screen bevel
+              boxShadow:
+                "inset 0 2px 8px rgba(0,0,0,0.25), " +
+                "inset 0 0 0 1px rgba(0,0,0,0.15), " +
+                "0 1px 0 rgba(255,255,255,0.06)",
+            }}
+          >
+            {/* Screen gloss / reflection overlay */}
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: "40%",
+                background:
+                  "linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 100%)",
+                pointerEvents: "none",
+                borderRadius: "10px 10px 0 0",
+                zIndex: 1,
+              }}
+            />
+            {/* Scan line */}
+            <div
+              style={{
+                position: "absolute",
+                left: 0,
+                right: 0,
+                height: "1px",
+                background: "rgba(0,0,0,0.06)",
+                animation: "scanline 4s linear infinite",
+                pointerEvents: "none",
+                zIndex: 1,
+              }}
+            />
+
+            {/* Content wrapper with relative positioning */}
+            <div style={{ position: "relative", zIndex: 2 }}>
+              {/* Close/Cancel Button */}
+              <button
+                onClick={onBack}
                 style={{
-                  display: "block",
-                  fontSize: "14px",
-                  color: "#333",
-                  marginBottom: "8px",
-                  fontWeight: "bold",
+                  position: "absolute",
+                  top: "0px",
+                  right: "0px",
+                  background: "rgba(0,0,0,0.15)",
+                  border: "1px solid rgba(0,0,0,0.1)",
+                  cursor: "pointer",
+                  padding: "6px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: "6px",
+                  transition: "all 0.15s",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
+                  zIndex: 10,
+                  fontSize: "18px",
+                  width: "28px",
+                  height: "28px",
+                  lineHeight: "1",
+                  color: "#666",
                 }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(0,0,0,0.25)";
+                  e.currentTarget.style.color = "#333";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(0,0,0,0.15)";
+                  e.currentTarget.style.color = "#666";
+                }}
+                title="Cancel Payment"
               >
-                🌉 Payment Mode:
-              </label>
+                ×
+              </button>
 
-              {/* Payment Mode Selection */}
-              <div style={{ marginBottom: "10px" }}>
-                {Array.isArray(crossChainOptions) &&
-                  crossChainOptions.map((option, index) => (
-                    <div
-                      key={index}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        marginBottom: "6px",
-                        padding: "8px",
-                        backgroundColor:
-                          paymentMode === option.type ? "#e8f5e8" : "#f8f9fa",
-                        borderRadius: "6px",
-                        border:
-                          paymentMode === option.type
-                            ? "2px solid #00ff00"
-                            : "1px solid #ddd",
-                        cursor: "pointer",
-                      }}
-                      onClick={() => handlePaymentModeChange(option.type)}
-                    >
-                      <input
-                        type="radio"
-                        name="paymentMode"
-                        value={option.type}
-                        checked={paymentMode === option.type}
-                        onChange={() => handlePaymentModeChange(option.type)}
-                        style={{ marginRight: "8px" }}
-                      />
-                      <div style={{ flex: 1 }}>
-                        <div
-                          style={{
-                            fontSize: "13px",
-                            fontWeight: "bold",
-                            color: "#333",
-                          }}
-                        >
-                          {option.type === "same-chain" && "📱 Same Network"}
-                          {option.type === "cross-chain" && "🌉 Cross-Chain"}
-                          {option.type === "switch-network" &&
-                            "🔄 Switch Network"}
-                          {option.recommended && (
-                            <span
-                              style={{ color: "#00aa00", fontSize: "11px" }}
-                            >
-                              {" "}
-                              (Recommended)
-                            </span>
-                          )}
-                        </div>
-                        <div style={{ fontSize: "11px", color: "#666" }}>
-                          {option.description}
-                        </div>
-                        <div style={{ fontSize: "10px", color: "#888" }}>
-                          Fee: {option.fee}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-
-              {/* Cross-Chain Route Info */}
-              {paymentMode === "cross-chain" && userNetwork && agentNetwork && (
-                <div
+              {/* Network Selection Dropdown */}
+              <div style={{ marginBottom: "15px", width: "100%" }}>
+                <label
                   style={{
-                    padding: "10px",
-                    backgroundColor: "#fff3cd",
-                    borderRadius: "6px",
-                    border: "1px solid #ffc107",
-                    fontSize: "12px",
-                    color: "#856404",
+                    display: "block",
+                    fontSize: "14px",
+                    color: "#333",
+                    marginBottom: "8px",
+                    fontWeight: "bold",
                   }}
                 >
-                  <div style={{ fontWeight: "bold", marginBottom: "4px" }}>
-                    🌉 Cross-Chain Route:
+                  🌐 Select Network:
+                </label>
+                <select
+                  value={selectedNetwork}
+                  onChange={(e) => handleNetworkChange(e.target.value)}
+                  disabled={isGeneratingQR}
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    borderRadius: "8px",
+                    border: "2px solid #00ff00",
+                    backgroundColor: "#f8f9fa",
+                    fontSize: "14px",
+                    fontWeight: "bold",
+                    color: "#333",
+                    cursor: isGeneratingQR ? "wait" : "pointer",
+                  }}
+                >
+                  {Object.entries(supportedNetworks).map(
+                    ([chainId, network]) => (
+                      <option key={chainId} value={chainId}>
+                        {network.name} ({network.symbol})
+                      </option>
+                    ),
+                  )}
+                </select>
+              </div>
+
+              {/* CCIP Cross-Chain Payment Options */}
+              {showCrossChainUI && (
+                <div style={{ marginBottom: "15px", width: "100%" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "14px",
+                      color: "#333",
+                      marginBottom: "8px",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    🌉 Payment Mode:
+                  </label>
+
+                  {/* Payment Mode Selection */}
+                  <div style={{ marginBottom: "10px" }}>
+                    {Array.isArray(crossChainOptions) &&
+                      crossChainOptions.map((option, index) => (
+                        <div
+                          key={index}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            marginBottom: "6px",
+                            padding: "8px",
+                            backgroundColor:
+                              paymentMode === option.type
+                                ? "#e8f5e8"
+                                : "#f8f9fa",
+                            borderRadius: "6px",
+                            border:
+                              paymentMode === option.type
+                                ? "2px solid #00ff00"
+                                : "1px solid #ddd",
+                            cursor: "pointer",
+                          }}
+                          onClick={() => handlePaymentModeChange(option.type)}
+                        >
+                          <input
+                            type="radio"
+                            name="paymentMode"
+                            value={option.type}
+                            checked={paymentMode === option.type}
+                            onChange={() =>
+                              handlePaymentModeChange(option.type)
+                            }
+                            style={{ marginRight: "8px" }}
+                          />
+                          <div style={{ flex: 1 }}>
+                            <div
+                              style={{
+                                fontSize: "13px",
+                                fontWeight: "bold",
+                                color: "#333",
+                              }}
+                            >
+                              {option.type === "same-chain" &&
+                                "📱 Same Network"}
+                              {option.type === "cross-chain" &&
+                                "🌉 Cross-Chain"}
+                              {option.type === "switch-network" &&
+                                "🔄 Switch Network"}
+                              {option.recommended && (
+                                <span
+                                  style={{ color: "#00aa00", fontSize: "11px" }}
+                                >
+                                  {" "}
+                                  (Recommended)
+                                </span>
+                              )}
+                            </div>
+                            <div style={{ fontSize: "11px", color: "#666" }}>
+                              {option.description}
+                            </div>
+                            <div style={{ fontSize: "10px", color: "#888" }}>
+                              Fee: {option.fee}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                   </div>
-                  <div>
-                    {supportedNetworks[userNetwork]?.name} →{" "}
-                    {supportedNetworks[agentNetwork]?.name}
-                  </div>
-                  {crossChainFeeEstimate && (
-                    <div style={{ marginTop: "4px", fontSize: "11px" }}>
-                      Estimated Fee: {parseFloat(crossChainFeeEstimate) / 1e18}{" "}
-                      ETH
+
+                  {/* Cross-Chain Route Info */}
+                  {paymentMode === "cross-chain" &&
+                    userNetwork &&
+                    agentNetwork && (
+                      <div
+                        style={{
+                          padding: "10px",
+                          backgroundColor: "#fff3cd",
+                          borderRadius: "6px",
+                          border: "1px solid #ffc107",
+                          fontSize: "12px",
+                          color: "#856404",
+                        }}
+                      >
+                        <div
+                          style={{ fontWeight: "bold", marginBottom: "4px" }}
+                        >
+                          🌉 Cross-Chain Route:
+                        </div>
+                        <div>
+                          {supportedNetworks[userNetwork]?.name} →{" "}
+                          {supportedNetworks[agentNetwork]?.name}
+                        </div>
+                        {crossChainFeeEstimate && (
+                          <div style={{ marginTop: "4px", fontSize: "11px" }}>
+                            Estimated Fee:{" "}
+                            {parseFloat(crossChainFeeEstimate) / 1e18} ETH
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                  {/* Network Switch Prompt */}
+                  {paymentMode === "switch-network" && agentNetwork && (
+                    <div
+                      style={{
+                        padding: "10px",
+                        backgroundColor: "#d1ecf1",
+                        borderRadius: "6px",
+                        border: "1px solid #bee5eb",
+                        fontSize: "12px",
+                        color: "#0c5460",
+                      }}
+                    >
+                      <div style={{ fontWeight: "bold", marginBottom: "4px" }}>
+                        🔄 Network Switch Required:
+                      </div>
+                      <div>
+                        Please switch to {supportedNetworks[agentNetwork]?.name}{" "}
+                        in your wallet to continue.
+                      </div>
                     </div>
                   )}
                 </div>
               )}
 
-              {/* Network Switch Prompt */}
-              {paymentMode === "switch-network" && agentNetwork && (
+              {/* Wallet Balance Display */}
+              <div
+                style={{
+                  marginBottom: "10px",
+                  width: "100%",
+                  textAlign: "center",
+                  padding: "8px",
+                  backgroundColor: "#f0f8ff",
+                  borderRadius: "8px",
+                  border: "1px solid #ddd",
+                }}
+              >
                 <div
                   style={{
-                    padding: "10px",
-                    backgroundColor: "#d1ecf1",
-                    borderRadius: "6px",
-                    border: "1px solid #bee5eb",
                     fontSize: "12px",
-                    color: "#0c5460",
+                    color: "#666",
+                    marginBottom: "4px",
                   }}
                 >
-                  <div style={{ fontWeight: "bold", marginBottom: "4px" }}>
-                    🔄 Network Switch Required:
+                  💰 Your Wallet Balance:
+                </div>
+                <div
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: "bold",
+                    color: walletBalance !== null ? "#00aa00" : "#666",
+                  }}
+                >
+                  {isLoadingBalance
+                    ? "Loading..."
+                    : walletBalance !== null
+                    ? `${parseFloat(walletBalance).toFixed(4)} ${
+                        supportedNetworks[selectedNetwork]?.symbol || "tokens"
+                      }`
+                    : "Connect wallet to view"}
+                </div>
+              </div>
+
+              {/* ENS Payment Info Display */}
+              {selectedMethod === "ens_payments" && ensPaymentInfo && (
+                <div
+                  style={{
+                    marginBottom: "15px",
+                    width: "100%",
+                    padding: "12px",
+                    backgroundColor: "#f0f7ff",
+                    borderRadius: "10px",
+                    border: "2px solid #5298ff",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: "bold",
+                      color: "#5298ff",
+                      marginBottom: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    🌐 ENS Payment
                   </div>
-                  <div>
-                    Please switch to {supportedNetworks[agentNetwork]?.name} in
-                    your wallet to continue.
+                  <div style={{ fontSize: "12px", color: "#333" }}>
+                    <div style={{ marginBottom: "4px" }}>
+                      <strong>Domain:</strong> {ensPaymentInfo.domain}
+                    </div>
+                    <div style={{ marginBottom: "4px" }}>
+                      <strong>Resolves to:</strong>{" "}
+                      {ensPaymentInfo.resolvedAddress.slice(0, 10)}...
+                      {ensPaymentInfo.resolvedAddress.slice(-8)}
+                    </div>
+                    <div style={{ marginBottom: "4px" }}>
+                      <strong>Amount:</strong> {ensPaymentInfo.amount} ETH
+                    </div>
+                    <div>
+                      <strong>Network:</strong> {ensPaymentInfo.network}
+                    </div>
                   </div>
                 </div>
               )}
-            </div>
-          )}
 
-          {/* Wallet Balance Display */}
-          <div
-            style={{
-              marginBottom: "10px",
-              width: "100%",
-              textAlign: "center",
-              padding: "8px",
-              backgroundColor: "#f0f8ff",
-              borderRadius: "8px",
-              border: "1px solid #ddd",
-            }}
-          >
-            <div
-              style={{ fontSize: "12px", color: "#666", marginBottom: "4px" }}
-            >
-              💰 Your Wallet Balance:
-            </div>
-            <div
-              style={{
-                fontSize: "14px",
-                fontWeight: "bold",
-                color: walletBalance !== null ? "#00aa00" : "#666",
-              }}
-            >
-              {isLoadingBalance
-                ? "Loading..."
-                : walletBalance !== null
-                ? `${parseFloat(walletBalance).toFixed(4)} ${
-                    supportedNetworks[selectedNetwork]?.symbol || "tokens"
-                  }`
-                : "Connect wallet to view"}
-            </div>
-          </div>
-
-          {/* ENS Payment Info Display */}
-          {selectedMethod === "ens_payments" && ensPaymentInfo && (
-            <div
-              style={{
-                marginBottom: "15px",
-                width: "100%",
-                padding: "12px",
-                backgroundColor: "#f0f7ff",
-                borderRadius: "10px",
-                border: "2px solid #5298ff",
-              }}
-            >
+              {/* Agent Payment Info */}
               <div
                 style={{
-                  fontSize: "14px",
+                  marginBottom: "15px",
+                  fontSize: "16px",
+                  color: "#333",
+                  textAlign: "center",
                   fontWeight: "bold",
-                  color: "#5298ff",
-                  marginBottom: "8px",
+                }}
+              >
+                💳 Pay {agent?.name || "Agent"}
+              </div>
+
+              <div
+                style={{
+                  marginBottom: "15px",
+                  fontSize: "14px",
+                  color: "#666",
                   textAlign: "center",
                 }}
               >
-                🌐 ENS Payment
-              </div>
-              <div style={{ fontSize: "12px", color: "#333" }}>
-                <div style={{ marginBottom: "4px" }}>
-                  <strong>Domain:</strong> {ensPaymentInfo.domain}
+                <div
+                  style={{
+                    fontSize: "16px",
+                    fontWeight: "bold",
+                    color: "#333",
+                  }}
+                >
+                  {(() => {
+                    // Check if agent has dynamic fee type
+                    const isDynamicFee = agent?.fee_type === "dynamic";
+
+                    // Use the paymentAmount prop that was passed to this component
+                    // It already has the final calculated amount from getFinalPaymentAmount()
+                    const finalAmount = paymentAmount;
+
+                    // For dynamic fee agents without payment amount, show "Dynamic Amount"
+                    if (isDynamicFee && !finalAmount) {
+                      return (
+                        <span style={{ color: "#ff9500" }}>Dynamic Amount</span>
+                      );
+                    }
+
+                    // Otherwise show the amount
+                    return (
+                      <>
+                        {finalAmount}{" "}
+                        {supportedNetworks[selectedNetwork]?.symbol || "USDC"}
+                      </>
+                    );
+                  })()}
                 </div>
-                <div style={{ marginBottom: "4px" }}>
-                  <strong>Resolves to:</strong>{" "}
-                  {ensPaymentInfo.resolvedAddress.slice(0, 10)}...
-                  {ensPaymentInfo.resolvedAddress.slice(-8)}
-                </div>
-                <div style={{ marginBottom: "4px" }}>
-                  <strong>Amount:</strong> {ensPaymentInfo.amount} ETH
-                </div>
-                <div>
-                  <strong>Network:</strong> {ensPaymentInfo.network}
-                </div>
-              </div>
-            </div>
-          )}
+                <span
+                  style={{
+                    fontSize: "12px",
+                    color: supportedNetworks[selectedNetwork]?.color,
+                  }}
+                >
+                  on {supportedNetworks[selectedNetwork]?.name}
+                </span>
 
-          {/* Agent Payment Info */}
-          <div
-            style={{
-              marginBottom: "15px",
-              fontSize: "16px",
-              color: "#333",
-              textAlign: "center",
-              fontWeight: "bold",
-            }}
-          >
-            💳 Pay {agent?.name || "Agent"}
-          </div>
-
-          <div
-            style={{
-              marginBottom: "15px",
-              fontSize: "14px",
-              color: "#666",
-              textAlign: "center",
-            }}
-          >
-            <div
-              style={{ fontSize: "16px", fontWeight: "bold", color: "#333" }}
-            >
-              {(() => {
-                // Check if agent has dynamic fee type
-                const isDynamicFee = agent?.fee_type === "dynamic";
-
-                // Use the paymentAmount prop that was passed to this component
-                // It already has the final calculated amount from getFinalPaymentAmount()
-                const finalAmount = paymentAmount;
-
-                // For dynamic fee agents without payment amount, show "Dynamic Amount"
-                if (isDynamicFee && !finalAmount) {
-                  return (
-                    <span style={{ color: "#ff9500" }}>Dynamic Amount</span>
-                  );
-                }
-
-                // Otherwise show the amount
-                return (
-                  <>
-                    {finalAmount}{" "}
-                    {supportedNetworks[selectedNetwork]?.symbol || "USDC"}
-                  </>
-                );
-              })()}
-            </div>
-            <span
-              style={{
-                fontSize: "12px",
-                color: supportedNetworks[selectedNetwork]?.color,
-              }}
-            >
-              on {supportedNetworks[selectedNetwork]?.name}
-            </span>
-
-            {/* Show URL payment data if available */}
-            {urlPaymentData && (
-              <div
-                style={{
-                  marginTop: "10px",
-                  padding: "8px",
-                  backgroundColor: "#e8f5e8",
-                  borderRadius: "6px",
-                  fontSize: "11px",
-                  color: "#333",
-                }}
-              >
-                {urlPaymentData.orderId && (
-                  <div>📝 Order: {urlPaymentData.orderId}</div>
-                )}
-                {urlPaymentData.merchantName && (
-                  <div>🏪 From: {urlPaymentData.merchantName}</div>
+                {/* Show URL payment data if available */}
+                {urlPaymentData && (
+                  <div
+                    style={{
+                      marginTop: "10px",
+                      padding: "8px",
+                      backgroundColor: "#e8f5e8",
+                      borderRadius: "6px",
+                      fontSize: "11px",
+                      color: "#333",
+                    }}
+                  >
+                    {urlPaymentData.orderId && (
+                      <div>📝 Order: {urlPaymentData.orderId}</div>
+                    )}
+                    {urlPaymentData.merchantName && (
+                      <div>🏪 From: {urlPaymentData.merchantName}</div>
+                    )}
+                  </div>
                 )}
               </div>
-            )}
-          </div>
 
-          {/* QR Code Display */}
-          {isGeneratingQR ? (
-            <div
-              style={{
-                width: "200px",
-                height: "200px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: "#f0f0f0",
-                borderRadius: "10px",
-                fontSize: "14px",
-                color: "#666",
-              }}
-            >
-              🔄 Generating QR...
-            </div>
-          ) : paymentMode === "switch-network" ? (
-            <div
-              style={{
-                width: "200px",
-                height: "200px",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: "#f8f9fa",
-                borderRadius: "10px",
-                border: "2px dashed #007bff",
-                fontSize: "14px",
-                color: "#007bff",
-                textAlign: "center",
-                padding: "20px",
-              }}
-            >
-              <div style={{ fontSize: "24px", marginBottom: "10px" }}>🔄</div>
-              <div style={{ fontWeight: "bold", marginBottom: "8px" }}>
-                Switch Network
-              </div>
-              <div style={{ fontSize: "12px" }}>
-                Please switch to {supportedNetworks[agentNetwork]?.name} in your
-                wallet
-              </div>
-            </div>
-          ) : currentQRData ? (
-            <div onClick={handleQRClick}>
-              {typeof currentQRData === "string" &&
-              (currentQRData.startsWith("data:image") ||
-                currentQRData.startsWith("http")) ? (
-                <img
-                  src={currentQRData}
-                  alt="Payment QR Code"
+              {/* QR Code Display */}
+              {isGeneratingQR ? (
+                <div
                   style={{
                     width: "200px",
                     height: "200px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: "#f0f0f0",
                     borderRadius: "10px",
-                    cursor: "pointer",
-                    border:
-                      paymentMode === "cross-chain"
-                        ? "2px solid #ff9500"
-                        : "2px solid #00ff00",
+                    fontSize: "14px",
+                    color: "#666",
                   }}
-                />
-              ) : (
-                <div style={{ position: "relative" }}>
-                  {qrDisplayValue && qrDisplayValue.length > 0 ? (
-                    <QRCode
-                      value={qrDisplayValue}
-                      size={200}
+                >
+                  🔄 Generating QR...
+                </div>
+              ) : paymentMode === "switch-network" ? (
+                <div
+                  style={{
+                    width: "200px",
+                    height: "200px",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: "#f8f9fa",
+                    borderRadius: "10px",
+                    border: "2px dashed #007bff",
+                    fontSize: "14px",
+                    color: "#007bff",
+                    textAlign: "center",
+                    padding: "20px",
+                  }}
+                >
+                  <div style={{ fontSize: "24px", marginBottom: "10px" }}>
+                    🔄
+                  </div>
+                  <div style={{ fontWeight: "bold", marginBottom: "8px" }}>
+                    Switch Network
+                  </div>
+                  <div style={{ fontSize: "12px" }}>
+                    Please switch to {supportedNetworks[agentNetwork]?.name} in
+                    your wallet
+                  </div>
+                </div>
+              ) : currentQRData ? (
+                <div onClick={handleQRClick}>
+                  {typeof currentQRData === "string" &&
+                  (currentQRData.startsWith("data:image") ||
+                    currentQRData.startsWith("http")) ? (
+                    <img
+                      src={currentQRData}
+                      alt="Payment QR Code"
                       style={{
-                        background: "white",
-                        padding: "10px",
+                        width: "200px",
+                        height: "200px",
                         borderRadius: "10px",
                         cursor: "pointer",
                         border:
@@ -1784,174 +1920,266 @@ const ARQRDisplay = ({
                       }}
                     />
                   ) : (
-                    <div
-                      style={{
-                        width: "200px",
-                        height: "200px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        backgroundColor: "#f0f0f0",
-                        borderRadius: "10px",
-                        fontSize: "14px",
-                        color: "#666",
-                      }}
-                    >
-                      No QR Data Available
-                    </div>
-                  )}
-                  {paymentMode === "cross-chain" && (
-                    <div
-                      style={{
-                        position: "absolute",
-                        top: "-5px",
-                        right: "-5px",
-                        backgroundColor: "#ff9500",
-                        color: "white",
-                        borderRadius: "50%",
-                        width: "30px",
-                        height: "30px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "16px",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      🌉
+                    <div style={{ position: "relative" }}>
+                      {qrDisplayValue && qrDisplayValue.length > 0 ? (
+                        <QRCode
+                          value={qrDisplayValue}
+                          size={200}
+                          style={{
+                            background: "white",
+                            padding: "10px",
+                            borderRadius: "10px",
+                            cursor: "pointer",
+                            border:
+                              paymentMode === "cross-chain"
+                                ? "2px solid #ff9500"
+                                : "2px solid #00ff00",
+                          }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            width: "200px",
+                            height: "200px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            backgroundColor: "#f0f0f0",
+                            borderRadius: "10px",
+                            fontSize: "14px",
+                            color: "#666",
+                          }}
+                        >
+                          No QR Data Available
+                        </div>
+                      )}
+                      {paymentMode === "cross-chain" && (
+                        <div
+                          style={{
+                            position: "absolute",
+                            top: "-5px",
+                            right: "-5px",
+                            backgroundColor: "#ff9500",
+                            color: "white",
+                            borderRadius: "50%",
+                            width: "30px",
+                            height: "30px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "16px",
+                            fontWeight: "bold",
+                          }}
+                        >
+                          🌉
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
+              ) : (
+                <div
+                  style={{
+                    width: "200px",
+                    height: "200px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: "#f0f0f0",
+                    borderRadius: "10px",
+                    fontSize: "14px",
+                    color: "#666",
+                  }}
+                >
+                  No QR Code Available
+                </div>
               )}
-            </div>
-          ) : (
-            <div
-              style={{
-                width: "200px",
-                height: "200px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: "#f0f0f0",
-                borderRadius: "10px",
-                fontSize: "14px",
-                color: "#666",
-              }}
-            >
-              No QR Code Available
-            </div>
-          )}
 
-          {/* Payment Instructions */}
+              {/* Payment Instructions */}
+              <div
+                style={{
+                  marginTop: "15px",
+                  fontSize: "12px",
+                  color: "#333",
+                  textAlign: "center",
+                  fontWeight: "bold",
+                }}
+              >
+                {transactionHash ? (
+                  <>
+                    ✅ PAYMENT SUCCESSFUL!
+                    <br />
+                    <a
+                      href={`https://hashscan.io/testnet/transaction/${transactionHash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        color: "#00D4AA",
+                        textDecoration: "underline",
+                        cursor: "pointer",
+                        fontSize: "11px",
+                        marginTop: "8px",
+                        display: "inline-block",
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
+                    >
+                      🔗 View on HashScan
+                    </a>
+                    <br />
+                    <span
+                      style={{
+                        fontSize: "9px",
+                        color: "#666",
+                        marginTop: "4px",
+                        display: "block",
+                      }}
+                    >
+                      TX: {transactionHash.slice(0, 10)}...
+                      {transactionHash.slice(-8)}
+                    </span>
+                  </>
+                ) : paymentMode === "cross-chain" ? (
+                  <>
+                    🌉 CROSS-CHAIN PAYMENT
+                    <br />
+                    🖱️ CLICK to Pay from {supportedNetworks[userNetwork]?.name}
+                    <br />
+                    📱 SCAN with Mobile Wallet
+                    {crossChainFeeEstimate && (
+                      <div
+                        style={{
+                          fontSize: "10px",
+                          color: "#ff9500",
+                          marginTop: "4px",
+                        }}
+                      >
+                        Additional cross-chain fee applies
+                      </div>
+                    )}
+                  </>
+                ) : paymentMode === "switch-network" ? (
+                  <>
+                    🔄 NETWORK SWITCH REQUIRED
+                    <br />
+                    Switch to {supportedNetworks[agentNetwork]?.name} first
+                  </>
+                ) : (
+                  <>
+                    🖱️ CLICK to Pay with{" "}
+                    {selectedNetwork === "solana-devnet"
+                      ? "Phantom"
+                      : "MetaMask"}
+                    <br />
+                    📱 SCAN with Mobile Wallet
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom bezel — screw holes + card slot hint */}
           <div
             style={{
-              marginTop: "15px",
-              fontSize: "12px",
-              color: "#333",
-              textAlign: "center",
-              fontWeight: "bold",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "10px 14px 4px",
             }}
           >
-            {transactionHash ? (
-              <>
-                ✅ PAYMENT SUCCESSFUL!
-                <br />
-                <a
-                  href={`https://hashscan.io/testnet/transaction/${transactionHash}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    color: "#00D4AA",
-                    textDecoration: "underline",
-                    cursor: "pointer",
-                    fontSize: "11px",
-                    marginTop: "8px",
-                    display: "inline-block",
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
-                >
-                  🔗 View on HashScan
-                </a>
-                <br />
-                <span
-                  style={{
-                    fontSize: "9px",
-                    color: "#666",
-                    marginTop: "4px",
-                    display: "block",
-                  }}
-                >
-                  TX: {transactionHash.slice(0, 10)}...
-                  {transactionHash.slice(-8)}
-                </span>
-              </>
-            ) : paymentMode === "cross-chain" ? (
-              <>
-                🌉 CROSS-CHAIN PAYMENT
-                <br />
-                🖱️ CLICK to Pay from {supportedNetworks[userNetwork]?.name}
-                <br />
-                📱 SCAN with Mobile Wallet
-                {crossChainFeeEstimate && (
-                  <div
-                    style={{
-                      fontSize: "10px",
-                      color: "#ff9500",
-                      marginTop: "4px",
-                    }}
-                  >
-                    Additional cross-chain fee applies
-                  </div>
-                )}
-              </>
-            ) : paymentMode === "switch-network" ? (
-              <>
-                🔄 NETWORK SWITCH REQUIRED
-                <br />
-                Switch to {supportedNetworks[agentNetwork]?.name} first
-              </>
-            ) : (
-              <>
-                🖱️ CLICK to Pay with{" "}
-                {selectedNetwork === "solana-devnet" ? "Phantom" : "MetaMask"}
-                <br />
-                📱 SCAN with Mobile Wallet
-              </>
-            )}
+            {/* Screw hole left */}
+            <div
+              style={{
+                width: "6px",
+                height: "6px",
+                borderRadius: "50%",
+                background: "radial-gradient(circle, #555 30%, #222 70%)",
+                boxShadow: "inset 0 1px 1px rgba(0,0,0,0.6)",
+              }}
+            />
+            {/* Card slot / payment indicator */}
+            <div
+              style={{
+                width: "50px",
+                height: "4px",
+                borderRadius: "2px",
+                background: "linear-gradient(90deg, #222, #333, #222)",
+                boxShadow: "inset 0 1px 2px rgba(0,0,0,0.5)",
+              }}
+            />
+            {/* Screw hole right */}
+            <div
+              style={{
+                width: "6px",
+                height: "6px",
+                borderRadius: "50%",
+                background: "radial-gradient(circle, #555 30%, #222 70%)",
+                boxShadow: "inset 0 1px 1px rgba(0,0,0,0.6)",
+              }}
+            />
+          </div>
+
+          {/* Cancel Payment Button - Hardware style */}
+          <div
+            style={{
+              padding: "12px 14px 8px",
+              display: "flex",
+              justifyContent: "center",
+            }}
+          >
+            <button
+              onClick={onBack}
+              style={{
+                background: "linear-gradient(145deg, #e63946, #c62937)",
+                border: "1px solid rgba(0,0,0,0.2)",
+                borderRadius: "8px",
+                padding: "10px 24px",
+                color: "white",
+                fontWeight: "700",
+                cursor: "pointer",
+                fontSize: "13px",
+                letterSpacing: "0.5px",
+                boxShadow:
+                  "0 4px 12px rgba(230, 57, 70, 0.4), " +
+                  "inset 0 1px 0 rgba(255,255,255,0.2), " +
+                  "inset 0 -2px 0 rgba(0,0,0,0.2)",
+                transition: "all 0.15s",
+                textShadow: "0 1px 2px rgba(0,0,0,0.3)",
+                width: "100%",
+                maxWidth: "200px",
+              }}
+              onMouseOver={(e) => {
+                e.target.style.transform = "translateY(-2px)";
+                e.target.style.boxShadow =
+                  "0 6px 16px rgba(230, 57, 70, 0.5), " +
+                  "inset 0 1px 0 rgba(255,255,255,0.2), " +
+                  "inset 0 -2px 0 rgba(0,0,0,0.2)";
+              }}
+              onMouseOut={(e) => {
+                e.target.style.transform = "translateY(0)";
+                e.target.style.boxShadow =
+                  "0 4px 12px rgba(230, 57, 70, 0.4), " +
+                  "inset 0 1px 0 rgba(255,255,255,0.2), " +
+                  "inset 0 -2px 0 rgba(0,0,0,0.2)";
+              }}
+            >
+              ✕ Cancel Payment
+            </button>
           </div>
         </div>
-      </Html>
 
-      {/* Back Button */}
-      <Html position={[0, position[1] - 3.0, position[2]]} transform>
-        <button
-          onClick={onBack}
-          style={{
-            background: "linear-gradient(135deg, #00ff00, #00cc00)",
-            border: "none",
-            borderRadius: "25px",
-            padding: "10px 20px",
-            color: "black",
-            fontWeight: "bold",
-            cursor: "pointer",
-            fontSize: "16px",
-            boxShadow: "0 5px 15px rgba(0, 255, 0, 0.3)",
-            transform: "translate(-50%, -50%)",
-            transition: "all 0.3s ease",
-          }}
-          onMouseOver={(e) => {
-            e.target.style.transform = "translate(-50%, -50%) scale(1.1)";
-            e.target.style.boxShadow = "0 8px 25px rgba(0, 255, 0, 0.5)";
-          }}
-          onMouseOut={(e) => {
-            e.target.style.transform = "translate(-50%, -50%) scale(1)";
-            e.target.style.boxShadow = "0 5px 15px rgba(0, 255, 0, 0.3)";
-          }}
-        >
-          ← Back to Cube
-        </button>
+        {/* CSS Animations */}
+        <style>{`
+          @keyframes scanline {
+            0% { top: 0%; }
+            100% { top: 100%; }
+          }
+          @keyframes ledPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+          }
+        `}</style>
       </Html>
 
       {/* QR Code Lighting */}
