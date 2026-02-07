@@ -173,7 +173,7 @@ const Enhanced3DAgent = ({
 }) => {
   const meshRef = useRef();
   const groupRef = useRef();
-  const [hovered, setHovered] = useState(false);
+  const hovered = false; // Hover animations disabled
 
   // DEBUG: Log position for ARTM agents
   if (
@@ -191,34 +191,15 @@ const Enhanced3DAgent = ({
 
   // Animation state
   const animationTime = useRef(0);
-  const floatOffset = useRef(Math.random() * Math.PI * 2);
 
-  // Animate the 3D model - float only, no rotation
+  // Animate the 3D model - static position, no floating, no hover pulse
   useFrame((state, delta) => {
     if (!groupRef.current) return;
 
     animationTime.current += delta;
 
-    // Remove rotation - models should face camera
-    // groupRef.current.rotation.y += delta * spinSpeed.current;
-
-    // Gentle floating animation
-    const floatAmplitude = 0.15; // How much it floats up/down
-    const floatSpeed = 1.5; // Speed of floating
-    groupRef.current.position.y =
-      position[1] +
-      Math.sin(animationTime.current * floatSpeed + floatOffset.current) *
-        floatAmplitude;
-
-    // Subtle pulse effect when hovered (only if meshRef exists)
-    if (meshRef.current && hovered) {
-      const pulse = 1 + Math.sin(animationTime.current * 8) * 0.08;
-      if (meshRef.current.scale) {
-        meshRef.current.scale.setScalar(pulse);
-      }
-    } else if (meshRef.current && meshRef.current.scale) {
-      meshRef.current.scale.setScalar(1);
-    }
+    // Keep models at their exact position - no floating
+    groupRef.current.position.y = position[1];
   });
 
   // Get agent color based on type
@@ -391,9 +372,9 @@ const Enhanced3DAgent = ({
           >
             <VirtualATMModel
               hovered={hovered}
-              scale={0.18}
+              scale={0.05}
               position={[0, 0, 0]}
-              rotation={[0, 0, 0]}
+              rotation={[0, Math.PI / 4, 0]}
             />
           </Suspense>
 
@@ -671,8 +652,6 @@ const Enhanced3DAgent = ({
       position={[position[0], position[1], position[2]]}
       scale={[distanceScale, distanceScale, distanceScale]}
       onClick={handleClick}
-      onPointerOver={() => setHovered(true)}
-      onPointerOut={() => setHovered(false)}
     >
       {/* Enhanced 3D Model */}
       {getEnhanced3DModel()}
