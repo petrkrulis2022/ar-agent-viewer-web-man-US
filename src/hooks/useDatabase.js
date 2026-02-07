@@ -588,6 +588,15 @@ export const useDatabase = () => {
                 ? parseFloat(obj.screen_position_y)
                 : undefined,
             positioning_mode: obj.positioning_mode || "gps",
+            // ARTM Virtual Terminal fields
+            bank_integrations: obj.bank_integrations || [],
+            exchange_integrations: obj.exchange_integrations || [],
+            card_payments_enabled: obj.card_payments_enabled || false,
+            wallet_management_enabled: obj.wallet_management_enabled || false,
+            terminal_display_config: obj.terminal_display_config || null,
+            payment_config: obj.payment_config || null,
+            payment_methods: obj.payment_methods || null,
+            owner_wallet: obj.owner_wallet || obj.deployer_address || null,
           };
 
           // Log payment fields for debugging for first object

@@ -198,7 +198,15 @@ export const getNearAgentsFromSupabase = async (
         features,
         screen_position_x,
         screen_position_y,
-        positioning_mode
+        positioning_mode,
+        bank_integrations,
+        exchange_integrations,
+        card_payments_enabled,
+        wallet_management_enabled,
+        terminal_display_config,
+        payment_config,
+        payment_methods,
+        owner_wallet
       `,
       )
       .limit(100);
