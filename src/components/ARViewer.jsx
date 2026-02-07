@@ -770,8 +770,11 @@ const ARViewer = () => {
         }
 
         if (filters.allPaymentTerminals) {
-          // Show payment terminals but EXCLUDE Virtual Terminals (they have their own ARTM system)
-          return !isMyAgent && isAnyPaymentTerminal && !isVirtualTerminalType;
+          // "Pay with CubePay" — show only POS terminals by OTHER users
+          // Exclude my_payment_terminal (those are private online terminals)
+          // Exclude Virtual Terminals (they have their own ARTM system)
+          const isPosTerminal = agentType === "pos_terminal";
+          return !isMyAgent && isPosTerminal;
         }
 
         // Individual type filters - now using normalized values

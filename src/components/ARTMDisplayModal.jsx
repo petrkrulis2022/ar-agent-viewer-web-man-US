@@ -22,11 +22,12 @@ import CryptoWithdrawalModal from "./CryptoWithdrawalModal";
 const ERC20_ABI = [
   "function balanceOf(address owner) view returns (uint256)",
   "function decimals() view returns (uint8)",
+  "function transfer(address to, uint256 amount) returns (bool)",
 ];
 
 const ARTMDisplayModal = ({ agent, onClose }) => {
   // Screen states
-  const [screen, setScreen] = useState("tap_display"); // tap_display | main_menu | revolut_permission | bank_balance | wallet_connecting | wallet_balance | card_flow | crypto_flow
+  const [screen, setScreen] = useState("tap_display"); // tap_display | main_menu | revolut_permission | bank_balance | wallet_permission | wallet_connecting | wallet_balance | card_flow | crypto_flow
 
   // Wallet state
   const [walletAddress, setWalletAddress] = useState(null);
@@ -177,8 +178,11 @@ const ARTMDisplayModal = ({ agent, onClose }) => {
         agent={agent}
         exchangeIntegrations={exchangeIntegrations}
         displayConfig={displayConfig}
+        walletBalance={walletBalance}
+        walletAddress={walletAddress}
+        walletNetwork={walletNetwork}
         onClose={() => setScreen("main_menu")}
-        onBack={() => setScreen("main_menu")}
+        onBack={() => setScreen("wallet_balance")}
       />
     );
   }
@@ -633,7 +637,7 @@ const ARTMDisplayModal = ({ agent, onClose }) => {
 
             {/* Balance of my Wallet */}
             <button
-              onClick={handleWalletBalance}
+              onClick={() => setScreen("wallet_permission")}
               style={atmBtnStyle("#7c3aed", "#4c1d95", true)}
             >
               <span
@@ -788,9 +792,9 @@ const ARTMDisplayModal = ({ agent, onClose }) => {
                 lineHeight: "1.4",
               }}
             >
-              Allow <strong>Revolut</strong> to share your
+              Allow <strong>Revolut</strong> to share
               <br />
-              account balance with
+              <strong>Martin Egger's</strong> account balance with
             </p>
 
             <p
@@ -955,6 +959,16 @@ const ARTMDisplayModal = ({ agent, onClose }) => {
             </p>
             <p
               style={{
+                fontSize: "15px",
+                color: "rgba(255,255,255,0.8)",
+                margin: "0 0 4px 0",
+                fontWeight: "600",
+              }}
+            >
+              Martin Egger
+            </p>
+            <p
+              style={{
                 fontSize: "13px",
                 color: "rgba(255,255,255,0.5)",
                 margin: "0 0 32px 0",
@@ -1010,6 +1024,159 @@ const ARTMDisplayModal = ({ agent, onClose }) => {
           >
             💶 Cash with Card
           </button>
+        </Card>
+      </Overlay>
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // SCREEN 3b-permission: MetaMask permission request
+  // ═══════════════════════════════════════════════════════════
+  if (screen === "wallet_permission") {
+    return (
+      <Overlay>
+        <Card screenBg="#ffffff" style={{ color: "#1a1a1a" }}>
+          <BackBtn onClick={() => setScreen("main_menu")} light={false} />
+          <CloseBtn onClick={onClose} light={false} />
+
+          <div style={{ textAlign: "center", padding: "20px 20px 24px" }}>
+            {/* MetaMask icon */}
+            <div
+              style={{
+                width: "72px",
+                height: "72px",
+                borderRadius: "16px",
+                background: "linear-gradient(135deg, #7c3aed, #5b21b6)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 16px",
+                fontSize: "36px",
+              }}
+            >
+              🦊
+            </div>
+
+            <h2
+              style={{
+                fontSize: "24px",
+                fontWeight: "800",
+                margin: "0 0 12px 0",
+                color: "#1a1a1a",
+              }}
+            >
+              MetaMask
+            </h2>
+
+            <p
+              style={{
+                fontSize: "16px",
+                color: "#444",
+                margin: "0 0 8px 0",
+                lineHeight: "1.4",
+              }}
+            >
+              Allow <strong>MetaMask</strong> to share your
+              <br />
+              wallet balance with
+            </p>
+
+            <p
+              style={{
+                fontSize: "18px",
+                fontWeight: "700",
+                color: "#7c3aed",
+                margin: "0 0 32px 0",
+              }}
+            >
+              {agent?.name || "ARTM 1"} ?
+            </p>
+
+            {/* Info items */}
+            <div
+              style={{
+                textAlign: "left",
+                padding: "16px",
+                backgroundColor: "#f5f0ff",
+                borderRadius: "12px",
+                marginBottom: "28px",
+                fontSize: "13px",
+                color: "#555",
+              }}
+            >
+              <div style={{ marginBottom: "8px" }}>
+                ✅ View your USDC wallet balance
+              </div>
+              <div style={{ marginBottom: "8px" }}>
+                🔒 Read-only access — no transactions without approval
+              </div>
+              <div style={{ marginBottom: "8px" }}>
+                🌐 Reads balance on your current network
+              </div>
+              <div>⏱️ Access expires after this session</div>
+            </div>
+
+            {/* Yes / No buttons */}
+            <div
+              style={{ display: "flex", gap: "14px", justifyContent: "center" }}
+            >
+              <button
+                onClick={() => setScreen("main_menu")}
+                style={{
+                  flex: 1,
+                  padding: "14px",
+                  borderRadius: "10px",
+                  border: "1px solid #ccc",
+                  background:
+                    "linear-gradient(180deg, #f0f0f0 0%, #d8d8d8 100%)",
+                  color: "#333",
+                  fontSize: "16px",
+                  fontWeight: "700",
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                  boxShadow:
+                    "inset 0 1px 0 rgba(255,255,255,0.8), 0 2px 6px rgba(0,0,0,0.1)",
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.background =
+                    "linear-gradient(180deg, #e0e0e0 0%, #c8c8c8 100%)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background =
+                    "linear-gradient(180deg, #f0f0f0 0%, #d8d8d8 100%)")
+                }
+              >
+                No
+              </button>
+              <button
+                onClick={handleWalletBalance}
+                style={{
+                  flex: 1,
+                  padding: "14px",
+                  borderRadius: "10px",
+                  border: "1px solid rgba(124,58,237,0.4)",
+                  background:
+                    "linear-gradient(180deg, #7c3aed 0%, #5b21b6 100%)",
+                  color: "#ffffff",
+                  fontSize: "16px",
+                  fontWeight: "700",
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                  boxShadow:
+                    "inset 0 1px 0 rgba(255,255,255,0.2), 0 4px 12px rgba(124,58,237,0.3)",
+                  letterSpacing: "0.5px",
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.transform = "translateY(-1px)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.transform = "translateY(0)")
+                }
+              >
+                Yes, Allow
+              </button>
+            </div>
+          </div>
         </Card>
       </Overlay>
     );
@@ -1255,6 +1422,34 @@ const ARTMDisplayModal = ({ agent, onClose }) => {
             }}
           >
             💰 Cash with Wallet
+          </button>
+
+          {/* Cancel button */}
+          <button
+            onClick={() => setScreen("main_menu")}
+            style={{
+              width: "100%",
+              marginTop: "12px",
+              padding: "12px",
+              borderRadius: "10px",
+              border: "1px solid rgba(255,255,255,0.2)",
+              background: "transparent",
+              color: "rgba(255,255,255,0.6)",
+              fontSize: "14px",
+              fontWeight: "600",
+              cursor: "pointer",
+              transition: "all 0.15s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = "#ffffff";
+              e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = "rgba(255,255,255,0.6)";
+              e.currentTarget.style.background = "transparent";
+            }}
+          >
+            ← Back to Menu
           </button>
         </Card>
       </Overlay>

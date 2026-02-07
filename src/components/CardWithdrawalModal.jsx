@@ -139,7 +139,17 @@ const CardWithdrawalModal = ({
         <div style={{ fontSize: "48px", fontWeight: "bold" }}>
           ${mockBalance.toFixed(2)}
         </div>
-        <div style={{ fontSize: "13px", opacity: 0.8, marginTop: "8px" }}>
+        <div
+          style={{
+            fontSize: "15px",
+            opacity: 0.9,
+            marginTop: "8px",
+            fontWeight: "600",
+          }}
+        >
+          Martin Egger
+        </div>
+        <div style={{ fontSize: "13px", opacity: 0.8, marginTop: "4px" }}>
           Revolut USD Account
         </div>
       </div>

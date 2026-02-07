@@ -41,8 +41,8 @@ const PaymentTerminalPOSModel = ({ hovered }) => {
   return (
     <primitive
       object={scene.clone()}
-      scale={0.05}
-      position={[0, -0.5, 0]}
+      scale={1.2}
+      position={[0, -1, -5]}
       rotation={[0, Math.PI / 4, 0]}
     />
   );
