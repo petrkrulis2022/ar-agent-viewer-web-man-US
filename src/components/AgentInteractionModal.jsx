@@ -24,6 +24,9 @@ import {
   Phone,
   MicOff,
   VideoOff,
+  Receipt,
+  RotateCcw,
+  CreditCard,
 } from "lucide-react";
 import {
   getUSDCContractForChain,
@@ -1203,15 +1206,15 @@ const AgentInteractionModal = ({
 
                 {/* Touch Action Buttons - 4 Buttons in 2x2 Grid at Bottom */}
                 <div className="grid grid-cols-2 gap-2 flex-shrink-0 pb-2">
-                  {/* Generate Payment QR Button */}
+                  {/* Proceed To Payment Button */}
                   <button
                     onClick={handlePayment}
                     className="group relative overflow-hidden bg-gradient-to-br from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold py-5 px-4 rounded-xl border-2 border-green-400/50 shadow-xl hover:shadow-2xl shadow-green-500/30 transition-all duration-200 hover:scale-105 active:scale-95 border-b-4 border-b-emerald-700"
                   >
                     <div className="relative z-10 flex flex-col items-center justify-center space-y-1">
-                      <QrCode className="w-7 h-7" />
+                      <CreditCard className="w-7 h-7" />
                       <span className="text-xs tracking-wide uppercase leading-tight text-center font-bold">
-                        Generate QR
+                        Proceed To Payment
                       </span>
                     </div>
                     <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-200"></div>
@@ -1233,30 +1236,30 @@ const AgentInteractionModal = ({
                     <div className="absolute top-1 right-1 w-2 h-2 bg-white/40 rounded-full blur-sm"></div>
                   </button>
 
-                  {/* XXX Button */}
+                  {/* Detailed Receipt Button */}
                   <button
-                    onClick={() => console.log("XXX action")}
+                    onClick={() => console.log("Detailed Receipt action")}
                     className="group relative overflow-hidden bg-gradient-to-br from-purple-500 to-violet-600 hover:from-purple-400 hover:to-violet-500 text-white font-bold py-5 px-4 rounded-xl border-2 border-purple-400/50 shadow-xl hover:shadow-2xl shadow-purple-500/30 transition-all duration-200 hover:scale-105 active:scale-95 border-b-4 border-b-violet-700"
                   >
                     <div className="relative z-10 flex flex-col items-center justify-center space-y-1">
-                      <Wallet className="w-7 h-7" />
+                      <Receipt className="w-7 h-7" />
                       <span className="text-xs tracking-wide uppercase leading-tight text-center font-bold">
-                        XXX
+                        Detailed Receipt
                       </span>
                     </div>
                     <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-200"></div>
                     <div className="absolute top-1 right-1 w-2 h-2 bg-white/40 rounded-full blur-sm"></div>
                   </button>
 
-                  {/* YYY Button */}
+                  {/* Revert Payment Button */}
                   <button
-                    onClick={() => console.log("YYY action")}
+                    onClick={() => console.log("Revert Payment action")}
                     className="group relative overflow-hidden bg-gradient-to-br from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500 text-white font-bold py-5 px-4 rounded-xl border-2 border-orange-400/50 shadow-xl hover:shadow-2xl shadow-orange-500/30 transition-all duration-200 hover:scale-105 active:scale-95 border-b-4 border-b-red-700"
                   >
                     <div className="relative z-10 flex flex-col items-center justify-center space-y-1">
-                      <Bot className="w-7 h-7" />
+                      <RotateCcw className="w-7 h-7" />
                       <span className="text-xs tracking-wide uppercase leading-tight text-center font-bold">
-                        YYY
+                        Revert Payment
                       </span>
                     </div>
                     <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-200"></div>

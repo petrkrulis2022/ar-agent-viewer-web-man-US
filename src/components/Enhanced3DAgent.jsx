@@ -6,6 +6,7 @@ import * as THREE from "three";
 // Preload 3D models for better performance
 useGLTF.preload("/models/terminals/humanoid_robot_face.glb");
 useGLTF.preload("/models/terminals/my_personal_terminal.glb");
+useGLTF.preload("/models/terminals/payment_terminal_test.glb");
 useGLTF.preload("/models/terminals/p-o-s_terminal.glb");
 useGLTF.preload("/models/terminals/atm_6_mb.glb");
 
@@ -24,13 +25,13 @@ const RoboticFaceModel = ({ hovered }) => {
 };
 
 const MyPersonalTerminalModel = ({ hovered }) => {
-  const { scene } = useGLTF("/models/terminals/my_personal_terminal.glb");
+  const { scene } = useGLTF("/models/terminals/payment_terminal_test.glb");
   return (
     <primitive
       object={scene.clone()}
-      scale={0.8}
-      position={[0, -1, -0.8]}
-      rotation={[0, Math.PI / 4, 0]}
+      scale={0.015}
+      position={[0, -0.1, 0]}
+      rotation={[-Math.PI / 2 - 0.45, 0, Math.PI]}
     />
   );
 };
@@ -40,8 +41,8 @@ const PaymentTerminalPOSModel = ({ hovered }) => {
   return (
     <primitive
       object={scene.clone()}
-      scale={0.8}
-      position={[0, -1, -0.8]}
+      scale={0.05}
+      position={[0, -0.5, 0]}
       rotation={[0, Math.PI / 4, 0]}
     />
   );
@@ -328,7 +329,7 @@ const Enhanced3DAgent = ({
     }
 
     // Determine which model to use based on agent type
-    // My Payment Terminal (my_payment_terminal) - uses my_personal_terminal.glb
+    // My Payment Terminal (my_payment_terminal) - uses payment_terminal_test.glb
     const isMyPaymentTerminal =
       agent.agent_type === "my_payment_terminal" ||
       agent.object_type === "my_payment_terminal";
@@ -416,7 +417,7 @@ const Enhanced3DAgent = ({
       );
     }
 
-    // My Payment Terminal (my_payment_terminal) - uses my_personal_terminal.glb
+    // My Payment Terminal (my_payment_terminal) - uses payment_terminal_test.glb
     if (isMyPaymentTerminal) {
       return (
         <group ref={meshRef}>
@@ -638,9 +639,13 @@ const Enhanced3DAgent = ({
     [agent, onAgentClick],
   );
 
-  // Distance-based scaling
+  // Distance-based scaling (reduce scale for my_payment_terminal to prevent oversizing)
+  const isMyPaymentTerminal =
+    agent.agent_type === "my_payment_terminal" ||
+    agent.object_type === "my_payment_terminal";
+  const maxScale = isMyPaymentTerminal ? 0.15 : 2.0;
   const distanceScale =
-    Math.max(0.4, Math.min(2.0, 60 / Math.max(distance, 15))) * scale;
+    Math.max(0.2, Math.min(maxScale, 60 / Math.max(distance, 15))) * scale;
 
   // Determine hit box size based on agent type
   // Reduced hit box for tighter clickable areas (prevents overlap when agents are close)

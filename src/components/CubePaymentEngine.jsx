@@ -117,7 +117,10 @@ const getAgentPaymentConfig = async (agentId) => {
       enabledMethods.push("crypto_qr"); // Always enable crypto QR as fallback
     }
 
-    if (paymentMethods.virtual_card?.enabled) {
+    if (
+      paymentMethods.bank_virtual_card?.enabled ||
+      paymentMethods.virtual_card?.enabled
+    ) {
       enabledMethods.push("virtual_card");
     }
 
@@ -3075,15 +3078,7 @@ const CubePaymentEngine = ({
             isOpen={showVirtualCardModal}
             onClose={handleVirtualCardClose}
             agentName={agent?.name || "AgentSphere Agent"}
-            agentFee={getFinalPaymentAmount()}
-            agentToken={
-              supportedNetworks[
-                agent?.deployment_chain_id ||
-                  agent?.chain_id ||
-                  agent?.network_id ||
-                  selectedNetwork
-              ]?.symbol || "USDC"
-            }
+            paymentAmount={getFinalPaymentAmount()}
             agentId={agent?.id}
             onPaymentComplete={(result) => {
               console.log("✅ Virtual card payment completed:", result);

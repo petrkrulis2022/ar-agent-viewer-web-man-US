@@ -84,7 +84,7 @@ const ARQRViewer = ({
       await qrCodeService.updateQRCodeStatus(
         qrCode.id,
         qrCodeService.QR_CODE_STATUS.SCANNED,
-        { scanned_at: new Date().toISOString() }
+        { scanned_at: new Date().toISOString() },
       );
 
       // Remove from local state
@@ -257,20 +257,7 @@ const ARQRViewer = ({
         </div>
       )}
 
-      {/* No QR Codes Message */}
-      {!isLoading && arQRCodes.length === 0 && showAROverlay && (
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30">
-          <Card className="bg-black/80 backdrop-blur-sm border-slate-500/30">
-            <CardContent className="p-4 text-center">
-              <QrCode className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-              <p className="text-slate-400 text-sm">No AR QR codes nearby</p>
-              <p className="text-slate-500 text-xs mt-1">
-                Generate payment QRs to see them here
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      {/* No QR Codes Message - hidden, not needed */}
     </div>
   );
 };

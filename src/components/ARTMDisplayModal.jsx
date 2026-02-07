@@ -226,7 +226,8 @@ const ARTMDisplayModal = ({ agent, onClose }) => {
     <div
       style={{
         // Outer metallic ATM body
-        background: "linear-gradient(170deg, #3a3a3a 0%, #1a1a1a 40%, #0d0d0d 100%)",
+        background:
+          "linear-gradient(170deg, #3a3a3a 0%, #1a1a1a 40%, #0d0d0d 100%)",
         borderRadius: "18px",
         padding: "14px",
         width: "92%",
@@ -275,7 +276,8 @@ const ARTMDisplayModal = ({ agent, onClose }) => {
       {/* Inner screen area */}
       <div
         style={{
-          background: screenBg || "linear-gradient(180deg, #f5f5f7 0%, #e8e8ec 100%)",
+          background:
+            screenBg || "linear-gradient(180deg, #f5f5f7 0%, #e8e8ec 100%)",
           borderRadius: "10px",
           padding: "28px 24px",
           position: "relative",
@@ -429,7 +431,14 @@ const ARTMDisplayModal = ({ agent, onClose }) => {
       <Overlay onBackdropClick={onClose}>
         <Card screenBg="linear-gradient(160deg, #0a1628 0%, #0d2847 50%, #0a1628 100%)">
           <CloseBtn onClick={onClose} />
-          <div style={{ textAlign: "center", marginBottom: "12px", position: "relative", zIndex: 2 }}>
+          <div
+            style={{
+              textAlign: "center",
+              marginBottom: "12px",
+              position: "relative",
+              zIndex: 2,
+            }}
+          >
             <h2
               style={{
                 fontSize: "20px",
@@ -441,7 +450,15 @@ const ARTMDisplayModal = ({ agent, onClose }) => {
             >
               {agent?.name || "ARTM"}
             </h2>
-            <p style={{ fontSize: "11px", color: "rgba(255,255,255,0.35)", margin: 0, letterSpacing: "2px", textTransform: "uppercase" }}>
+            <p
+              style={{
+                fontSize: "11px",
+                color: "rgba(255,255,255,0.35)",
+                margin: 0,
+                letterSpacing: "2px",
+                textTransform: "uppercase",
+              }}
+            >
               AR Teller Machine
             </p>
           </div>
@@ -478,7 +495,14 @@ const ARTMDisplayModal = ({ agent, onClose }) => {
                 "inset 0 1px 20px rgba(255,255,255,0.08), 0 0 30px rgba(0,82,255,0.25)";
             }}
           >
-            <span style={{ fontSize: "36px", filter: "drop-shadow(0 0 8px rgba(0,140,255,0.5))" }}>🏧</span>
+            <span
+              style={{
+                fontSize: "36px",
+                filter: "drop-shadow(0 0 8px rgba(0,140,255,0.5))",
+              }}
+            >
+              🏧
+            </span>
             <span
               style={{
                 color: "#ffffff",
@@ -490,7 +514,13 @@ const ARTMDisplayModal = ({ agent, onClose }) => {
             >
               TAP ON DISPLAY
             </span>
-            <span style={{ color: "rgba(255,255,255,0.45)", fontSize: "11px", letterSpacing: "1px" }}>
+            <span
+              style={{
+                color: "rgba(255,255,255,0.45)",
+                fontSize: "11px",
+                letterSpacing: "1px",
+              }}
+            >
               Touch to start
             </span>
           </button>
@@ -534,7 +564,14 @@ const ARTMDisplayModal = ({ agent, onClose }) => {
       <Overlay onBackdropClick={onClose}>
         <Card screenBg="linear-gradient(180deg, #0a1628 0%, #0d2140 50%, #081422 100%)">
           <CloseBtn onClick={onClose} />
-          <div style={{ textAlign: "center", marginBottom: "16px", position: "relative", zIndex: 2 }}>
+          <div
+            style={{
+              textAlign: "center",
+              marginBottom: "16px",
+              position: "relative",
+              zIndex: 2,
+            }}
+          >
             <h2
               style={{
                 fontSize: "18px",
@@ -546,7 +583,15 @@ const ARTMDisplayModal = ({ agent, onClose }) => {
             >
               {agent?.name || "ARTM"}
             </h2>
-            <p style={{ fontSize: "11px", color: "rgba(255,255,255,0.35)", margin: 0, letterSpacing: "2px", textTransform: "uppercase" }}>
+            <p
+              style={{
+                fontSize: "11px",
+                color: "rgba(255,255,255,0.35)",
+                margin: 0,
+                letterSpacing: "2px",
+                textTransform: "uppercase",
+              }}
+            >
               Select an option
             </p>
           </div>
@@ -565,9 +610,20 @@ const ARTMDisplayModal = ({ agent, onClose }) => {
             <button
               onClick={handleBankBalance}
               disabled={bankIntegrations.length === 0}
-              style={atmBtnStyle("#0066ff", "#003399", bankIntegrations.length > 0)}
+              style={atmBtnStyle(
+                "#0066ff",
+                "#003399",
+                bankIntegrations.length > 0,
+              )}
             >
-              <span style={{ fontSize: "24px", filter: "drop-shadow(0 0 4px rgba(0,100,255,0.5))" }}>🏦</span>
+              <span
+                style={{
+                  fontSize: "24px",
+                  filter: "drop-shadow(0 0 4px rgba(0,100,255,0.5))",
+                }}
+              >
+                🏦
+              </span>
               <span style={{ lineHeight: "1.2", textAlign: "center" }}>
                 Balance of my
                 <br />
@@ -580,7 +636,14 @@ const ARTMDisplayModal = ({ agent, onClose }) => {
               onClick={handleWalletBalance}
               style={atmBtnStyle("#7c3aed", "#4c1d95", true)}
             >
-              <span style={{ fontSize: "24px", filter: "drop-shadow(0 0 4px rgba(124,58,237,0.5))" }}>🦊</span>
+              <span
+                style={{
+                  fontSize: "24px",
+                  filter: "drop-shadow(0 0 4px rgba(124,58,237,0.5))",
+                }}
+              >
+                🦊
+              </span>
               <span style={{ lineHeight: "1.2", textAlign: "center" }}>
                 Balance of my
                 <br />
@@ -592,9 +655,20 @@ const ARTMDisplayModal = ({ agent, onClose }) => {
             <button
               onClick={handleCashWithCard}
               disabled={bankIntegrations.length === 0}
-              style={atmBtnStyle("#10b981", "#065f46", bankIntegrations.length > 0)}
+              style={atmBtnStyle(
+                "#10b981",
+                "#065f46",
+                bankIntegrations.length > 0,
+              )}
             >
-              <span style={{ fontSize: "24px", filter: "drop-shadow(0 0 4px rgba(16,185,129,0.5))" }}>💳</span>
+              <span
+                style={{
+                  fontSize: "24px",
+                  filter: "drop-shadow(0 0 4px rgba(16,185,129,0.5))",
+                }}
+              >
+                💳
+              </span>
               <span style={{ lineHeight: "1.2", textAlign: "center" }}>
                 Cash with
                 <br />
@@ -606,9 +680,20 @@ const ARTMDisplayModal = ({ agent, onClose }) => {
             <button
               onClick={handleCashWithWallet}
               disabled={exchangeIntegrations.length === 0}
-              style={atmBtnStyle("#f59e0b", "#92400e", exchangeIntegrations.length > 0)}
+              style={atmBtnStyle(
+                "#f59e0b",
+                "#92400e",
+                exchangeIntegrations.length > 0,
+              )}
             >
-              <span style={{ fontSize: "24px", filter: "drop-shadow(0 0 4px rgba(245,158,11,0.5))" }}>💰</span>
+              <span
+                style={{
+                  fontSize: "24px",
+                  filter: "drop-shadow(0 0 4px rgba(245,158,11,0.5))",
+                }}
+              >
+                💰
+              </span>
               <span style={{ lineHeight: "1.2", textAlign: "center" }}>
                 Cash with
                 <br />
@@ -751,19 +836,23 @@ const ARTMDisplayModal = ({ agent, onClose }) => {
                   padding: "14px",
                   borderRadius: "10px",
                   border: "1px solid #ccc",
-                  background: "linear-gradient(180deg, #f0f0f0 0%, #d8d8d8 100%)",
+                  background:
+                    "linear-gradient(180deg, #f0f0f0 0%, #d8d8d8 100%)",
                   color: "#333",
                   fontSize: "16px",
                   fontWeight: "700",
                   cursor: "pointer",
                   transition: "all 0.15s",
-                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8), 0 2px 6px rgba(0,0,0,0.1)",
+                  boxShadow:
+                    "inset 0 1px 0 rgba(255,255,255,0.8), 0 2px 6px rgba(0,0,0,0.1)",
                 }}
                 onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = "linear-gradient(180deg, #e0e0e0 0%, #c8c8c8 100%)")
+                  (e.currentTarget.style.background =
+                    "linear-gradient(180deg, #e0e0e0 0%, #c8c8c8 100%)")
                 }
                 onMouseLeave={(e) =>
-                  (e.currentTarget.style.background = "linear-gradient(180deg, #f0f0f0 0%, #d8d8d8 100%)")
+                  (e.currentTarget.style.background =
+                    "linear-gradient(180deg, #f0f0f0 0%, #d8d8d8 100%)")
                 }
               >
                 No
@@ -782,7 +871,8 @@ const ARTMDisplayModal = ({ agent, onClose }) => {
                   fontWeight: "700",
                   cursor: "pointer",
                   transition: "all 0.15s",
-                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2), 0 4px 12px rgba(0,80,255,0.3)",
+                  boxShadow:
+                    "inset 0 1px 0 rgba(255,255,255,0.2), 0 4px 12px rgba(0,80,255,0.3)",
                   letterSpacing: "0.5px",
                 }}
                 onMouseEnter={(e) =>
@@ -967,12 +1057,14 @@ const ARTMDisplayModal = ({ agent, onClose }) => {
                     padding: "12px 32px",
                     borderRadius: "10px",
                     border: "1px solid rgba(124,58,237,0.4)",
-                    background: "linear-gradient(180deg, #7c3aed 0%, #5b21b6 100%)",
+                    background:
+                      "linear-gradient(180deg, #7c3aed 0%, #5b21b6 100%)",
                     color: "#fff",
                     fontSize: "15px",
                     fontWeight: "700",
                     cursor: "pointer",
-                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.15), 0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(124,58,237,0.15)",
+                    boxShadow:
+                      "inset 0 1px 0 rgba(255,255,255,0.15), 0 4px 12px rgba(0,0,0,0.3), 0 0 20px rgba(124,58,237,0.15)",
                     letterSpacing: "0.5px",
                   }}
                 >
@@ -1004,7 +1096,13 @@ const ARTMDisplayModal = ({ agent, onClose }) => {
                 >
                   Connecting to MetaMask...
                 </h3>
-                <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.45)", margin: 0 }}>
+                <p
+                  style={{
+                    fontSize: "14px",
+                    color: "rgba(255,255,255,0.45)",
+                    margin: 0,
+                  }}
+                >
                   Please confirm in your wallet
                 </p>
               </>

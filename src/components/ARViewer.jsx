@@ -81,10 +81,10 @@ const ARViewer = () => {
 
   // 🔍 Agent Filtering State - Default to "My Payment Terminals"
   const [agentFilters, setAgentFilters] = useState({
-    allAgents: false,
+    allAgents: true, // 🎯 Default to showing all agents
     noAgents: false,
     myAgents: false,
-    myPaymentTerminals: true, // 🎯 Default to showing user's payment terminals
+    myPaymentTerminals: false,
     allNonMyAgents: false,
     allPaymentTerminals: false,
     // Individual agent types
@@ -765,8 +765,8 @@ const ARViewer = () => {
         }
 
         if (filters.myPaymentTerminals) {
-          // ONLY show content_creator type (My Personal Terminal)
-          return isMyAgent && agentType === "content_creator";
+          // Show all payment terminal types owned by user
+          return isMyAgent && isAnyPaymentTerminal;
         }
 
         if (filters.allPaymentTerminals) {
@@ -781,7 +781,7 @@ const ARViewer = () => {
           { key: "paymentTerminal", value: "payment_terminal" },
           { key: "gameAgent", value: "game_agent" },
           { key: "worldBuilder3D", value: "3d_world_builder" },
-          { key: "virtualTerminal", value: "virtual_terminal" },
+          { key: "virtualTerminal", value: "artm_terminal" },
           { key: "contentCreator", value: "content_creator" },
           { key: "realEstateBroker", value: "real_estate_broker" },
           { key: "busStopAgent", value: "bus_stop_agent" },
