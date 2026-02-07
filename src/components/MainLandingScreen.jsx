@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -27,6 +28,7 @@ import NetworkDisplay from "./NetworkDisplay";
 import WalletAddressDisplay from "./WalletAddressDisplay";
 
 const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
+  const navigate = useNavigate();
   const { getNearAgents, getCurrentLocation, isLoading, refreshConnection } =
     useDatabase();
   const [agents, setAgents] = useState([]);
@@ -262,11 +264,33 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
             </Button>
 
             <Button
-              onClick={() => onEnterAgentWorld("myPaymentTerminals")}
+              onClick={() =>
+                (window.location.href = "http://localhost:5175/deploy")
+              }
               size="lg"
               className="bg-gradient-to-br from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-black font-semibold px-3 py-6 text-xs rounded-2xl transition-all duration-200 hover:scale-105 shadow-xl hover:shadow-2xl shadow-green-500/30 flex flex-col items-center justify-center min-h-[80px] border-b-4 border-green-700"
             >
               Deploy Terminal
+            </Button>
+
+            <Button
+              onClick={() => onEnterAgentWorld("findATMs")}
+              size="lg"
+              className="bg-gradient-to-br from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-black font-semibold px-3 py-6 text-xs rounded-2xl transition-all duration-200 hover:scale-105 shadow-xl hover:shadow-2xl shadow-green-500/30 flex flex-col items-center justify-center min-h-[80px] border-b-4 border-green-700"
+            >
+              Find ATMs
+              <br />
+              in Range
+            </Button>
+
+            <Button
+              onClick={() => onEnterAgentWorld("findAgents")}
+              size="lg"
+              className="bg-gradient-to-br from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-black font-semibold px-3 py-6 text-xs rounded-2xl transition-all duration-200 hover:scale-105 shadow-xl hover:shadow-2xl shadow-green-500/30 flex flex-col items-center justify-center min-h-[80px] border-b-4 border-green-700"
+            >
+              Find Agents
+              <br />
+              in Range
             </Button>
           </div>
         </div>
@@ -295,7 +319,10 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
               </span>
             </button>
 
-            <button className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors bg-slate-800/30 rounded-lg border border-slate-700/50">
+            <button
+              onClick={() => navigate("/agent-map")}
+              className="flex flex-col items-center space-y-1 p-2 text-slate-400 hover:text-white transition-colors bg-slate-800/30 rounded-lg border border-slate-700/50"
+            >
               <MapPin className="w-5 h-5" />
               <span className="text-xs font-medium">Agent Map</span>
             </button>

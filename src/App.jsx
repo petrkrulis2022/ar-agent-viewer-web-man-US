@@ -9,6 +9,7 @@ import {
 } from "react-router-dom";
 import ARViewer from "./components/ARViewer";
 import AgentMarketplace from "./components/marketplace/AgentMarketplace";
+import AgentMapView from "./components/AgentMapView";
 import MainLandingScreen from "./components/MainLandingScreen";
 import CameraActivationScreen from "./components/CameraActivationScreen";
 import SimpleCubeTest from "./components/SimpleCubeTest";
@@ -135,6 +136,9 @@ function AppContent() {
 
         {/* AR Viewer Route */}
         <Route path="/ar-view" element={<ARViewer />} />
+
+        {/* Agent Map View Route */}
+        <Route path="/agent-map" element={<AgentMapView />} />
 
         {/* Redirect any unknown routes to main landing */}
         <Route path="*" element={<Navigate to="/" replace />} />
