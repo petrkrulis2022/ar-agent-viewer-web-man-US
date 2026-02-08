@@ -274,7 +274,10 @@ const MainLandingScreen = ({ onEnterAgentWorld, onShowWallet }) => {
             </Button>
 
             <Button
-              onClick={() => onEnterAgentWorld("findATMs")}
+              onClick={() =>
+                (window.location.href =
+                  "http://localhost:5176/agent-map?filter=artm_terminal")
+              }
               size="lg"
               className="bg-gradient-to-br from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-black font-semibold px-3 py-6 text-xs rounded-2xl transition-all duration-200 hover:scale-105 shadow-xl hover:shadow-2xl shadow-green-500/30 flex flex-col items-center justify-center min-h-[80px] border-b-4 border-green-700"
             >

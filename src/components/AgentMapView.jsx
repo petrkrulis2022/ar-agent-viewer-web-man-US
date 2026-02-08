@@ -98,6 +98,18 @@ const AgentMapView = () => {
     loadMapData();
   }, [getCurrentLocation, getNearAgents, searchRadius]);
 
+  // Read filter from URL parameter on mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const filterParam = urlParams.get("filter");
+
+    if (filterParam) {
+      console.log("🔍 Setting agent type filter from URL:", filterParam);
+      setSelectedAgentType(filterParam);
+      setShowFilters(true); // Show filters panel so user can see it's filtered
+    }
+  }, []);
+
   // Filter agents based on selected filters
   const filteredAgents = agents.filter((agent) => {
     // Network filter
