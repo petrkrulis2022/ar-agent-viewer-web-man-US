@@ -18,6 +18,26 @@ const generateUniqueId = () => {
   return `${Date.now()}_${++notificationIdCounter}`;
 };
 
+// Detect WebGL support once at module level
+const detectWebGL = () => {
+  try {
+    const canvas = document.createElement("canvas");
+    const gl =
+      canvas.getContext("webgl2") ||
+      canvas.getContext("webgl") ||
+      canvas.getContext("experimental-webgl");
+    if (gl) {
+      // Clean up
+      const ext = gl.getExtension("WEBGL_lose_context");
+      if (ext) ext.loseContext();
+      return true;
+    }
+    return false;
+  } catch (e) {
+    return false;
+  }
+};
+
 const AR3DScene = ({
   agents = [],
   onAgentClick,
@@ -27,6 +47,7 @@ const AR3DScene = ({
   paymentContext = null,
   isPaymentMode = false,
 }) => {
+  const [webglSupported] = useState(() => detectWebGL());
   const [agents3D, setAgents3D] = useState([]);
 
   // Agent interaction states
@@ -299,7 +320,6 @@ const AR3DScene = ({
     setShowAgentModal(false);
     setShowCubePayment(false);
     setShowQRScanner(false);
-    setShowTravelFlow(false);
     setSelectedAgent(null);
   };
 
@@ -327,23 +347,21 @@ const AR3DScene = ({
       // Calculate frustum dimensions using ACTUAL viewport dimensions
       // This ensures proper conversion from screen % to 3D world coords
       const vFOV = (75 * Math.PI) / 180; // 75° FOV in radians
-      
+
       // Get actual canvas/viewport aspect ratio - use window dimensions
       const canvasAspect = window.innerWidth / window.innerHeight;
-      
+
       // Calculate frustum height and width at the object's Z distance
       const frustumHeight = 2 * Math.tan(vFOV / 2) * distance;
       const frustumWidth = frustumHeight * canvasAspect;
-      
+
       // Convert screen percentages (0-100) to world coordinates
       // X: 0% = left (-frustumWidth/2), 100% = right (+frustumWidth/2)
       // Y: 0% = top (+frustumHeight/2), 100% = bottom (-frustumHeight/2)
       const screenX =
-        -frustumWidth / 2 +
-        (agent.screen_position_x / 100) * frustumWidth;
+        -frustumWidth / 2 + (agent.screen_position_x / 100) * frustumWidth;
       const screenY =
-        frustumHeight / 2 -
-        (agent.screen_position_y / 100) * frustumHeight;
+        frustumHeight / 2 - (agent.screen_position_y / 100) * frustumHeight;
 
       console.log(
         `📐 Screen→3D: Input(${agent.screen_position_x.toFixed(
@@ -352,7 +370,9 @@ const AR3DScene = ({
           2,
         )}, ${screenY.toFixed(2)}, ${screenZ.toFixed(
           1,
-        )}) [aspect=${canvasAspect.toFixed(2)}, frustum=${frustumWidth.toFixed(2)}×${frustumHeight.toFixed(2)}]`,
+        )}) [aspect=${canvasAspect.toFixed(2)}, frustum=${frustumWidth.toFixed(
+          2,
+        )}×${frustumHeight.toFixed(2)}]`,
       );
 
       return {
@@ -445,7 +465,7 @@ const AR3DScene = ({
   // Update 3D agents with positions
   useEffect(() => {
     console.log("🤖 AR3DScene received agents:", agents.length, "agents");
-    
+
     const agentsData = agents.map((a) => ({
       name: a.name,
       type: a.agent_type || a.object_type,
@@ -455,7 +475,7 @@ const AR3DScene = ({
       lat: a.latitude,
       lon: a.longitude,
     }));
-    
+
     console.log("🤖 Full agents data (JSON):");
     console.log(JSON.stringify(agentsData, null, 2));
     console.log("🤖 Full agents data (Object):", agentsData);
@@ -504,7 +524,7 @@ const AR3DScene = ({
         strategy: a.position3D.strategy,
         distance: parseFloat(a.position3D.distance.toFixed(1)),
       }));
-      
+
       console.log("📊 Agent Positioning Results (JSON):");
       console.log(JSON.stringify(positioningResults, null, 2));
       console.log("📊 Positioning Results (Object):", positioningResults);
@@ -535,6 +555,58 @@ const AR3DScene = ({
       <meshStandardMaterial color="#444444" transparent opacity={0.5} />
     </mesh>
   );
+
+  // ── WebGL not available → graceful fallback ──
+  if (!webglSupported) {
+    return (
+      <div
+        className="absolute inset-0 pointer-events-auto flex items-center justify-center"
+        style={{ zIndex: 15 }}
+      >
+        <div className="bg-black/90 backdrop-blur-sm rounded-2xl p-8 mx-4 max-w-md text-center border border-red-500/40 shadow-2xl">
+          <div className="text-5xl mb-4">⚠️</div>
+          <h2 className="text-white text-xl font-bold mb-3">
+            WebGL Unavailable
+          </h2>
+          <p className="text-gray-300 text-sm mb-4">
+            Your browser cannot create a 3D context. The GPU / hardware
+            acceleration is disabled or unsupported.
+          </p>
+          <div className="text-left text-xs text-gray-400 space-y-1 mb-5">
+            <p>Try these fixes:</p>
+            <ol className="list-decimal list-inside space-y-1 pl-2">
+              <li>
+                Open{" "}
+                <span className="text-blue-400">chrome://settings/system</span>{" "}
+                → enable <b>Hardware acceleration</b>
+              </li>
+              <li>
+                Open{" "}
+                <span className="text-blue-400">
+                  chrome://flags/#ignore-gpu-blocklist
+                </span>{" "}
+                → set to <b>Enabled</b>
+              </li>
+              <li>Relaunch your browser</li>
+            </ol>
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors"
+          >
+            Reload Page
+          </button>
+          {/* Still show agents count so user knows data loaded */}
+          {agents.length > 0 && (
+            <p className="text-gray-500 text-xs mt-4">
+              {agents.length} agent{agents.length !== 1 ? "s" : ""} loaded —
+              enable WebGL to see them in 3D
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

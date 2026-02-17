@@ -192,15 +192,21 @@ const Enhanced3DAgent = ({
 
   // Animation state
   const animationTime = useRef(0);
+  const floatOffset = useRef(Math.random() * Math.PI * 2);
 
-  // Animate the 3D model - static position, no floating, no hover pulse
+  // Animate the 3D model - subtle float only (no hover pulse)
   useFrame((state, delta) => {
     if (!groupRef.current) return;
 
     animationTime.current += delta;
 
-    // Keep models at their exact position - no floating
-    groupRef.current.position.y = position[1];
+    // Very subtle floating so objects feel alive without affecting layout
+    const time = state.clock.getElapsedTime();
+    const floatAmplitude = 0.02 * scale;
+    const floatSpeed = 1.1;
+    groupRef.current.position.y =
+      position[1] +
+      Math.sin(time * floatSpeed + floatOffset.current) * floatAmplitude;
   });
 
   // Get agent color based on type

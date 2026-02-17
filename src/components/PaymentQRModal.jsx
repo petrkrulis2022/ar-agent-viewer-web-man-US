@@ -167,7 +167,7 @@ const PaymentQRModal = ({
         onPaymentComplete(agent, paymentData);
       }
       onClose();
-    }, 2000);
+    }, 3000);
   };
 
   if (!isOpen || !agent || !paymentData) return null;
@@ -199,15 +199,18 @@ const PaymentQRModal = ({
         <CardContent className="p-6 space-y-6">
           {paymentStatus === "pending" && (
             <>
-              {/* QR Code */}
-              <div className="flex justify-center">
-                <div className="bg-white p-4 rounded-lg">
+              {/* QR Code with Red Alert */}
+              <div className="flex justify-center relative">
+                <div className="bg-white p-4 rounded-lg shadow-lg">
                   <QRCode
                     value={paymentData.uri}
                     size={200}
                     level="M"
                     includeMargin={true}
                   />
+                </div>
+                <div className="absolute -top-3 -right-3 bg-red-600 rounded-full w-12 h-12 flex items-center justify-center border-4 border-slate-900 animate-pulse">
+                  <span className="text-white text-2xl font-bold">!</span>
                 </div>
               </div>
 
@@ -284,7 +287,7 @@ const PaymentQRModal = ({
                   onClick={() =>
                     window.open(
                       `https://explorer-testnet.blockdag.org`,
-                      "_blank"
+                      "_blank",
                     )
                   }
                   variant="outline"
@@ -319,21 +322,36 @@ const PaymentQRModal = ({
           )}
 
           {paymentStatus === "completed" && (
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto">
-                <CheckCircle className="w-8 h-8 text-white" />
+            <div className="text-center space-y-8 py-4">
+              <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center mx-auto animate-pulse">
+                <CheckCircle className="w-14 h-14 text-white" />
               </div>
               <div>
-                <h3 className="text-xl font-semibold text-white mb-2">
-                  Payment Successful!
+                <h3 className="text-4xl font-bold text-white mb-4">
+                  🎉 Payment Successful!
                 </h3>
-                <p className="text-green-400">
-                  {paymentData.amount} {paymentData.token} sent to {agent.name}
+                <p className="text-green-300 text-2xl font-semibold">
+                  {paymentData.amount} {paymentData.token} sent
                 </p>
+                <p className="text-white text-xl mt-2">to {agent.name}</p>
               </div>
-              <Badge className="bg-green-500 text-white">
-                Transaction Confirmed
+              <Badge className="bg-green-500 text-white text-lg py-3 px-6 mx-auto">
+                ✓ Transaction Confirmed
               </Badge>
+
+              {/* Explorer Link - MASSIVE and Prominent */}
+              <Button
+                onClick={() =>
+                  window.open(`https://explorer-testnet.blockdag.org`, "_blank")
+                }
+                className="w-full bg-gradient-to-r from-green-500 via-emerald-500 to-emerald-600 hover:from-green-600 hover:via-emerald-600 hover:to-emerald-700 text-white font-bold py-8 text-3xl shadow-2xl border-2 border-green-300"
+              >
+                <ExternalLink className="w-8 h-8 mr-4 inline-block" />
+                VIEW TRANSACTION
+              </Button>
+              <p className="text-green-300 text-sm">
+                Click to see your transaction on the blockchain explorer
+              </p>
             </div>
           )}
 

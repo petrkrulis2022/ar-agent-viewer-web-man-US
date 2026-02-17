@@ -300,7 +300,7 @@ const PaymentCube = ({
       // Always apply subtle floating animation
       if (!isDragging) {
         const time = state.clock.getElapsedTime();
-        meshRef.current.position.y = Math.sin(time * 1.5) * 0.1;
+        meshRef.current.position.y = Math.sin(time * 1.5) * 0.02;
       }
     }
   });
@@ -754,14 +754,64 @@ const ARQRDisplay = ({
   paymentAmount,
   urlPaymentData,
   onPaymentComplete,
+  onPaymentSuccess, // Callback to notify parent of successful payment (renders overlay outside Canvas)
   ensPaymentInfo, // ENS payment details
   selectedMethod, // Payment method type
 }) => {
   const [selectedNetwork, setSelectedNetwork] = useState("11155111"); // Default to Ethereum Sepolia
   const [isGeneratingQR, setIsGeneratingQR] = useState(false);
   const [currentQRData, setCurrentQRData] = useState(qrData);
+  const [localTransactionHash, setLocalTransactionHash] = useState(null);
   const [walletBalance, setWalletBalance] = useState(null);
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
+
+  const explorerTxUrlForNetwork = useCallback((networkId, txHash) => {
+    if (!txHash) return null;
+
+    const id = String(networkId);
+
+    if (id === "296") {
+      return `https://hashscan.io/testnet/transaction/${txHash}`;
+    }
+
+    if (id === "solana-devnet" || id === "devnet") {
+      return `https://solscan.io/tx/${txHash}?cluster=devnet`;
+    }
+
+    switch (id) {
+      case "11155111":
+        return `https://sepolia.etherscan.io/tx/${txHash}`;
+      case "84532":
+        return `https://sepolia.basescan.org/tx/${txHash}`;
+      case "421614":
+        return `https://sepolia.arbiscan.io/tx/${txHash}`;
+      case "11155420":
+        return `https://sepolia-optimism.etherscan.io/tx/${txHash}`;
+      case "43113":
+        return `https://testnet.snowtrace.io/tx/${txHash}`;
+      case "80002":
+        return `https://amoy.polygonscan.com/tx/${txHash}`;
+      default:
+        // Fallback to Sepolia Etherscan (best-effort)
+        return `https://sepolia.etherscan.io/tx/${txHash}`;
+    }
+  }, []);
+
+  const transactionHashToShow = localTransactionHash || transactionHash;
+  const explorerUrl = explorerTxUrlForNetwork(
+    selectedNetwork,
+    transactionHashToShow,
+  );
+
+  const explorerLabel = (() => {
+    const id = String(selectedNetwork);
+    if (id === "296") return "HashScan";
+    if (id === "84532") return "BaseScan";
+    return "Explorer";
+  })();
+
+  // NOTE: Auto-close removed — the success overlay now has a "Done" button
+  // so the user has time to click the explorer link.
 
   // CCIP Cross-Chain State
   const [userNetwork, setUserNetwork] = useState(null);
@@ -777,6 +827,13 @@ const ARQRDisplay = ({
       setCurrentQRData(qrData);
     }
   }, [qrData]);
+
+  // Keep local tx hash in sync if parent provides one
+  useEffect(() => {
+    if (transactionHash) {
+      setLocalTransactionHash(transactionHash);
+    }
+  }, [transactionHash]);
 
   // Network configuration for dropdown
   const supportedNetworks = {
@@ -1009,7 +1066,14 @@ const ARQRDisplay = ({
         const balance = await dynamicQRService.getCurrentWalletBalance(
           networkForBalance,
         );
-        setWalletBalance(balance);
+        // Normalize: service returns object for EVM, string for Hedera
+        if (balance && typeof balance === "object" && balance.formatted) {
+          setWalletBalance(balance.formatted);
+        } else if (balance !== null && balance !== undefined) {
+          setWalletBalance(String(balance));
+        } else {
+          setWalletBalance(null);
+        }
       } catch (error) {
         console.error("Balance load error:", error);
         setWalletBalance(null);
@@ -1284,28 +1348,37 @@ const ARQRDisplay = ({
           "✅ Transaction successful:",
           transactionResult.transactionHash,
         );
-        alert(
-          `🎉 Payment Sent Successfully!\n\n💳 Transaction Hash:\n${transactionResult.transactionHash}\n\n🔗 Network: ${supportedNetworks[selectedNetwork].name}\n\nYou can view this transaction on the blockchain explorer.`,
-        );
+        setLocalTransactionHash(transactionResult.transactionHash);
+
+        // Notify parent (CubePaymentEngine) to show success overlay outside the Canvas
+        if (onPaymentSuccess) {
+          onPaymentSuccess({
+            transactionHash: transactionResult.transactionHash,
+            networkId: selectedNetwork,
+            network: supportedNetworks[selectedNetwork].name,
+            method: "crypto_qr",
+            amount: transactionData.amount || paymentAmount,
+          });
+        }
 
         // Refresh balance after successful transaction
         setTimeout(async () => {
           const newBalance = await dynamicQRService.getCurrentWalletBalance(
             selectedNetwork,
           );
-          setWalletBalance(newBalance);
+          // Normalize: service returns object for EVM, string for Hedera
+          if (
+            newBalance &&
+            typeof newBalance === "object" &&
+            newBalance.formatted
+          ) {
+            setWalletBalance(newBalance.formatted);
+          } else if (newBalance !== null && newBalance !== undefined) {
+            setWalletBalance(String(newBalance));
+          } else {
+            setWalletBalance(null);
+          }
         }, 2000);
-
-        // Call onPaymentComplete to return to modal with unlocked interactions
-        if (onPaymentComplete) {
-          onPaymentComplete(agent, {
-            success: true,
-            transactionHash: transactionResult.transactionHash,
-            network: supportedNetworks[selectedNetwork].name,
-            method: "crypto_qr",
-            amount: transactionData.amount || paymentAmount,
-          });
-        }
       } else {
         console.error("❌ Transaction failed:", transactionResult.error);
         alert(
@@ -1722,9 +1795,7 @@ const ARQRDisplay = ({
                   {isLoadingBalance
                     ? "Loading..."
                     : walletBalance !== null
-                    ? `${parseFloat(walletBalance).toFixed(4)} ${
-                        supportedNetworks[selectedNetwork]?.symbol || "tokens"
-                      }`
+                    ? walletBalance
                     : "Connect wallet to view"}
                 </div>
               </div>
@@ -1999,45 +2070,59 @@ const ARQRDisplay = ({
               <div
                 style={{
                   marginTop: "15px",
-                  fontSize: "12px",
+                  fontSize: "14px",
                   color: "#333",
                   textAlign: "center",
                   fontWeight: "bold",
                 }}
               >
-                {transactionHash ? (
+                {transactionHashToShow ? (
                   <>
-                    ✅ PAYMENT SUCCESSFUL!
-                    <br />
+                    <span
+                      style={{
+                        fontSize: "18px",
+                        display: "block",
+                        marginBottom: "10px",
+                      }}
+                    >
+                      ✅ PAYMENT SUCCESSFUL!
+                    </span>
                     <a
-                      href={`https://hashscan.io/testnet/transaction/${transactionHash}`}
+                      href={explorerUrl || undefined}
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{
-                        color: "#00D4AA",
+                        color: "#00ff88",
                         textDecoration: "underline",
                         cursor: "pointer",
-                        fontSize: "11px",
+                        fontSize: "18px",
+                        fontWeight: "bold",
                         marginTop: "8px",
                         display: "inline-block",
+                        padding: "10px 18px",
+                        backgroundColor: "rgba(0, 200, 100, 0.15)",
+                        borderRadius: "8px",
+                        border: "2px solid #00ff88",
+                        opacity: explorerUrl ? 1 : 0.6,
+                        pointerEvents: explorerUrl ? "auto" : "none",
                       }}
                       onClick={(e) => {
                         e.stopPropagation();
                       }}
                     >
-                      🔗 View on HashScan
+                      🔗 View on {explorerLabel}
                     </a>
                     <br />
                     <span
                       style={{
-                        fontSize: "9px",
-                        color: "#666",
-                        marginTop: "4px",
+                        fontSize: "12px",
+                        color: "#999",
+                        marginTop: "8px",
                         display: "block",
                       }}
                     >
-                      TX: {transactionHash.slice(0, 10)}...
-                      {transactionHash.slice(-8)}
+                      TX: {transactionHashToShow.slice(0, 10)}...
+                      {transactionHashToShow.slice(-8)}
                     </span>
                   </>
                 ) : paymentMode === "cross-chain" ? (
@@ -2240,6 +2325,54 @@ const CubePaymentEngine = ({
   const [virtualCardAgentId, setVirtualCardAgentId] = useState(null);
 
   const [isInitializing, setIsInitializing] = useState(true); // Prevent auto-clicks on load
+
+  // Payment Success Overlay state (lifted from ARQRDisplay so it renders outside the Canvas)
+  const [paymentSuccessData, setPaymentSuccessData] = useState(null);
+
+  const explorerTxUrlForNetwork = useCallback((networkId, txHash) => {
+    if (!txHash) return null;
+    const id = String(networkId);
+    if (id === "296")
+      return `https://hashscan.io/testnet/transaction/${txHash}`;
+    if (id === "solana-devnet" || id === "devnet")
+      return `https://solscan.io/tx/${txHash}?cluster=devnet`;
+    switch (id) {
+      case "11155111":
+        return `https://sepolia.etherscan.io/tx/${txHash}`;
+      case "84532":
+        return `https://sepolia.basescan.org/tx/${txHash}`;
+      case "421614":
+        return `https://sepolia.arbiscan.io/tx/${txHash}`;
+      case "11155420":
+        return `https://sepolia-optimism.etherscan.io/tx/${txHash}`;
+      case "43113":
+        return `https://testnet.snowtrace.io/tx/${txHash}`;
+      case "80002":
+        return `https://amoy.polygonscan.com/tx/${txHash}`;
+      default:
+        return `https://sepolia.etherscan.io/tx/${txHash}`;
+    }
+  }, []);
+
+  const handlePaymentSuccessClose = useCallback(() => {
+    if (onPaymentComplete && paymentSuccessData) {
+      onPaymentComplete(agent, {
+        success: true,
+        transactionHash: paymentSuccessData.transactionHash,
+        network: paymentSuccessData.network,
+        method: paymentSuccessData.method,
+        amount: paymentSuccessData.amount,
+        closeAgentModal: true,
+      });
+    }
+    setPaymentSuccessData(null);
+  }, [agent, onPaymentComplete, paymentSuccessData]);
+
+  const handlePaymentSuccessFromQR = useCallback((data) => {
+    setPaymentSuccessData(data);
+    setCurrentView("cube");
+    setQRData(null);
+  }, []);
 
   // Prevent immediate face selection when cube loads
   useEffect(() => {
@@ -3211,6 +3344,7 @@ const CubePaymentEngine = ({
               paymentAmount={getFinalPaymentAmount()}
               urlPaymentData={urlPaymentData}
               onPaymentComplete={onPaymentComplete}
+              onPaymentSuccess={handlePaymentSuccessFromQR}
               ensPaymentInfo={ensPaymentInfo}
               selectedMethod={selectedMethod}
             />
@@ -3354,6 +3488,136 @@ const CubePaymentEngine = ({
           />
         )}
       </div>
+
+      {/* Payment Success Overlay — rendered outside the Canvas */}
+      {paymentSuccessData && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.75)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+            padding: "20px",
+          }}
+          onClick={handlePaymentSuccessClose}
+        >
+          <div
+            style={{
+              width: "min(480px, 94vw)",
+              backgroundColor: "#111",
+              borderRadius: "16px",
+              padding: "32px 24px",
+              border: "3px solid #00ff88",
+              boxShadow:
+                "0 0 60px rgba(0, 255, 100, 0.3), 0 12px 40px rgba(0, 0, 0, 0.5)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                fontSize: "28px",
+                fontWeight: "bold",
+                color: "#fff",
+                marginBottom: "16px",
+                textAlign: "center",
+              }}
+            >
+              🎉 Payment Successful!
+            </div>
+
+            <div
+              style={{
+                fontSize: "16px",
+                color: "#aaa",
+                marginBottom: "12px",
+                textAlign: "center",
+              }}
+            >
+              🔗 Network: {paymentSuccessData.network}
+            </div>
+
+            <div
+              style={{
+                fontSize: "13px",
+                color: "#888",
+                marginBottom: "20px",
+                textAlign: "center",
+                wordBreak: "break-all",
+                fontFamily: "monospace",
+                background: "rgba(255,255,255,0.05)",
+                padding: "10px",
+                borderRadius: "8px",
+              }}
+            >
+              💳 {paymentSuccessData.transactionHash}
+            </div>
+
+            <div style={{ textAlign: "center", marginBottom: "20px" }}>
+              <a
+                href={
+                  explorerTxUrlForNetwork(
+                    paymentSuccessData.networkId,
+                    paymentSuccessData.transactionHash,
+                  ) || undefined
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "inline-block",
+                  color: "#fff",
+                  backgroundColor: "#00aa55",
+                  textDecoration: "none",
+                  fontSize: "22px",
+                  fontWeight: "bold",
+                  padding: "16px 32px",
+                  borderRadius: "12px",
+                  border: "2px solid #00ff88",
+                  boxShadow: "0 0 20px rgba(0, 255, 100, 0.25)",
+                  transition: "transform 0.15s, box-shadow 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "scale(1.05)";
+                  e.currentTarget.style.boxShadow =
+                    "0 0 30px rgba(0, 255, 100, 0.45)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "scale(1)";
+                  e.currentTarget.style.boxShadow =
+                    "0 0 20px rgba(0, 255, 100, 0.25)";
+                }}
+              >
+                🔗 View on{" "}
+                {(() => {
+                  const id = String(paymentSuccessData.networkId);
+                  if (id === "296") return "HashScan";
+                  if (id === "84532") return "BaseScan";
+                  return "Explorer";
+                })()}
+              </a>
+            </div>
+
+            <button
+              onClick={handlePaymentSuccessClose}
+              style={{
+                width: "100%",
+                padding: "14px 16px",
+                borderRadius: "12px",
+                backgroundColor: "#333",
+                color: "white",
+                fontWeight: "bold",
+                fontSize: "16px",
+                border: "1px solid #555",
+                cursor: "pointer",
+              }}
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

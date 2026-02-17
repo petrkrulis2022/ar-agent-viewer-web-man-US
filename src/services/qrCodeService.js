@@ -3,6 +3,9 @@ import { supabase } from "../lib/supabase";
 // Local storage for QR codes when Supabase is unavailable
 let localQRCodes = [];
 
+// Flag to disable Supabase after 404 (table doesn't exist)
+let supabaseQRDisabled = false;
+
 // Create local QR code (fallback when Supabase is unavailable)
 const createLocalQRCode = (qrCodeData) => {
   const localQR = {
@@ -41,7 +44,10 @@ export const createQRCode = async (qrCodeData) => {
   console.log("✅ AR QR Code created locally (always visible):", localQR);
 
   try {
-    // Try to save to Supabase in background (non-blocking)
+    // Skip Supabase if disabled (table doesn't exist) or no connection
+    if (supabaseQRDisabled) {
+      return localQR;
+    }
     if (!supabase) {
       console.warn("No Supabase connection, AR QR remains local only");
       return localQR;
@@ -68,11 +74,25 @@ export const createQRCode = async (qrCodeData) => {
       .single();
 
     if (error) {
-      console.warn(
-        "Supabase save failed, but AR QR remains active locally:",
-        error
-      );
-      // Update local QR with note about DB failure
+      // Check if table doesn't exist (404) - disable further Supabase attempts
+      const is404 =
+        error.code === "42P01" ||
+        error.code === "PGRST116" ||
+        error.status === 404 ||
+        error.statusCode === 404 ||
+        error.message?.includes("does not exist") ||
+        error.message?.includes("404");
+      if (is404) {
+        console.warn(
+          "⚠️ ar_qr_codes table not found - disabling Supabase QR persistence (using local storage)",
+        );
+        supabaseQRDisabled = true;
+      } else {
+        console.warn(
+          "Supabase save failed, but AR QR remains active locally:",
+          error.message,
+        );
+      }
       localQR.dbSaveStatus = "failed";
       localQR.dbError = error.message;
       return localQR;
@@ -94,9 +114,8 @@ export const createQRCode = async (qrCodeData) => {
 // Get active QR codes near user location
 export const getActiveQRCodes = async (userLocation, radiusMeters = 100) => {
   try {
-    // If no Supabase connection, return local QR codes
-    if (!supabase) {
-      console.warn("No Supabase connection, returning local QR codes");
+    // Skip Supabase if disabled or no connection
+    if (supabaseQRDisabled || !supabase) {
       return getLocalActiveQRCodes(userLocation, radiusMeters);
     }
 
@@ -107,7 +126,17 @@ export const getActiveQRCodes = async (userLocation, radiusMeters = 100) => {
       .gt("expiration_time", new Date().toISOString());
 
     if (error) {
-      console.warn("Supabase error, falling back to local QR codes:", error);
+      // Disable on 404
+      const is404 =
+        error.code === "42P01" ||
+        error.code === "PGRST116" ||
+        error.status === 404 ||
+        error.statusCode === 404 ||
+        error.message?.includes("does not exist") ||
+        error.message?.includes("404");
+      if (is404) {
+        supabaseQRDisabled = true;
+      }
       return getLocalActiveQRCodes(userLocation, radiusMeters);
     }
 
@@ -120,7 +149,7 @@ export const getActiveQRCodes = async (userLocation, radiusMeters = 100) => {
           userLocation.latitude,
           userLocation.longitude,
           qr.latitude,
-          qr.longitude
+          qr.longitude,
         );
         return distance <= radiusMeters;
       });
@@ -130,7 +159,7 @@ export const getActiveQRCodes = async (userLocation, radiusMeters = 100) => {
   } catch (error) {
     console.warn(
       "Error fetching QR codes from Supabase, using local fallback:",
-      error
+      error,
     );
     return getLocalActiveQRCodes(userLocation, radiusMeters);
   }
@@ -158,7 +187,7 @@ const getLocalActiveQRCodes = (userLocation, radiusMeters = 100) => {
 export const updateQRCodeStatus = async (
   qrCodeId,
   status,
-  additionalData = {}
+  additionalData = {},
 ) => {
   try {
     // Handle local QR codes
@@ -250,7 +279,7 @@ export const generateARPosition = (agentPosition, userPosition, index = 0) => {
   // Enhanced 3D positioning system for better visibility from multiple angles
   console.log(
     `🎯 Generating AR position ${index} for agent at:`,
-    agentPosition
+    agentPosition,
   );
 
   // Create multiple positioning strategies based on index
@@ -323,8 +352,8 @@ export const generateARPosition = (agentPosition, userPosition, index = 0) => {
 
   console.log(
     `📍 AR Position ${index} (${strategy.description}): [${x.toFixed(
-      2
-    )}, ${y.toFixed(2)}, ${z.toFixed(2)}]`
+      2,
+    )}, ${y.toFixed(2)}, ${z.toFixed(2)}]`,
   );
 
   return [x, y, z];
@@ -337,7 +366,7 @@ export const cleanupExpiredQRCodes = async () => {
     const now = new Date();
     const beforeCount = localQRCodes.length;
     localQRCodes = localQRCodes.filter(
-      (qr) => new Date(qr.expiration_time) > now
+      (qr) => new Date(qr.expiration_time) > now,
     );
     const localCleaned = beforeCount - localQRCodes.length;
 
@@ -345,8 +374,8 @@ export const cleanupExpiredQRCodes = async () => {
       console.log(`Cleaned up ${localCleaned} expired local QR codes`);
     }
 
-    // If no Supabase connection, return local cleanup count
-    if (!supabase) {
+    // Skip Supabase if disabled or no connection
+    if (supabaseQRDisabled || !supabase) {
       return localCleaned;
     }
 
@@ -357,7 +386,17 @@ export const cleanupExpiredQRCodes = async () => {
       .in("status", [QR_CODE_STATUS.GENERATED, QR_CODE_STATUS.ACTIVE]);
 
     if (error) {
-      console.warn("Error cleaning up expired QR codes in Supabase:", error);
+      // Disable on 404
+      const is404 =
+        error.code === "42P01" ||
+        error.code === "PGRST116" ||
+        error.status === 404 ||
+        error.statusCode === 404 ||
+        error.message?.includes("does not exist") ||
+        error.message?.includes("404");
+      if (is404) {
+        supabaseQRDisabled = true;
+      }
       return localCleaned;
     }
 

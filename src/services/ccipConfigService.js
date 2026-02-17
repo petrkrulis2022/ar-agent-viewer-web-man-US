@@ -154,11 +154,13 @@ class CCIPConfigService {
    */
   initializeConfigurations() {
     try {
-      console.log("🚀 Initializing CCIP configurations with consolidated structure...");
-      
+      console.log(
+        "🚀 Initializing CCIP configurations with consolidated structure...",
+      );
+
       // Load all chains from the consolidated configuration
       const chains = ccipConfigConsolidated.chains;
-      
+
       Object.entries(chains).forEach(([networkName, config]) => {
         console.log(`🔍 LOADING CONFIG FOR ${networkName}:`, {
           chainId: config.chainId,
@@ -171,33 +173,34 @@ class CCIPConfigService {
           console.log("🚨 OP SEPOLIA CONFIGURATION VALIDATION:");
           console.log(
             "  - Raw chainSelector from config:",
-            config.chainSelector
+            config.chainSelector,
           );
           console.log("  - Type:", typeof config.chainSelector);
           console.log("  - String value:", String(config.chainSelector));
           console.log("  - Expected:", "5224473277236331295");
           console.log(
             "  - Match:",
-            String(config.chainSelector) === "5224473277236331295"
+            String(config.chainSelector) === "5224473277236331295",
           );
 
           if (String(config.chainSelector) !== "5224473277236331295") {
             console.error(
-              "❌ CRITICAL: Wrong OP Sepolia chain selector in config file!"
+              "❌ CRITICAL: Wrong OP Sepolia chain selector in config file!",
             );
             throw new Error(
-              `OP Sepolia chain selector is wrong: expected 5224473277236331295, got ${config.chainSelector}`
+              `OP Sepolia chain selector is wrong: expected 5224473277236331295, got ${config.chainSelector}`,
             );
           } else {
             console.log(
-              "✅ OP Sepolia chain selector is correct in config file"
+              "✅ OP Sepolia chain selector is correct in config file",
             );
           }
         }
 
         // Determine chain type based on chainId
         const chainType = config.chainId === "devnet" ? "SVM" : "EVM";
-        const chainIdKey = config.chainId === "devnet" ? "devnet" : config.chainId.toString();
+        const chainIdKey =
+          config.chainId === "devnet" ? "devnet" : config.chainId.toString();
 
         this.networkConfigs.set(chainIdKey, {
           chainId: config.chainId,
@@ -220,11 +223,11 @@ class CCIPConfigService {
       console.log(
         "✅ CCIP Configuration Service initialized with",
         this.networkConfigs.size,
-        "networks"
+        "networks",
       );
       console.log(
         "✅ Total supported cross-chain routes:",
-        this.supportedRoutes.size
+        this.supportedRoutes.size,
       );
     } catch (error) {
       console.error("❌ Failed to initialize CCIP configurations:", error);
@@ -392,7 +395,7 @@ class CCIPConfigService {
     amount,
     recipient,
     feeToken = "native",
-    provider
+    provider,
   ) {
     try {
       if (!this.isCrossChainTransfer(sourceChain, destinationChain)) {
@@ -416,13 +419,13 @@ class CCIPConfigService {
         amount,
         sourceConfig,
         destConfig,
-        feeToken
+        feeToken,
       );
 
       // Get router contract instance
       const routerContract = this.getRouterContract(
         sourceConfig.router,
-        provider
+        provider,
       );
 
       // Call getFee on the router contract
@@ -436,22 +439,22 @@ class CCIPConfigService {
       try {
         estimatedFee = await routerContract.getFee(
           BigInt(destConfig.chainSelector), // Convert to BigInt for uint64
-          message
+          message,
         );
         console.log(
           "✅ Contract fee estimation successful:",
-          estimatedFee.toString()
+          estimatedFee.toString(),
         );
       } catch (contractError) {
         console.warn(
           "⚠️ Contract fee estimation failed, using emergency calculation:",
-          contractError.message
+          contractError.message,
         );
 
         // Fall back to emergency fee calculation
         const emergencyFeeWei = this.getEstimatedFeeForRoute_OLD(
           sourceChain,
-          destinationChain
+          destinationChain,
         );
         estimatedFee = ethers.BigNumber.from(emergencyFeeWei);
 
@@ -524,7 +527,7 @@ class CCIPConfigService {
     } else {
       // Default to native ETH with warning
       console.warn(
-        "⚠️ Fee token not found or invalid, defaulting to native ETH"
+        "⚠️ Fee token not found or invalid, defaulting to native ETH",
       );
       feeTokenAddress = ethers.constants.AddressZero;
     }
@@ -573,7 +576,7 @@ class CCIPConfigService {
     // Encode the gasLimit parameter
     const encodedArgs = ethers.utils.defaultAbiCoder.encode(
       ["uint256"],
-      [args.gasLimit]
+      [args.gasLimit],
     );
 
     // Concatenate tag + encoded args
@@ -607,7 +610,7 @@ class CCIPConfigService {
     destinationChainSelector,
     message,
     valueWei,
-    userAddress
+    userAddress,
   ) {
     try {
       console.log("🎬 SIMULATING CCIP Transaction before execution...");
@@ -630,7 +633,7 @@ class CCIPConfigService {
       const routerContract = new ethers.Contract(
         routerAddress,
         CCIP_ROUTER_ABI,
-        provider
+        provider,
       );
 
       // Perform static call (simulation) to detect revert reasons
@@ -643,7 +646,7 @@ class CCIPConfigService {
         // Check if destination chain selector is supported
         try {
           const isSupported = await routerContract.isChainSupported(
-            BigInt(destinationChainSelector) // Convert to BigInt for uint64
+            BigInt(destinationChainSelector), // Convert to BigInt for uint64
           );
           console.log(`  - Destination chain supported: ${isSupported}`);
           if (!isSupported) {
@@ -657,7 +660,7 @@ class CCIPConfigService {
         } catch (checkError) {
           console.warn(
             "  - Could not check chain support:",
-            checkError.message
+            checkError.message,
           );
         }
 
@@ -666,13 +669,13 @@ class CCIPConfigService {
         const userBalance = await provider.getBalance(userAddress);
         const requiredValue = ethers.BigNumber.from(valueWei);
         console.log(
-          `  - User ETH balance: ${ethers.utils.formatEther(userBalance)} ETH`
+          `  - User ETH balance: ${ethers.utils.formatEther(userBalance)} ETH`,
         );
         console.log(
-          `  - Required value: ${ethers.utils.formatEther(requiredValue)} ETH`
+          `  - Required value: ${ethers.utils.formatEther(requiredValue)} ETH`,
         );
         console.log(
-          `  - Sufficient balance: ${userBalance.gte(requiredValue)}`
+          `  - Sufficient balance: ${userBalance.gte(requiredValue)}`,
         );
 
         if (userBalance.lt(requiredValue)) {
@@ -691,7 +694,7 @@ class CCIPConfigService {
             from: userAddress,
             value: valueWei,
             gasLimit: 1000000, // High gas limit for simulation
-          }
+          },
         );
 
         console.log("✅ SIMULATION SUCCESS - Transaction should work:", {
@@ -752,7 +755,7 @@ class CCIPConfigService {
               // Standard revert with reason string
               const reason = ethers.utils.defaultAbiCoder.decode(
                 ["string"],
-                "0x" + errorData.slice(10)
+                "0x" + errorData.slice(10),
               )[0];
               revertReason = reason;
               decodingAttempts.push("ABI decoded revert string");
@@ -760,7 +763,7 @@ class CCIPConfigService {
               // Panic error
               const panicCode = ethers.utils.defaultAbiCoder.decode(
                 ["uint256"],
-                "0x" + errorData.slice(10)
+                "0x" + errorData.slice(10),
               )[0];
               revertReason = `Panic error: ${panicCode.toString()}`;
               decodingAttempts.push("Panic code decoded");
@@ -782,7 +785,7 @@ class CCIPConfigService {
         };
 
         for (const [pattern, description] of Object.entries(
-          ccipErrorPatterns
+          ccipErrorPatterns,
         )) {
           if (simulationError.message?.toLowerCase().includes(pattern)) {
             revertReason = description;
@@ -826,7 +829,7 @@ class CCIPConfigService {
     destinationChain,
     amount,
     recipient,
-    feeToken = "native"
+    feeToken = "native",
   ) {
     try {
       console.log("🔧 Building CCIP transaction:", {
@@ -849,7 +852,7 @@ class CCIPConfigService {
       console.log("  - Destination Chain ID:", destinationChain);
       console.log(
         "  - Destination Config FULL:",
-        JSON.stringify(destConfig, null, 2)
+        JSON.stringify(destConfig, null, 2),
       );
       console.log("  - Chain Selector from config:", destConfig.chainSelector);
       console.log("  - Chain Selector TYPE:", typeof destConfig.chainSelector);
@@ -870,15 +873,15 @@ class CCIPConfigService {
         console.log(`  - Expected: ${expectedOPSepoliaSelector}`);
         console.log(`  - Actual: ${actualSelector}`);
         console.log(
-          `  - Match: ${actualSelector === expectedOPSepoliaSelector}`
+          `  - Match: ${actualSelector === expectedOPSepoliaSelector}`,
         );
 
         if (actualSelector !== expectedOPSepoliaSelector) {
           console.error(
-            `  ❌ WRONG CHAIN SELECTOR! Using ${actualSelector} instead of ${expectedOPSepoliaSelector}`
+            `  ❌ WRONG CHAIN SELECTOR! Using ${actualSelector} instead of ${expectedOPSepoliaSelector}`,
           );
           throw new Error(
-            `Critical error: Wrong OP Sepolia chain selector. Expected ${expectedOPSepoliaSelector}, got ${actualSelector}`
+            `Critical error: Wrong OP Sepolia chain selector. Expected ${expectedOPSepoliaSelector}, got ${actualSelector}`,
           );
         } else {
           console.log("  ✅ OP Sepolia chain selector is CORRECT");
@@ -891,17 +894,25 @@ class CCIPConfigService {
         amount,
         sourceConfig,
         destConfig,
-        feeToken
+        feeToken,
       );
 
-      // Get provider for fee estimation (using source chain's RPC URL)
-      let rpcUrl = sourceConfig.rpcUrl;
-      // Fix RPC URL format - add https:// if missing
-      if (!rpcUrl.startsWith("http://") && !rpcUrl.startsWith("https://")) {
-        rpcUrl = "https://" + rpcUrl;
+      // Get provider for fee estimation
+      // Prefer wallet provider (Web3Provider) to avoid CORS issues with direct RPC
+      let provider;
+      if (typeof window !== "undefined" && window.ethereum) {
+        // Use wallet provider - no CORS issues since it goes through MetaMask
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        console.log("🔧 Using wallet provider for fee estimation (CORS-safe)");
+      } else {
+        // Fallback to direct RPC (may have CORS issues in browser)
+        let rpcUrl = sourceConfig.rpcUrl;
+        if (!rpcUrl.startsWith("http://") && !rpcUrl.startsWith("https://")) {
+          rpcUrl = "https://" + rpcUrl;
+        }
+        console.log("🔧 RPC URL for provider:", rpcUrl);
+        provider = new ethers.providers.JsonRpcProvider(rpcUrl);
       }
-      console.log("🔧 RPC URL for provider:", rpcUrl);
-      const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
 
       // Estimate fees using the updated estimateCCIPFees function
       const feeEstimate = await this.estimateCCIPFees(
@@ -910,7 +921,7 @@ class CCIPConfigService {
         amount,
         recipient,
         feeToken,
-        provider // Pass the provider for on-chain fee estimation
+        provider, // Pass the provider for on-chain fee estimation
       );
 
       console.log("✅ Fee estimate:", feeEstimate);
@@ -941,7 +952,7 @@ class CCIPConfigService {
       console.log("🚨 CHAIN SELECTOR VALIDATION:");
       console.log(
         "  - Raw destConfig.chainSelector:",
-        destConfig.chainSelector
+        destConfig.chainSelector,
       );
       console.log("  - Type:", typeof destConfig.chainSelector);
       console.log("  - String value:", String(destConfig.chainSelector));
@@ -959,24 +970,24 @@ class CCIPConfigService {
       const correctOPSepoliaHex = correctOPSepoliaValue.toString(16);
       console.log(
         "  - CORRECT OP Sepolia decimal:",
-        correctOPSepoliaValue.toString()
+        correctOPSepoliaValue.toString(),
       );
       console.log("  - CORRECT OP Sepolia hex:", "0x" + correctOPSepoliaHex);
 
       // Compare the values
       console.log(
         "  - Values match?:",
-        actualValue.toString() === correctOPSepoliaValue.toString()
+        actualValue.toString() === correctOPSepoliaValue.toString(),
       );
       console.log("  - Hex match?:", actualHex === correctOPSepoliaHex);
       console.log("  - Expected OP Sepolia:", "5224473277236331295");
       console.log(
         "  - Match expected?:",
-        String(destConfig.chainSelector) === "5224473277236331295"
+        String(destConfig.chainSelector) === "5224473277236331295",
       );
       console.log(
         "  - Wrong old selector?:",
-        String(destConfig.chainSelector) === "5216608019844513823"
+        String(destConfig.chainSelector) === "5216608019844513823",
       );
 
       // CRITICAL FIX: Use correct chain selector for transaction encoding
@@ -989,16 +1000,16 @@ class CCIPConfigService {
             isOPSepolia: destinationChain.toString() === "11155420",
             selectorCorrupted:
               destConfig.chainSelector === destConfig.chainName,
-          }
+          },
         );
 
         // CRITICAL: Detect chain selector corruption
         if (destConfig.chainSelector === destConfig.chainName) {
           console.error(
-            "🚨 CRITICAL: chainSelector corrupted to chainName in transaction encoding!"
+            "🚨 CRITICAL: chainSelector corrupted to chainName in transaction encoding!",
           );
           console.error(
-            `  - Got: "${destConfig.chainSelector}" (should be numeric)`
+            `  - Got: "${destConfig.chainSelector}" (should be numeric)`,
           );
           console.error(`  - ChainName: "${destConfig.chainName}"`);
         }
@@ -1007,7 +1018,7 @@ class CCIPConfigService {
         if (destinationChain.toString() === "11155420") {
           const correctOPSelector = "5224473277236331295";
           console.log(
-            "🚨 FORCING CORRECT OP SEPOLIA CHAIN SELECTOR FOR TRANSACTION ENCODING"
+            "🚨 FORCING CORRECT OP SEPOLIA CHAIN SELECTOR FOR TRANSACTION ENCODING",
           );
           console.log("  - Destination Chain: OP Sepolia (11155420)");
           console.log("  - Config value:", destConfig.chainSelector);
@@ -1018,10 +1029,10 @@ class CCIPConfigService {
         // For other chains, ensure we don't use a corrupted value
         if (destConfig.chainSelector === destConfig.chainName) {
           console.error(
-            "🚨 Cannot fix corrupted chain selector for non-OP chain!"
+            "🚨 Cannot fix corrupted chain selector for non-OP chain!",
           );
           throw new Error(
-            `Chain selector corrupted for chain ${destinationChain}: got "${destConfig.chainSelector}" (chain name) instead of numeric selector`
+            `Chain selector corrupted for chain ${destinationChain}: got "${destConfig.chainSelector}" (chain name) instead of numeric selector`,
           );
         }
 
@@ -1030,7 +1041,7 @@ class CCIPConfigService {
 
       console.log(
         "🎯 FINAL CHAIN SELECTOR FOR ENCODING:",
-        correctChainSelector
+        correctChainSelector,
       );
 
       // FINAL VERIFICATION: Double-check chain selector before encoding
@@ -1063,11 +1074,11 @@ class CCIPConfigService {
       console.log("  - String value:", finalChainSelector);
       console.log(
         "  - BigInt for encoding:",
-        chainSelectorForEncoding.toString()
+        chainSelectorForEncoding.toString(),
       );
       console.log(
         "  - Hex representation:",
-        "0x" + chainSelectorForEncoding.toString(16)
+        "0x" + chainSelectorForEncoding.toString(16),
       );
 
       const txData = routerInterface.encodeFunctionData("ccipSend", [
@@ -1080,17 +1091,17 @@ class CCIPConfigService {
       console.log("  - Full txData:", txData);
       console.log(
         "  - Function selector (first 10 chars):",
-        txData.substring(0, 10)
+        txData.substring(0, 10),
       );
       console.log(
         "  - Chain selector bytes (next 64 chars):",
-        txData.substring(10, 74)
+        txData.substring(10, 74),
       );
       const encodedChainSelector = txData.substring(10, 74);
       console.log("  - Chain selector as hex:", "0x" + encodedChainSelector);
       console.log(
         "  - Chain selector as decimal:",
-        BigInt("0x" + encodedChainSelector).toString()
+        BigInt("0x" + encodedChainSelector).toString(),
       );
 
       console.log("✅ Transaction data encoded");
@@ -1144,12 +1155,12 @@ class CCIPConfigService {
             // CRITICAL BUG FIX: Detect if chainSelector was corrupted to chainName
             if (destConfig.chainSelector === destConfig.chainName) {
               console.error(
-                "🚨 CRITICAL BUG: chainSelector corrupted to chainName!"
+                "🚨 CRITICAL BUG: chainSelector corrupted to chainName!",
               );
               console.error(`  - chainSelector: "${destConfig.chainSelector}"`);
               console.error(`  - chainName: "${destConfig.chainName}"`);
               console.error(
-                "  - This should NEVER happen - fixing automatically"
+                "  - This should NEVER happen - fixing automatically",
               );
 
               // Use correct chain selector based on destination chain
@@ -1346,7 +1357,7 @@ class CCIPConfigService {
       const sourceConfig = this.getNetworkConfig(sourceChain);
       if (!sourceConfig || !sourceConfig.usdc) {
         throw new Error(
-          `USDC configuration not found for chain ${sourceChain}`
+          `USDC configuration not found for chain ${sourceChain}`,
         );
       }
 
@@ -1364,13 +1375,13 @@ class CCIPConfigService {
       const usdcContract = new ethers.Contract(
         sourceConfig.usdc.tokenAddress,
         ERC20_ABI,
-        signer
+        signer,
       );
 
       // Check current allowance
       const currentAllowance = await usdcContract.allowance(
         userAddress,
-        sourceConfig.router
+        sourceConfig.router,
       );
 
       console.log("💰 ERC-20 Allowance Check:", {
@@ -1428,7 +1439,7 @@ class CCIPConfigService {
       const sourceConfig = this.getNetworkConfig(sourceChain);
       if (!sourceConfig || !sourceConfig.usdc) {
         throw new Error(
-          `USDC configuration not found for chain ${sourceChain}`
+          `USDC configuration not found for chain ${sourceChain}`,
         );
       }
 
@@ -1453,7 +1464,7 @@ class CCIPConfigService {
         // Verify we're on the correct network
         if (network.chainId !== parseInt(sourceChain)) {
           console.warn(
-            `⚠️ Network mismatch: Expected ${sourceChain}, got ${network.chainId}`
+            `⚠️ Network mismatch: Expected ${sourceChain}, got ${network.chainId}`,
           );
           // Continue anyway - network switching should happen in UI
         }
@@ -1461,7 +1472,7 @@ class CCIPConfigService {
         // Double-check the signer address matches the expected user address
         if (signerAddress.toLowerCase() !== userAddress.toLowerCase()) {
           throw new Error(
-            `Signer address mismatch: expected ${userAddress}, got ${signerAddress}`
+            `Signer address mismatch: expected ${userAddress}, got ${signerAddress}`,
           );
         }
 
@@ -1480,7 +1491,7 @@ class CCIPConfigService {
       const usdcContract = new ethers.Contract(
         sourceConfig.usdc.tokenAddress,
         ERC20_ABI,
-        signer
+        signer,
       );
 
       console.log("🔓 Requesting USDC approval transaction:", {
@@ -1493,7 +1504,7 @@ class CCIPConfigService {
       // Request approval transaction
       const approveTx = await usdcContract.approve(
         sourceConfig.router,
-        tokenAmount
+        tokenAmount,
       );
 
       console.log("⏳ Approval transaction sent:", {

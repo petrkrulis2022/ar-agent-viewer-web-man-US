@@ -54,7 +54,7 @@ class DynamicQRService {
         } else {
           this.supportedNetworks[chainId] = networkConfig;
         }
-      }
+      },
     );
 
     console.log("✅ DynamicQRService initialized with consolidated config:", {
@@ -64,7 +64,7 @@ class DynamicQRService {
 
     // ✅ Hedera Testnet already in consolidated config with custom stablecoins
     console.log(
-      "✅ Hedera Testnet (296) configured with USDh and custom stablecoins"
+      "✅ Hedera Testnet (296) configured with USDh and custom stablecoins",
     );
   }
 
@@ -122,14 +122,14 @@ class DynamicQRService {
       agentData.deployment_chain_id ||
         agentData.chain_id ||
         agentData.network_id ||
-        11155111
+        11155111,
     );
 
     // 🔧 CRITICAL FIX: Override chain ID if network name indicates Hedera but database has wrong value
     const networkName = agentData.deployment_network_name || agentData.network;
     if (networkName && networkName.toLowerCase().includes("hedera")) {
       console.log(
-        "🔧 [getAgentNetwork] Hedera network detected from name - overriding chain ID to 296"
+        "🔧 [getAgentNetwork] Hedera network detected from name - overriding chain ID to 296",
       );
       chainId = "296";
     }
@@ -158,7 +158,7 @@ class DynamicQRService {
     sourceChainId,
     destChainId,
     amount,
-    feeToken = "native"
+    feeToken = "native",
   ) {
     try {
       console.log("📱 Generating MetaMask-optimized cross-chain QR");
@@ -177,7 +177,7 @@ class DynamicQRService {
         destChainId,
         amount,
         agentData.agent_wallet_address || agentData.payment_recipient_address,
-        feeToken
+        feeToken,
       );
 
       if (!ccipTx.success) {
@@ -255,7 +255,7 @@ class DynamicQRService {
     sourceChainId,
     destChainId,
     amount,
-    feeToken = "native"
+    feeToken = "native",
   ) {
     try {
       console.log("🌉 Generating CCIP cross-chain QR:", {
@@ -275,7 +275,7 @@ class DynamicQRService {
       const destConfig = ccipConfigService.getNetworkConfig(destChainId);
       if (!destConfig) {
         throw new Error(
-          `CCIP not supported on destination chain: ${destChainId}`
+          `CCIP not supported on destination chain: ${destChainId}`,
         );
       }
 
@@ -286,20 +286,20 @@ class DynamicQRService {
         amount,
         agentData.agent_wallet_address || agentData.payment_recipient_address,
         feeToken,
-        true // Skip simulation - already validated in modal
+        true, // Skip simulation - already validated in modal
       );
 
       if (!ccipTx || !ccipTx.success) {
         throw new Error(
           `CCIP transaction build failed: ${
             ccipTx?.error || "undefined result"
-          }`
+          }`,
         );
       }
 
       // VALIDATION: Check fee amounts before proceeding
       const feeInETH = parseFloat(
-        ethers.utils.formatEther(ccipTx.estimatedFee || "0")
+        ethers.utils.formatEther(ccipTx.estimatedFee || "0"),
       );
       console.log("🔍 CCIP Fee Validation:", {
         estimatedFee: ccipTx.estimatedFee,
@@ -313,7 +313,7 @@ class DynamicQRService {
       if (feeInETH > 0.01) {
         console.error("🚨 CCIP fee is too high:", feeInETH, "ETH");
         throw new Error(
-          `CCIP fee too high: ${feeInETH} ETH. Max allowed: 0.01 ETH`
+          `CCIP fee too high: ${feeInETH} ETH. Max allowed: 0.01 ETH`,
         );
       }
 
@@ -411,7 +411,7 @@ class DynamicQRService {
     try {
       console.log(
         "🔗 Generating dynamic QR code for:",
-        agentData?.name || "agent"
+        agentData?.name || "agent",
       );
 
       if (!agentData) {
@@ -441,7 +441,7 @@ class DynamicQRService {
         agentData.deployment_chain_id ||
           agentData.chain_id ||
           agentData.network_id ||
-          11155111
+          11155111,
       );
 
       // 🔧 CRITICAL FIX: Override chain ID if network name indicates Hedera but database has wrong value
@@ -449,7 +449,7 @@ class DynamicQRService {
         agentData.deployment_network_name || agentData.network;
       if (networkName && networkName.toLowerCase().includes("hedera")) {
         console.log(
-          "🔧 Hedera network detected from name - overriding chain ID to 296"
+          "🔧 Hedera network detected from name - overriding chain ID to 296",
         );
         agentChainId = "296";
       }
@@ -467,10 +467,10 @@ class DynamicQRService {
         try {
           customStablecoinService.validateToken(
             feeToken,
-            parseInt(agentChainId)
+            parseInt(agentChainId),
           );
           console.log(
-            `✅ Custom stablecoin ${feeToken} validated for chain ${agentChainId}`
+            `✅ Custom stablecoin ${feeToken} validated for chain ${agentChainId}`,
           );
         } catch (validationError) {
           console.error(`❌ Token validation failed:`, validationError.message);
@@ -504,9 +504,9 @@ class DynamicQRService {
 
         // Create Solana Pay URI format
         let solanaPayUri = `solana:${walletAddress}?amount=${feeAmount}&label=${encodeURIComponent(
-          agentData.name || "AgentSphere Payment"
+          agentData.name || "AgentSphere Payment",
         )}&message=${encodeURIComponent(
-          `Payment for ${agentData.name || "agent"}`
+          `Payment for ${agentData.name || "agent"}`,
         )}`;
 
         // Include SPL token if specified
@@ -571,7 +571,7 @@ class DynamicQRService {
             userChainId, // Source chain (user's current network)
             agentChainId, // Destination chain (agent's network)
             feeAmount,
-            "native" // Fee token preference
+            "native", // Fee token preference
           );
 
           if (metaMaskQR.success) {
@@ -593,7 +593,7 @@ class DynamicQRService {
         } catch (metaMaskError) {
           console.warn(
             "⚠️ MetaMask QR failed, falling back to standard:",
-            metaMaskError.message
+            metaMaskError.message,
           );
         }
 
@@ -603,36 +603,23 @@ class DynamicQRService {
           userChainId, // Source chain (user's current network)
           agentChainId, // Destination chain (agent's network)
           feeAmount,
-          "native" // Fee token preference
+          "native", // Fee token preference
         );
       }
 
       // ✅ SAME NETWORK OR NO USER NETWORK DETECTED → Use Standard Logic
       console.log("✅ Same-chain payment, using standard QR generation");
 
-      // Use agent's network as target (original logic)
+      // 🔧 FIX: Always use agent's network as target - do NOT override with user's wallet network
+      // The cross-chain detection above already handles cases where networks differ
       let targetNetwork = parseInt(agentChainId) || 11155111;
       let chainType = this.detectChainType(targetNetwork);
 
-      // For EVM networks, try to detect current network
-      if (
-        chainType === "EVM" &&
-        typeof window !== "undefined" &&
-        window.ethereum
-      ) {
-        try {
-          const currentChainId = await window.ethereum.request({
-            method: "eth_chainId",
-          });
-          targetNetwork = parseInt(currentChainId, 16);
-          console.log("🌐 Detected EVM network:", targetNetwork);
-        } catch (error) {
-          console.warn(
-            "⚠️ Could not detect EVM network, using default:",
-            targetNetwork
-          );
-        }
-      }
+      console.log(`🎯 Using agent's network for QR generation:`, {
+        agentChainId,
+        targetNetwork,
+        chainType,
+      });
 
       // For Solana networks, check if Phantom/Solflare is available
       if (
@@ -669,12 +656,12 @@ class DynamicQRService {
             : targetNetwork;
 
         console.log(
-          `🪙 Looking up custom stablecoin ${feeToken} on chain ${chainIdNumber}`
+          `🪙 Looking up custom stablecoin ${feeToken} on chain ${chainIdNumber}`,
         );
 
         tokenAddress = customStablecoinService.getTokenAddress(
           feeToken,
-          chainIdNumber
+          chainIdNumber,
         );
 
         console.log(`🪙 Custom stablecoin lookup result:`, {
@@ -686,15 +673,15 @@ class DynamicQRService {
 
         if (!tokenAddress) {
           console.error(
-            `❌ Custom stablecoin ${feeToken} not found on network ${chainIdNumber}`
+            `❌ Custom stablecoin ${feeToken} not found on network ${chainIdNumber}`,
           );
           console.error(
             `Available custom stablecoins:`,
-            customStablecoinService.getAvailableStablecoins(chainIdNumber)
+            customStablecoinService.getAvailableStablecoins(chainIdNumber),
           );
           throw new Error(
             `Custom stablecoin ${feeToken} not available on network ${targetNetwork}. ` +
-              `Please select a different payment token.`
+              `Please select a different payment token.`,
           );
         }
       } else {
@@ -728,7 +715,7 @@ class DynamicQRService {
           walletAddress,
           feeAmount,
           feeToken,
-          tokenAddress
+          tokenAddress,
         );
 
         console.log(`🔍 Generated ERC-20 transfer data:`, {
@@ -744,11 +731,11 @@ class DynamicQRService {
         if (tokenAddress) {
           // ERC-20 token transfer URI format with chain ID
           const amountInDecimals = Math.floor(
-            parseFloat(feeAmount) * Math.pow(10, 6)
+            parseFloat(feeAmount) * Math.pow(10, 6),
           ); // All custom stablecoins use 6 decimals
           paymentUri = `ethereum:${tokenAddress}@${targetNetwork}/transfer?address=${walletAddress}&uint256=${amountInDecimals}`;
           console.log(
-            `📱 Generated EIP-681 for ERC-20 on chain ${targetNetwork}: ${paymentUri}`
+            `📱 Generated EIP-681 for ERC-20 on chain ${targetNetwork}: ${paymentUri}`,
           );
           console.log(`🔍 EIP-681 Details:`, {
             tokenContract: tokenAddress,
@@ -762,18 +749,18 @@ class DynamicQRService {
         } else {
           // CRITICAL: No native token support - all payments must be ERC-20 stablecoins
           console.error(
-            `❌ Token address not found for network ${targetNetwork}`
+            `❌ Token address not found for network ${targetNetwork}`,
           );
           console.error(
             `Available networks:`,
-            Object.keys(this.usdcTokenAddresses)
+            Object.keys(this.usdcTokenAddresses),
           );
           throw new Error(
             `Token address not configured for network ${targetNetwork}. ` +
               `All payments must use ERC-20 stablecoins. ` +
               `Available networks: ${Object.keys(this.usdcTokenAddresses).join(
-                ", "
-              )}`
+                ", ",
+              )}`,
           );
         }
       } else if (this.isSolanaNetwork(targetNetwork)) {
@@ -840,7 +827,7 @@ class DynamicQRService {
       console.error("❌ Agent data:", agentData);
       console.error(
         "❌ Fee token:",
-        paymentToken || agentData.interaction_fee_token
+        paymentToken || agentData.interaction_fee_token,
       );
       return {
         success: false,
@@ -853,7 +840,7 @@ class DynamicQRService {
     recipientAddress,
     amount,
     token = "USDC",
-    tokenAddress = null
+    tokenAddress = null,
   ) {
     if (!tokenAddress) {
       // Direct ETH transfer - no data needed
@@ -913,7 +900,7 @@ class DynamicQRService {
   async handleEVMTransaction(qrData) {
     if (typeof window === "undefined" || !window.ethereum) {
       throw new Error(
-        "MetaMask not detected. Please install MetaMask to proceed with the transaction."
+        "MetaMask not detected. Please install MetaMask to proceed with the transaction.",
       );
     }
 
@@ -965,7 +952,7 @@ class DynamicQRService {
 
     if (currentChainId !== targetChainId) {
       console.log(
-        `🔄 Switching network from ${currentChainId} to ${targetChainId}`
+        `🔄 Switching network from ${currentChainId} to ${targetChainId}`,
       );
       try {
         await window.ethereum.request({
@@ -974,7 +961,7 @@ class DynamicQRService {
         });
       } catch (switchError) {
         console.warn(
-          "⚠️ Network switch failed, proceeding with current network"
+          "⚠️ Network switch failed, proceeding with current network",
         );
       }
     }
@@ -982,7 +969,7 @@ class DynamicQRService {
     // Cross-chain transactions should have allowance already approved via modal
     if (qrData.isCrossChain && qrData.transactionData) {
       console.log(
-        "� Cross-chain transaction detected - assuming allowance approved via modal"
+        "� Cross-chain transaction detected - assuming allowance approved via modal",
       );
       console.log("� CCIP Transaction details:", {
         sourceChain: qrData.transactionData.sourceChain,
@@ -1019,14 +1006,14 @@ class DynamicQRService {
 
     if (typeof window === "undefined" || !wallet) {
       throw new Error(
-        "Solana wallet not detected. Please install Phantom or another Solana wallet."
+        "Solana wallet not detected. Please install Phantom or another Solana wallet.",
       );
     }
 
     // Try to connect to Solana wallet (Phantom, Solflare, etc.)
     console.log(
       "🔍 Using wallet:",
-      wallet.isPhantom ? "Phantom" : "Other Solana wallet"
+      wallet.isPhantom ? "Phantom" : "Other Solana wallet",
     );
 
     if (!wallet.isConnected) {
@@ -1064,7 +1051,7 @@ class DynamicQRService {
   async fetchUSDCBalance(walletAddress, chainId) {
     try {
       console.log(
-        `💰 Fetching USDC balance for ${walletAddress} on chain ${chainId}`
+        `💰 Fetching USDC balance for ${walletAddress} on chain ${chainId}`,
       );
 
       const chainType = this.detectChainType(chainId);
@@ -1097,7 +1084,7 @@ class DynamicQRService {
       "🔍 fetchEVMUSDCBalance called with chainId:",
       chainId,
       "Type:",
-      typeof chainId
+      typeof chainId,
     );
 
     const networkInfo = this.getNetworkInfo(chainId);
@@ -1160,7 +1147,7 @@ class DynamicQRService {
         `🔍 Using encoding method:`,
         window.ethereum.utils?.encodeFunctionCall
           ? "MetaMask utils"
-          : "Custom encoding"
+          : "Custom encoding",
       );
       console.log(`🔍 Encoded call data:`, data);
 
@@ -1192,7 +1179,7 @@ class DynamicQRService {
         } else {
           console.warn(
             `⚠️ Empty or invalid balance response, using 0:`,
-            balance
+            balance,
           );
           balanceInWei = 0;
         }
@@ -1206,8 +1193,8 @@ class DynamicQRService {
       console.log(
         `🔍 Balance calculation: ${balanceInWei} / ${Math.pow(
           10,
-          6
-        )} = ${balanceInUSDC}`
+          6,
+        )} = ${balanceInUSDC}`,
       );
 
       console.log(`✅ EVM USDC Balance: ${balanceInUSDC} USDC`);
@@ -1291,7 +1278,7 @@ class DynamicQRService {
         if (wallet && wallet.isConnected) {
           return await this.fetchUSDCBalance(
             wallet.publicKey.toString(),
-            chainId
+            chainId,
           );
         }
       }

@@ -55,6 +55,8 @@ export default defineConfig({
       "e921551af012.ngrok-free.app",
       "jair-unrenunciatory-pseudozealously.ngrok-free.app",
       "jair-unrenunciatory-pseudozealously.ngrok-free.dev", // Current Ngrok URL
+      "5d6a-89-103-65-193.ngrok-free.app", // AR Viewer Frontend
+      "peristaltic-dissected-jewel.ngrok-free.dev", // AR Viewer Frontend (new bandwidth account)
     ],
     cors: {
       origin: [
@@ -63,6 +65,8 @@ export default defineConfig({
         "https://ce9c2121aa0a.ngrok-free.app",
         "https://jair-unrenunciatory-pseudozealously.ngrok-free.app",
         "https://jair-unrenunciatory-pseudozealously.ngrok-free.dev",
+        "https://5d6a-89-103-65-193.ngrok-free.app", // AR Viewer Frontend
+        "https://peristaltic-dissected-jewel.ngrok-free.dev", // AR Viewer Frontend (new bandwidth account)
       ],
       credentials: true,
     },

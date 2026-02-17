@@ -88,8 +88,8 @@ const UserFacingQRCode = ({
 
     const time = state.clock.getElapsedTime();
 
-    // Smooth floating animation - draws attention without being distracting
-    const floatAmplitude = 0.08;
+    // Smooth floating animation - very subtle
+    const floatAmplitude = 0.02;
     const floatSpeed = 1.2;
     meshRef.current.position.y =
       position[1] + Math.sin(time * floatSpeed) * floatAmplitude;

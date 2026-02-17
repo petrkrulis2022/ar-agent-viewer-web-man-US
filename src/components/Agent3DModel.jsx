@@ -45,7 +45,7 @@ const Agent3DModel = ({
     groupRef.current.rotation.y += delta * spinSpeed.current;
 
     // Floating animation (gentle up/down movement)
-    const floatIntensity = 0.1 * scale; // Scale with distance
+    const floatIntensity = 0.02 * scale; // Very subtle bob
     const floatY =
       Math.sin(animationTime.current * 1.5 + floatOffset.current) *
       floatIntensity;

@@ -86,7 +86,7 @@ const FloatingQRCode = ({
           setHasError(false);
           setIsVisible(true);
         }
-      }
+      },
     );
   }, [qrData]);
 
@@ -96,8 +96,8 @@ const FloatingQRCode = ({
 
     const time = state.clock.getElapsedTime();
 
-    // Enhanced floating animation - more noticeable
-    const floatAmplitude = 0.25; // Increased amplitude
+    // Subtle floating animation
+    const floatAmplitude = 0.03;
     const floatSpeed = 1.0;
     meshRef.current.position.y =
       position[1] + Math.sin(time * floatSpeed) * floatAmplitude;
@@ -537,8 +537,8 @@ const ARQRCodeFixed = ({ qrCodes = [], onQRScanned, className = "" }) => {
       prev.map((qr) =>
         qr.id === scanData.id
           ? { ...qr, status: "scanned", scannedAt: scanData.scannedAt }
-          : qr
-      )
+          : qr,
+      ),
     );
 
     // Call parent handler with enhanced data
