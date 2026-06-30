@@ -45,6 +45,17 @@ KEY MESSAGES:
 
 LOGO/WORDMARK: "RUNGENT" — bold, technical, with a subtle motion/streak or reticle on the "U" or
 the dot of an "i"-like glyph. Tagline: "THE AI RUNNING MAN."
+
+RUNGENT VISUAL (the runner character — ALWAYS render it; never omit it in AR shots):
+a glowing neon-green (#00FF6A) humanoid RUNNER SILHOUETTE in a mid-stride sprint pose — solid
+filled figure with a bright emissive outline, soft outer glow/bloom, faint cyan (#00E5FF) rim
+light, motion-streak trails behind it, a subtle dark contact shadow on the ground, and a thin
+scanline/hologram shimmer so it reads as an AR overlay (not a real person). It must be clearly
+recognizable as a running human and ~35–45% of frame height when close. Build it in pure CSS/SVG.
+
+AR LAYERING (any AR camera shot): BACK = dark night-street background; MIDDLE = the Rungent figure
+(the focal point); FRONT = the HUD (reticle, distance, HOLD-TO-CATCH ring, FIRE button,
+timer/prize). Never hide the figure behind the street or the HUD; the reticle locks onto it.
 ```
 
 ---
@@ -67,9 +78,10 @@ flows:
    dots), DELAYED Rungent breadcrumbs (fading green dots, "last seen 14 min ago"), the Rungent's
    live TRANSPORT MODE chip ("🚲 cycling"), checkpoints, geofenced no-go zones (amber hatch),
    staged AR items (magenta). Bottom bar: Map · AR · Items · Store · Leaderboard.
-5) AR CAMERA — simulated phone-camera street scene at night with a glowing running figure (the
-   Rungent) in AR + a targeting reticle HUD, distance "23 m", "HOLD TO CATCH" ring and a "FIRE"
-   button. Show a Hunter avatar of another player visible in-scene too.
+5) AR CAMERA — simulated phone-camera night street with the RUNGENT figure as the clear focal
+   point (render per the RUNGENT VISUAL + AR LAYERING spec — it must be visibly present) + a
+   targeting reticle locked on it, distance "23 m", "HOLD TO CATCH" ring and a "FIRE" button.
+   Show another player's Hunter avatar visible in-scene too.
 6) CATCH/SHOOT RESULT — success state: "RUNGENT DOWN" / "CAUGHT!" with confetti of green sparks,
    prize-share summary, "Share clip" button (TikTok/Reels/Kick icons).
 7) SPECTATE — a live war-room view: map of dots + "LIVE" tag + picture-in-picture AR stream +
@@ -156,8 +168,9 @@ flow-arrow map between them:
 4) Main: bottom tab bar [Map | AR | Items | Store | Leaderboard]. Detail the MAP screen layout:
    header HUD (timer + prize), the map canvas with legend (me, hunters-live, rungent-delayed,
    checkpoints, no-go zones, items), a "transport mode" status chip, and a "Go AR" CTA.
-5) AR screen: camera viewport area, reticle, distance readout, HOLD-TO-CATCH control, FIRE button,
-   ammo/cooldown indicator.
+5) AR screen: camera viewport area with a labeled "RUNGENT figure (running silhouette)"
+   placeholder as the focal point, reticle locked on it, distance readout, HOLD-TO-CATCH control,
+   FIRE button, ammo/cooldown indicator.
 6) Result sheet: caught/escaped state, prize-share breakdown, Share-clip.
 7) Spectate/Back: war-room map + stream slot + back-rungent/back-hunter (glory points) panel.
 
@@ -174,15 +187,23 @@ Create a short (~20–30s) vertical (9:16) animated teaser/trailer for RUNGENT (
 Brief). Cinematic neon-cyberpunk, night city, fast cuts, HUD/glitch transitions, driving
 electronic beat feel. Storyboard the sequence:
 
+IMPORTANT: render the RUNGENT figure per the RUNGENT VISUAL + AR LAYERING spec and make it
+CLEARLY VISIBLE as the focal point in beats 2, 4 and 5 — in front of the street, behind the HUD;
+the reticle locks onto it. Do not leave the AR/shooting shots empty.
+
 1) [0–3s] Black. A green glitch. Text types out: "AN AI IS ON THE RUN." Distant siren.
-2) [3–7s] A phone rises; through its camera a glowing runner figure sprints across a dark street
-   and vanishes around a corner. Reticle flickers, "TARGET LOST."
+2) [3–7s] A phone rises; through its camera the RUNGENT figure (per spec — glowing green runner
+   silhouette, motion streaks, the clear focal point) sprints across a dark street and vanishes
+   around a corner. Reticle tries to follow, flickers "TARGET LOST."
 3) [7–12s] Quick montage: a war-room map blooming with cyan hunter dots; fading green breadcrumb
    trail; a "🚲 CYCLING" mode chip; a train blurring past.
-4) [12–17s] Multiple hunters (real people, phones up) converging down an alley; the runner feints
-   and doubles back; "HOLD TO CATCH" ring closes — then breaks (smoke decoy). Tension.
-5) [17–23s] A crosshair finally LOCKS — "FIRE" — green flash — "RUNGENT DOWN." Prize pool number
-   slams on screen ($100,000) with a coin-burst.
+4) [12–17s] Multiple hunters (real people, phones up) converging down an alley; the RUNGENT figure
+   (clearly visible, glowing) runs toward camera, FEINTS one way then DOUBLES BACK; the
+   "HOLD TO CATCH" ring closes on it — then breaks as a smoke decoy puffs around it. Tension.
+5) [17–23s] The crosshair LOCKS directly onto the RUNGENT figure (reticle snaps green) — "FIRE" —
+   a green muzzle flash hits the figure, it staggers and dissolves into green particles —
+   "RUNGENT DOWN" stamps over where it was. Prize pool number slams on screen ($100,000) with a
+   coin-burst.
 6) [23–28s] Logo reveal: "RUNGENT — THE AI RUNNING MAN." Tagline: "You can only see it through
    your lens." End CTA: "Join the Hunt." + "by Intangible Tech."
 

@@ -42,6 +42,15 @@ never a real person."
 **WORDMARK:** "RUNGENT" — bold, technical, subtle motion-streak or reticle accent. Tagline:
 "THE AI RUNNING MAN."
 
+**RUNGENT VISUAL (the runner character — ALWAYS render it in AR shots, never omit it):** a glowing
+neon-green `#00FF6A` humanoid **runner silhouette** in a mid-stride sprint pose — solid filled
+figure, bright emissive outline, soft outer glow/bloom, faint cyan `#00E5FF` rim light, motion-
+streak trails, a subtle dark contact shadow, and a thin scanline/hologram shimmer so it reads as an
+AR overlay (not a real person). Clearly a running human; ~35–45% of frame height when close; built
+in pure CSS/SVG. **AR layering:** back = night-street background, middle = the Rungent figure (focal
+point), front = the HUD (reticle/distance/HOLD-TO-CATCH ring/FIRE button). The reticle locks onto
+the figure; never hide it behind the street or HUD.
+
 ---
 
 ## PRODUCT FACTS (use for copy & structure)
@@ -100,7 +109,8 @@ tech combined.
 4. **Map / Radar (home)** — dark city map: me (center), Hunters (live cyan dots), Rungent (delayed
    fading green breadcrumbs), transport-mode chip, checkpoints, no-go zones (amber hatch), items
    (magenta). Bottom bar: Map · AR · Items · Store · Leaderboard. Top HUD: leg timer + prize pool.
-5. **AR Camera** — night street through the camera, glowing Rungent figure, reticle, distance
+5. **AR Camera** — night street through the camera, the **Rungent figure as the clear focal point**
+   (render per the RUNGENT VISUAL spec — it must be visibly present), reticle locked on it, distance
    "23 m", "HOLD TO CATCH" ring, "FIRE" button, another Hunter's avatar visible.
 6. **Catch/Shoot Result** — "RUNGENT DOWN" / "CAUGHT!", green spark burst, prize-share summary,
    "Share clip" (TikTok/Reels/Kick).
