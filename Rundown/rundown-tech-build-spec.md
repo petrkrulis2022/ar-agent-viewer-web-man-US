@@ -434,9 +434,10 @@ Sepolia + Solana devnet.
 ### 14.3 v2 / v3 (deferred — do NOT lose these)
 Teams; reload/ammo; weapon variety + gear store; passive-watcher accounts & optional viewer avatars
 (cosmetic); backer share of the prize pool; mainnet real-money markets (licensed, position limits,
-stricter firewall); face-blurring + T&S; RTK precision + device attestation; native app + AR glasses;
-photorealistic live Rungent-POV; the multi-stream premium mosaic; **"compete to be the next Rungent"**
-creator economy; celebrity-likeness legs.
+stricter firewall); face-blurring + T&S; RTK precision + device attestation; native app + **AR glasses
+via Google XR Blocks** (WebXR+Three.js+Gemini — gaze/gesture aiming, occlusion, avatars; NOT for phone
+v1 — no GPS anchoring + no iOS WebXR; see `rundown-tech.md` §2.10); photorealistic live Rungent-POV; the
+multi-stream premium mosaic; **"compete to be the next Rungent"** creator economy; celebrity-likeness legs.
 
 ---
 

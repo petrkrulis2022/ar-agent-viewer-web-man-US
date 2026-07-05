@@ -142,6 +142,33 @@ an interesting hunt + fair win-rate."
 - **Shared:** Supabase (Postgres + Auth + Storage) as today; the Rungent app reads/writes the same
   agent/wallet model.
 
+### 2.10 AR-glasses track — Google XR Blocks (v2/v3 north star, NOT v1)
+
+Our long-term "best way to play" is **AR glasses**. When we get there, adopt **Google XR Blocks**
+(`github.com/google/xrblocks`) — an open-source **WebXR + Three.js + Gemini** framework for AI+XR.
+
+**Why it fits the glasses future:**
+- **Same 3D stack** — Three.js + WebXR (we're React Three Fiber, a Three.js wrapper), so the glowing
+  Rungent model/shader and skills port over with low switching cost.
+- **The hard glasses UX is pre-built:** its "Reality Model" gives **gaze + gesture aiming** (shoot the
+  Rungent by looking/pointing), **occlusion** (Rungent ducks behind real buildings), **avatars**,
+  depth/lighting, and **remote-peer multi-user**.
+- **Agent-native:** its `ai` module treats an AI character as a first-class **Intelligent entity** —
+  exactly the Rungent (swap Gemini for our Claude brain; Gemini Live could drive in-range voice).
+- Aligns with our all-Google maps/infra choice; the **XR Blocks Gem** (vibe-coding IDE) is good for a
+  fast headset marketing spike.
+
+**Why it is NOT the v1 foundation (do not build the phone demo on it):**
+- **No geolocation / outdoor world anchoring** — it's device-relative, room-scale, depth-based; RUNDOWN
+  needs city-scale GPS+altitude anchoring (still ours / ARCore Geospatial / Niantic VPS regardless).
+- **Headset-first; WebXR AR does NOT run on iOS Safari** — v1 is phone-first incl. iPhones, so the
+  R3F + `getUserMedia` + Geolocation approach stays for v1.
+- Research-grade framework tied to just-launching Android XR hardware (Galaxy XR / Project Aura).
+
+**Borrow now, even on phone v1:** adopt its **Reality Model vocabulary** to structure the code —
+Rungent = *Intelligent entity*, hunters = *Social entities/avatars*, items = *Virtual assets* — and its
+**agent-as-scene-entity** pattern (matches our two-layer brain).
+
 ---
 
 ## 3. Reference architecture
