@@ -157,12 +157,12 @@ watermark, distorted hands, extra limbs, cartoonish, daytime, low quality.
 - **Lock the character:** reuse the exact runner description (muscular, neon-green holographic,
   emissive rim, motion streaks, scanlines) verbatim in every prompt. If your tool supports a
   **seed** or **reference image**, feed it a frame from the best clip (or your
-  `rungent-hologram.png` / a still from `rungent-visual-mock.html`) to keep him identical.
+  `rundown-hologram.png` / a still from `rundown-visual-mock.html`) to keep him identical.
 - **Do HUD + branding in post:** reticle, "$100,000", "LIVE", transport-mode chip, RUNGENT
   wordmark, captions — overlay in CapCut/Premiere/After Effects using the brand colors
   (green #00FF6A, cyan #00E5FF, magenta #FF2E9A, amber #FFB020).
 - **Grade to match the mock:** push blacks, add green glow/bloom, subtle scanlines and film grain
-  so the videos match `rungent-visual-mock.html` and the design system.
+  so the videos match `rundown-visual-mock.html` and the design system.
 - **Music:** dark, driving electronic / cinematic trailer beat; sidechain to the bass hits.
 - If a clip renders the runner as a *real* man (not holographic), add to the prompt:
   *"clearly a translucent glowing hologram made of light, not a real solid person, semi-transparent,

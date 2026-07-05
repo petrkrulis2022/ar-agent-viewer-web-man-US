@@ -223,6 +223,6 @@ typography, and a countdown-timer + LIVE-tag HUD overlay throughout. Specify tim
   hero of slide 1."
 - Keep the safety message visible (AI target, geofencing) — it's a differentiator *and* it
   pre-empts the obvious investor objection.
-- Source content + facts from `rungent.md`; source the build story for slide 8 from
-  `rungent-tech.md`.
+- Source content + facts from `rundown.md`; source the build story for slide 8 from
+  `rundown-tech.md`.
 ```

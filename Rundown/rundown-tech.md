@@ -1,9 +1,10 @@
-# Rungent — Full Technical Stack & Architecture
+# RUNDOWN — Full Technical Stack & Architecture
 
+**Platform / show:** RUNDOWN · **The AI runner (character/type):** Rungent
 **Version:** 0.1
 **Date:** June 29, 2026
-**Audience:** engineering team building Rungent in a **separate codebase** (this doc is
-self-contained so it can be lifted out wholesale).
+**Audience:** engineering team building RUNDOWN (runner: Rungent) in a **separate codebase** (this doc
+is self-contained so it can be lifted out wholesale).
 
 > Rungent reuses the **CubePay / AgentSphere** primitives (agent-with-wallet, AR object
 > deployment, GPS anchoring, movement, real-time sync, multi-chain payments) but adds a large new
@@ -74,7 +75,7 @@ bucketing of Hunters/items and efficient "who's near whom" lookups.
 
 ### 2.4 The Rungent AI brain
 
-Two layers (see `rungent.md` §7):
+Two layers (see `rundown.md` §7):
 
 1. **Strategy layer — LLM agent.** Use **Claude (latest, e.g. `claude-opus-4-8`)** as the
    decision-maker: a tool-using agent that, each decision tick, is given structured state
@@ -117,7 +118,7 @@ an interesting hunt + fair win-rate."
 - **Prize-pool contract:** holds sponsor funds; pays out to winner(s)/backers on the
   server-attested leg result (oracle/multisig-gated release).
 - **Token launch (optional):** **Solana** + **pump.fun** for the community token (Demo B). Keep it
-  isolated from prize custody. (Legal review — see `rungent.md` §19.)
+  isolated from prize custody. (Legal review — see `rundown.md` §19.)
 - **Backing/prediction market (deferred):** licensed module; could be on-chain (Polymarket-style)
   but jurisdiction-locked.
 
@@ -246,6 +247,6 @@ rungent/
 
 ---
 
-**Sibling docs:** `rungent.md` (product), `rungent-design.md` (design prompts).
+**Sibling docs:** `rundown.md` (product), `rundown-design.md` (design prompts).
 **Reuse sources:** `../CUBE_PAY_PROJECT_OVERVIEW.md`, `../p2p.md`, `../contracts/P2PEscrow.sol`,
 `../src/components/Enhanced3DAgent.jsx`, `../src/components/ARViewer.jsx`, `../src/services/`.

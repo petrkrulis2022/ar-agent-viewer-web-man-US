@@ -1,8 +1,8 @@
 # Rungent — Design Context (attach this single file to Claude design)
 
 > This one file gives the designer everything it needs: the brand system + the product facts +
-> the build story. Attach it, then paste the per-template prompt from `rungent-design.md`.
-> (Condensed from `rungent.md` and `rungent-tech.md`.)
+> the build story. Attach it, then paste the per-template prompt from `rundown-design.md`.
+> (Condensed from `rundown.md` and `rundown-tech.md`.)
 
 ---
 

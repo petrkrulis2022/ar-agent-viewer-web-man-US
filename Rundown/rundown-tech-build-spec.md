@@ -8,8 +8,8 @@
 > CubePay stack, (2) captures every **locked product decision**, (3) gives the **architecture, data
 > model, contracts, and AI design**, and (4) ends with a **copy-paste BUILD-AGENT PROMPT** (Part 15)
 > for the coding agent that will build RUNDOWN in the new repo.
-> Sibling docs: `rungent.md` (product), `rungent-tech.md` (stack overview), `rungent-design.md` +
-> `rungent-design-context.md` (design), `rungent-visual-mock.html` (AR look), `rungent-video-prompts.md`.
+> Sibling docs: `rundown.md` (product), `rundown-tech.md` (stack overview), `rundown-design.md` +
+> `rundown-design-context.md` (design), `rundown-visual-mock.html` (AR look), `rundown-video-prompts.md`.
 
 ---
 
@@ -83,7 +83,7 @@ two-wallet escrow**, the **AI Rungent brain**, **rigged-GLB locomotion + heading
 - **Voice:** **two-way** dialogue, **only with a hunter in AR range**; everyone else hears via the
   (delayed) stream. Character voice.
 - **Appearance:** **rigged GLB humanoid** with walk/run animation, styled as the glowing muscular
-  hologram (see `rungent-visual-mock.html`); rotates to face heading; **interactive** like the cube.
+  hologram (see `rundown-visual-mock.html`); rotates to face heading; **interactive** like the cube.
 - **Daily 1-min recap:** a **real AI-generated talking video** of the character over a real background
   (2025-movie style), at end of each active day.
 
@@ -342,7 +342,7 @@ Rungent at **capped human speed** (walk 6 / run 10 km/h; may slow), **clamps alt
 
 - **Rungent render:** load the **rigged GLB** with `useGLTF`+`useAnimations`; play `walk`/`run` clips
   keyed to `transport_mode`/`speed`; rotate model to `heading_deg`; apply the **holographic shader/bloom**
-  (green emissive + fresnel rim + scanlines) to match `rungent-visual-mock.html`. Anchor at
+  (green emissive + fresnel rim + scanlines) to match `rundown-visual-mock.html`. Anchor at
   `true_lat/lng/alt` **only when the hunter is within engagement range** (else it's off-camera/on the
   delayed map).
 - **Interactivity:** tap opens an interaction panel (inspect, talk) — mirror `AgentInteractionModal` /
@@ -397,7 +397,7 @@ Rungent at **capped human speed** (walk 6 / run 10 km/h; may slow), **clamps alt
   is a later premium desktop feature).
 - **Rungent tile:** a **stylized live 3D map-cam** — its (delayed) position gliding over **Google
   Photorealistic 3D Tiles** — always present. Cinematic "through-its-eyes" POV stays **marketing
-  content** (see `rungent-video-prompts.md`), not a live v1 render.
+  content** (see `rundown-video-prompts.md`), not a live v1 render.
 - **Monetization surface:** this is the pump.fun / token-launch stream and the ad surface.
 
 ---
@@ -548,6 +548,6 @@ funds.
 
 ---
 
-**Related:** `rungent.md`, `rungent-tech.md`, `rungent-design.md`, `rungent-design-context.md`,
-`rungent-visual-mock.html`, `rungent-video-prompts.md`, `../contracts/P2PEscrow.sol`,
+**Related:** `rundown.md`, `rundown-tech.md`, `rundown-design.md`, `rundown-design-context.md`,
+`rundown-visual-mock.html`, `rundown-video-prompts.md`, `../contracts/P2PEscrow.sol`,
 `../CUBE_PAY_PROJECT_OVERVIEW.md`.

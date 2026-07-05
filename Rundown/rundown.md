@@ -1,5 +1,6 @@
-# Rungent — The AI Running Man · Product Specification
+# RUNDOWN — The AI Running Man · Product Specification
 
+**Platform / show:** RUNDOWN · **The AI runner (character/type):** Rungent
 **Version:** 0.1 (Concept)
 **Date:** June 29, 2026
 **Status:** Concept / Pre-Development
@@ -55,7 +56,7 @@ and real people ("Hunters") use their phones (or AR glasses) to physically track
   items into its path, sponsors fund prize pools, and the whole thing is a live broadcast.
 - It is built on the **CubePay / AgentSphere stack** — agent-with-wallet, AR object deployment,
   GPS anchoring, movement, real-time sync, and multi-chain payments already exist (see
-  `rungent-tech.md`).
+  `rundown-tech.md`).
 
 ---
 
@@ -470,9 +471,9 @@ A signature surface — and a marketing weapon.
 1. **AI routing realism vs. fairness** — how cunning is too cunning? Need playtests to tune the
    delay window, speed caps, and deception so Hunters can win ~30–50% of Legs.
 2. **Engine choice for AR** — WebXR/8th Wall (fast, web, reuses our stack) vs. Unity + Niantic
-   Lightship / AR Foundation (richer, glasses-ready). See `rungent-tech.md`.
+   Lightship / AR Foundation (richer, glasses-ready). See `rundown-tech.md`.
 3. **Real-time scale** — Supabase Realtime for a city of Hunters, or a dedicated game-state
-   service (Colyseus/Ably/PubNub + PostGIS)? See `rungent-tech.md`.
+   service (Colyseus/Ably/PubNub + PostGIS)? See `rundown-tech.md`.
 4. **Catch vs. shoot balance** — do both end the Leg, or does "shot" wound/slow and "caught" end?
 5. **Team economics** — how is a shared prize split among a Hunter team + their backers?
 6. **Energy/rest model** — how visible is it to Hunters (do they know when it's resting)?
@@ -481,5 +482,5 @@ A signature surface — and a marketing weapon.
 
 ---
 
-**Sibling docs:** `rungent-tech.md` (full stack), `rungent-design.md` (design-tool prompts).
+**Sibling docs:** `rundown-tech.md` (full stack), `rundown-design.md` (design-tool prompts).
 **Related:** `../CUBE_PAY_PROJECT_OVERVIEW.md`, `../p2p.md`, `../P2P_CUBE_FUNDRAISING_OVERVIEW.md`.
