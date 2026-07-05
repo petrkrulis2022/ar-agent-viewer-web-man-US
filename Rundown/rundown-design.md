@@ -1,4 +1,4 @@
-# Rungent — Design Prompts (for Claude design / AI design tool)
+# RUNDOWN — Design Prompts (for Claude design / AI design tool)
 
 This file contains **ready-to-paste prompts** for each template in the design tool
 (**Prototype · Slides · Document · Wireframe · Animation**). Start a project, pick the template,
@@ -10,7 +10,7 @@ and paste the matching prompt. The **Shared Brand Brief** below should be pasted
 ## 0. Shared Brand Brief (paste first / set as project context)
 
 ```
-PRODUCT: Rungent — "The AI Running Man." A real-world augmented-reality pursuit game.
+PRODUCT: RUNDOWN — "The AI Running Man." A real-world augmented-reality pursuit game.
 A cunning, fully-synthetic AI character (the "Rungent") goes on the run across a real city,
 moving like a real human (on foot, bike, train — never flight). Real people ("Hunters") use
 their phones / AR glasses to physically track it down and CATCH (collide) or SHOOT (AR aim) it
@@ -19,7 +19,7 @@ visible through the device camera, in AR. It's The Running Man, but the runner i
 arena is the real world.
 
 MAKER: Intangible Tech — builders of UnrealPay / CubePay (payment infrastructure for the spatial
-web). Rungent reuses that AR + crypto-wallet + agent stack.
+web). RUNDOWN reuses that AR + crypto-wallet + agent stack.
 
 AUDIENCE: (1) gamers / urban explorers / crypto-native early adopters; (2) investors & sponsors.
 
@@ -43,7 +43,7 @@ KEY MESSAGES:
 - "Catch it or shoot it. Split the pool."
 - Safe by design: the target is an AI — never a real person.
 
-LOGO/WORDMARK: "RUNGENT" — bold, technical, with a subtle motion/streak or reticle on the "U" or
+LOGO/WORDMARK: "RUNDOWN" (show/app logo; the runner rendered in-scene is a "Rungent") — bold, technical, with a subtle motion/streak or reticle on the "U" or
 the dot of an "i"-like glyph. Tagline: "THE AI RUNNING MAN."
 
 RUNGENT VISUAL (the runner character — ALWAYS render it; never omit it in AR shots):
@@ -63,11 +63,11 @@ timer/prize). Never hide the figure behind the street or the HUD; the reticle lo
 ## 1. PROTOTYPE — interactive Hunter-app prototype
 
 ```
-Create an interactive mobile-app prototype for RUNGENT (use the Shared Brand Brief). Dark,
+Create an interactive mobile-app prototype for RUNDOWN (use the Shared Brand Brief). Dark,
 neon-cyberpunk, AR-game HUD aesthetic. Mobile portrait. Build these linked screens with tappable
 flows:
 
-1) SPLASH / LOGIN — "RUNGENT — THE AI RUNNING MAN." CTA: "Enter the Hunt." Anonymous / wallet
+1) SPLASH / LOGIN — "RUNDOWN — THE AI RUNNING MAN." CTA: "Enter the Hunt." Anonymous / wallet
    login chips.
 2) LEG BRIEF — story card for the current Leg: the Rungent's name + portrait, its backstory, the
    AREA (map thumbnail), START DATE/countdown timer, DESTINATION (hidden/teased), PRIZE POOL
@@ -97,11 +97,11 @@ and prize pool.
 ## 2. SLIDES — investor / sponsor pitch deck
 
 ```
-Create a 14-slide investor & sponsor pitch deck for RUNGENT (use the Shared Brand Brief).
+Create a 14-slide investor & sponsor pitch deck for RUNDOWN (use the Shared Brand Brief).
 Cinematic dark cyberpunk, big bold type, one idea per slide, lots of negative space, neon accents,
 HUD/reticle motifs. Slides:
 
-1) TITLE — "RUNGENT — THE AI RUNNING MAN." Tagline + a hero shot (phone-AR glowing runner on a
+1) TITLE — "RUNDOWN — THE AI RUNNING MAN." Tagline + a hero shot (phone-AR glowing runner on a
    night street). "by Intangible Tech."
 2) THE HOOK — "An AI is on the run in your city. Hunt it. In real life. In AR."
 3) PROBLEM / OPPORTUNITY — location-based AR games proved $ (Pokémon Go), but nothing has combined
@@ -135,10 +135,10 @@ glow, and reticle/radar accents. Include placeholder spots for hero images and s
 ## 3. DOCUMENT — one-page concept / sponsor one-pager
 
 ```
-Create a polished one-page concept document (one-pager) for RUNGENT (use the Shared Brand Brief),
+Create a polished one-page concept document (one-pager) for RUNDOWN (use the Shared Brand Brief),
 designed for sponsors and partners. Dark premium layout with neon accents, scannable. Sections:
 
-- HEADER: RUNGENT wordmark + tagline "THE AI RUNNING MAN" + one-line description.
+- HEADER: RUNDOWN wordmark + tagline "THE AI RUNNING MAN" + one-line description.
 - WHAT IT IS: 2–3 sentences (AI fugitive, real city, AR, catch/shoot, real prize pool).
 - HOW A LEG WORKS: a compact 5-step horizontal flow (Story → Area → Start → Hunt → Capture/Escape).
 - WHY SPONSORS WIN: sponsored checkpoints drive real footfall to your door; branded items, safe
@@ -183,7 +183,7 @@ path Map → AR → Result as bold arrows. Keep it strictly low-fi: this is for 
 ## 5. ANIMATION — teaser / trailer storyboard + motion
 
 ```
-Create a short (~20–30s) vertical (9:16) animated teaser/trailer for RUNGENT (use the Shared Brand
+Create a short (~20–30s) vertical (9:16) animated teaser/trailer for RUNDOWN (use the Shared Brand
 Brief). Cinematic neon-cyberpunk, night city, fast cuts, HUD/glitch transitions, driving
 electronic beat feel. Storyboard the sequence:
 
@@ -204,7 +204,7 @@ the reticle locks onto it. Do not leave the AR/shooting shots empty.
    a green muzzle flash hits the figure, it staggers and dissolves into green particles —
    "RUNGENT DOWN" stamps over where it was. Prize pool number slams on screen ($100,000) with a
    coin-burst.
-6) [23–28s] Logo reveal: "RUNGENT — THE AI RUNNING MAN." Tagline: "You can only see it through
+6) [23–28s] Logo reveal: "RUNDOWN — THE AI RUNNING MAN." Tagline: "You can only see it through
    your lens." End CTA: "Join the Hunt." + "by Intangible Tech."
 
 Use the green/cyan/magenta palette, reticle/radar/breadcrumb/glitch motifs, kinetic uppercase

@@ -1,4 +1,4 @@
-# Rungent — Gemini / Veo Video Prompts
+# RUNDOWN — Gemini / Veo Video Prompts
 
 Prompts for **Google Veo 3** (in Gemini / Flow / Vertex). Two hero videos:
 **A) "Become the Running Man" hype/recruitment ad** and **B) Hunter-POV AR chase (see it through your phone).**
@@ -11,7 +11,7 @@ Plus bonus variants.
 - **Audio:** Veo 3 generates sound + dialogue. Dialogue in quotes renders as spoken lines; keep
   lines short. Prefix ambient/music with "Audio:".
 - **On-screen text/HUD/logos are unreliable in AI video** — generate the footage clean and add the
-  reticle, "$100,000", "LIVE", the RUNGENT wordmark, and captions in post (After Effects/CapCut).
+  reticle, "$100,000", "LIVE", the RUNDOWN wordmark, and captions in post (After Effects/CapCut).
 - **The runner look (keep identical across shots):** a **muscular male figure made of glowing
   neon-green light (#00FF6A)**, translucent hologram with a bright emissive rim, soft green bloom,
   faint cyan edge light, motion-trail streaks behind him, subtle horizontal scanline shimmer —
@@ -68,9 +68,9 @@ city hunting. Real money on the line."
 **SHOT 5 — Call to action (8s)**
 ```
 The neon-green runner bursts toward camera and dissolves into a shower of green particles that
-swirl and reform into empty black space (leave clean center for the RUNGENT logo in post).
+swirl and reform into empty black space (leave clean center for the RUNDOWN logo in post).
 Final slow particle drift. [STYLE LINE]. Audio: one last big bass hit then near-silence, a low
-voice: "Rungent. Become part of the hunt." Subtle synth sting to end.
+voice: "RUNDOWN. Become part of the hunt." Subtle synth sting to end.
 ```
 
 **Condensed single-shot version (if you only want one 8s clip):**
@@ -158,7 +158,7 @@ watermark, distorted hands, extra limbs, cartoonish, daytime, low quality.
   emissive rim, motion streaks, scanlines) verbatim in every prompt. If your tool supports a
   **seed** or **reference image**, feed it a frame from the best clip (or your
   `rundown-hologram.png` / a still from `rundown-visual-mock.html`) to keep him identical.
-- **Do HUD + branding in post:** reticle, "$100,000", "LIVE", transport-mode chip, RUNGENT
+- **Do HUD + branding in post:** reticle, "$100,000", "LIVE", transport-mode chip, RUNDOWN
   wordmark, captions — overlay in CapCut/Premiere/After Effects using the brand colors
   (green #00FF6A, cyan #00E5FF, magenta #FF2E9A, amber #FFB020).
 - **Grade to match the mock:** push blacks, add green glow/bloom, subtle scanlines and film grain

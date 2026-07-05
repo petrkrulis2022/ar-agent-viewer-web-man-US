@@ -1,4 +1,4 @@
-# Rungent — Design Context (attach this single file to Claude design)
+# RUNDOWN — Design Context (attach this single file to Claude design)
 
 > This one file gives the designer everything it needs: the brand system + the product facts +
 > the build story. Attach it, then paste the per-template prompt from `rundown-design.md`.
@@ -8,7 +8,7 @@
 
 ## BRAND BRIEF
 
-**PRODUCT:** Rungent — "The AI Running Man." A real-world augmented-reality pursuit game. A
+**PRODUCT:** RUNDOWN — "The AI Running Man." A real-world augmented-reality pursuit game. A
 cunning, fully-synthetic AI character (the "Rungent") goes on the run across a real city, moving
 like a real human (on foot, bike, train — never flight). Real people ("Hunters") use their phones
 / AR glasses to physically track it down and **CATCH (collide)** or **SHOOT (AR aim)** it before
@@ -17,7 +17,7 @@ through the device camera, in AR. It's *The Running Man*, but the runner is an A
 the real world.
 
 **MAKER:** Intangible Tech — builders of UnrealPay / CubePay (payment infrastructure for the
-spatial web). Rungent reuses that AR + crypto-wallet + agent stack.
+spatial web). RUNDOWN reuses that AR + crypto-wallet + agent stack.
 
 **AUDIENCE:** (1) gamers / urban explorers / crypto-native early adopters; (2) investors & sponsors.
 
@@ -39,7 +39,7 @@ little dangerous, premium. Blade Runner × Pokémon Go × a live manhunt broadca
 your lens." · "Catch it or shoot it. Split the pool." · "Safe by design — the target is an AI,
 never a real person."
 
-**WORDMARK:** "RUNGENT" — bold, technical, subtle motion-streak or reticle accent. Tagline:
+**WORDMARK:** "RUNDOWN" (show logo; runner in-scene = a "Rungent") — bold, technical, subtle motion-streak or reticle accent. Tagline:
 "THE AI RUNNING MAN."
 
 **RUNGENT VISUAL (the runner character — ALWAYS render it in AR shots, never omit it):** a glowing
@@ -90,7 +90,7 @@ community token.
 runner; users build & train their own AI runner characters and **compete to be the next Rungent**
 (creator economy).
 
-**Build story (for the "Built on our stack" slide):** Rungent reuses CubePay/AgentSphere —
+**Build story (for the "Built on our stack" slide):** RUNDOWN reuses CubePay/AgentSphere —
 AR agents rendered over the camera, GPS anchoring, real-time sync, and multi-chain crypto wallets/
 payments already exist. The new build is the real-time game server, the AI routing brain (a Claude
 strategy agent + a deterministic human-speed movement simulator), hardened anti-cheat, mapping/
@@ -101,7 +101,7 @@ tech combined.
 
 ## THE 7 HUNTER-APP SCREENS (for prototype/wireframe)
 
-1. **Splash / Login** — "RUNGENT — THE AI RUNNING MAN", CTA "Enter the Hunt", anonymous/wallet.
+1. **Splash / Login** — "RUNDOWN — THE AI RUNNING MAN", CTA "Enter the Hunt", anonymous/wallet.
 2. **Leg Brief** — Rungent portrait + backstory, area map, start countdown, teased destination,
    glowing prize pool, sponsor logos. CTA "Join this Leg".
 3. **Create Hunter Avatar** — character + name + loadout (scope/weapon/gear) with a store feel
