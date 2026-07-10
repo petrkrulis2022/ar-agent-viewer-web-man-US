@@ -191,6 +191,77 @@ countdown HUD running.
 
 ---
 
+## F) CONTINUATION CLIP 2 — "THE CITY IS TOLD" (8s, 9:16)
+
+> Follows E. He's alive and running — now the world finds out. Announcement + mobilization beat.
+
+```
+Cinematic dystopian sci-fi, vertical 9:16, neon-noir, teal-magenta grade with electric-green accents,
+film grain, volumetric light, premium commercial look.
+
+[0-2s] The camera lifts off an empty night street and rockets upward into a stylized dark 3D map of the
+country — glowing neon contour lines, city clusters — racing low across the terrain.
+[2-4s] A new city blooms into view below. A single green dot ignites over it and pulses like a
+heartbeat. Small cyan dots begin scattering around it.
+[4-6s] Hard cut to street level in that city at night: phone screens lighting up one by one — in hands,
+pulled from pockets, at a bus stop, across a crowded bar — each flashing a green pulse notification.
+Faces lit green from below.
+[6-8s] People begin to move. Walking, then running. They pour out of doorways into rain-slicked neon
+streets, phones raised, breath visible. Energy surging.
+
+Audio: a rushing whoosh across the map, a heartbeat pulse accelerating, a cascade of notification
+chimes, crowd murmurs building to a roar as a driving electronic beat kicks in.
+
+Negative prompt: text, watermark, logo, subtitles, distorted hands, extra limbs, cartoonish, low
+quality, daytime.
+```
+
+**Add in post:** `LEG 02` → city name → `PRIZE POOL $100,000`; keep the LIVE tag + countdown HUD.
+
+---
+
+## G) CONTINUATION CLIP 3 — "THE HUNT RESUMES" (8s, 9:16) — lands the CTA
+
+> Follows F. The payoff: you are in the hunt. Ends on the logo + call to action.
+
+```
+Cinematic photoreal, vertical 9:16, first-person POV, handheld, rain-slicked neon night street, film
+grain, shallow depth of field.
+
+[0-2s] First-person POV, running hard down a night street, my own hands holding a phone up in front of
+me, breath ragged. To the naked eye the street ahead is EMPTY.
+[2-4s] On the phone screen a muscular male figure made of glowing neon-green holographic light —
+translucent, emissive rim, cyan edge light, motion-trail streaks, scanline shimmer — ROARS past close
+to camera. The camera whips to follow him.
+[4-6s] He skids, turns, and locks eyes with the camera through the phone screen. A defiant half-smile.
+Then he vanishes around a corner in a burst of light streaks.
+[6-8s] The hunter lowers the phone. The real street is empty, silent, rain falling. A held beat. Hard
+cut to black with a green glitch — clean center left for a logo.
+
+Audio: heavy breathing, pounding footsteps, heartbeat; a huge whoosh and deep bass hit as he passes;
+then sudden near-silence and rain; a final ominous synth sting.
+
+Negative prompt: text, watermark, logo, subtitles, distorted hands, extra limbs, cartoonish, low
+quality, daytime, solid opaque person.
+```
+
+**Add in post:** `YOU CAN ONLY SEE IT THROUGH YOUR LENS.` → `JOIN THE HUNT.` → the **RUNDOWN** wordmark
++ `by Intangible Tech.`
+
+---
+
+## The full cut
+
+| Segment | Length | Beat |
+|---|---|---|
+| Teaser (shots 1–6) | ~28s | An AI is on the run → hunted → RUNGENT DOWN → prize → RUNDOWN logo |
+| **E — It's Not Over** | 8s | He reassembles, looks at camera, bolts. "NEXT LEG LOADING" |
+| **F — The City Is Told** | 8s | Map flight → new city ignites → phones light up → crowds mobilize |
+| **G — The Hunt Resumes** | 8s | Hunter POV, he roars past and vanishes → "JOIN THE HUNT" + logo |
+| **Total** | **~52s** | Clean 60-second cut |
+
+---
+
 ## Consistency & production tips
 - **Lock the character:** reuse the exact runner description (muscular, neon-green holographic,
   emissive rim, motion streaks, scanlines) verbatim in every prompt. If your tool supports a
