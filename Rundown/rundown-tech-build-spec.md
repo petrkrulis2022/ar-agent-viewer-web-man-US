@@ -8,8 +8,30 @@
 > CubePay stack, (2) captures every **locked product decision**, (3) gives the **architecture, data
 > model, contracts, and AI design**, and (4) ends with a **copy-paste BUILD-AGENT PROMPT** (Part 15)
 > for the coding agent that will build RUNDOWN in the new repo.
-> Sibling docs: `rundown.md` (product), `rundown-tech.md` (stack overview), `rundown-design.md` +
-> `rundown-design-context.md` (design), `rundown-visual-mock.html` (AR look), `rundown-video-prompts.md`.
+> Sibling docs: **`rundown-demo-build-prompt.md` (build the demo — start here)**, `rundown.md`
+> (product), `rundown-tech.md` (stack overview), `rundown-design.md` + `rundown-design-context.md`
+> (design), `rundown-visual-mock.html` (AR look), `rundown-video-prompts.md`.
+
+---
+
+## ▶ START HERE — build order
+
+**We build the DEMO first.** Not v1. Not the full show. The demo is a throwaway "magic slice" that
+proves the one loop that sells the product, and it must be **screen-recordable / streamable**.
+
+| If you are… | Read / do this |
+|---|---|
+| **The coding agent building the demo** | Use **`rundown-demo-build-prompt.md`** — a self-contained, demo-only prompt with M0–M7 milestones and acceptance criteria. Start there. |
+| Looking for the demo's must-haves | **§14.1** below |
+| Looking for the whole-project prompt (Demo → v1) | **§15** below |
+| Needing architecture / stack / data model / contracts | **§4–§13** below |
+| Wondering what's deliberately deferred | **§14.3** (v2/v3) |
+
+**The demo's north star:** *"I walk down my street with my phone. The glowing runner is there. It turns,
+looks at me, and speaks. I aim, I fire. It goes down. Testnet USDC lands in my wallet. All on camera."*
+
+Everything in §4–§13 exists to make that sentence true, and to make sure the code grows into v1 without
+being thrown away twice.
 
 ---
 
