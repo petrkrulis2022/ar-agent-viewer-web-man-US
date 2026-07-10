@@ -153,6 +153,44 @@ watermark, distorted hands, extra limbs, cartoonish, daytime, low quality.
 
 ---
 
+## E) CONTINUATION CLIP — "IT'S NOT OVER" (post-logo sting, 8s, 9:16)
+
+> Plays immediately after the teaser's logo reveal / "Join the Hunt" CTA. Resurrects the character and
+> teases the next leg — this is what turns a trailer into an episodic **show**.
+
+```
+Cinematic dystopian sci-fi, vertical 9:16, anamorphic, neon-noir rain-slicked night city, teal-magenta
+grade with electric-green accents, film grain, shallow depth of field, volumetric light.
+
+[0-2s] A dark, empty night street. Faint glowing green embers and particles drift slowly in the air,
+the residue of something that just vanished. Stillness. Slow push-in.
+[2-5s] The embers suddenly swirl, accelerate inward, and REASSEMBLE into a muscular male figure made of
+glowing neon-green holographic light — translucent, bright emissive rim, cyan edge light, scanline
+shimmer — rising from a crouch, head bowed.
+[5-7s] He lifts his head, looks DIRECTLY into the camera, and gives a defiant half-smile. Then he BOLTS
+straight past the camera in an explosion of motion-trail streaks; the camera whips to follow and he is
+already gone.
+[7-8s] The frame settles on the empty street. A hard green glitch. Clean black center left for text.
+
+Audio: near-silence and a low ominous hum; an electric crackle as he reassembles; a rising synth swell;
+a deep bass hit and a whoosh as he bolts; ending on a single ominous synth sting.
+
+Negative prompt: text, watermark, logo, subtitles, distorted hands, extra limbs, cartoonish, low
+quality, daytime, solid opaque person.
+```
+
+**Add in post:** `IT'S NOT OVER` → `NEXT LEG LOADING` → the **RUNDOWN** wordmark; keep the LIVE tag +
+countdown HUD running.
+
+**Alternate continuations (same 8s slot):**
+- **E2 — "The payout":** hunter POV; the green particle burst clears, the phone screen shows testnet
+  USDC landing in the wallet, a distant cheer. Grounds the *real money* claim.
+- **E3 — "New city":** the camera pulls up off the street into a stylized 3D map, races across the
+  country, and a fresh green dot ignites over a new city. Reuses the Rungent map-cam aesthetic and
+  teases the next leg.
+
+---
+
 ## Consistency & production tips
 - **Lock the character:** reuse the exact runner description (muscular, neon-green holographic,
   emissive rim, motion streaks, scanlines) verbatim in every prompt. If your tool supports a
