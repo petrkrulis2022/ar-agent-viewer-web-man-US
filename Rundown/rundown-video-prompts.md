@@ -338,6 +338,40 @@ quality, daytime, solid opaque person.
 
 ---
 
+## K) FEATURE BEAT — "THE CATCH & THE PRIZE" (8s, 9:16) — capture + payout
+
+> Showcases: the emotional payoff of the whole loop — catch the Rungent → real crypto lands in your
+> wallet. The best finale for a highlight cut; pairs right after I (Cornered).
+
+```
+Cinematic photoreal, vertical 9:16, rain-slicked neon night street, teal-magenta grade with
+electric-green accents, film grain, shallow depth of field, volumetric light.
+
+[0-2s] First-person hunter POV, sprinting, phone raised. On the screen the muscular neon-green
+holographic runner is close and cornered against a wall; a "HOLD TO CATCH" ring snaps shut around him
+and locks solid green. Impact.
+[2-4s] The runner freezes mid-stride, his glow flaring white-green, then SHATTERS into a huge burst of
+green particles and light shards that rain down. "Caught." The hunter's free hand pumps the air.
+[4-6s] The swirling green particles rush together and reform into a glowing prize: a neon holographic
+money bag / stack of golden coins spinning above the pavement, radiating light, digits and crypto
+glyphs shimmering across its surface.
+[6-8s] The prize collapses into a stream of green light that pours into the phone; on-screen a wallet
+balance ticks up fast. The hunter lifts the phone triumphantly to the neon skyline. Hard cut, green
+glitch, clean center left for text.
+
+Audio: a tense lock-on tone snapping shut, a big glassy shatter and whoosh as he bursts, a bright
+triumphant synth swell, coin/chime sparkle as the prize forms, a satisfying "cha-ching" deposit sound,
+a distant cheer, ending on a confident bass hit.
+
+Negative prompt: text, watermark, logo, subtitles, distorted hands, extra limbs, cartoonish, low
+quality, daytime, solid opaque person.
+```
+
+**Add in post:** `RUNGENT DOWN` → `YOU CAUGHT IT` → `+ $100,000` (and/or `+ USDC`) → the **RUNDOWN**
+wordmark.
+
+---
+
 ## The full cut
 
 | Segment | Length | Beat |
@@ -350,8 +384,10 @@ quality, daytime, solid opaque person.
 | *H — The City Helps Him* | 8s | *(optional feature beat)* viewer deploys a bike, he escapes on it |
 | *I — Cornered* | 8s | *(optional feature beat)* pincer + decoy skill, "TARGET LOST" |
 | *J — The World Is Watching* | 8s | *(optional feature beat)* bar crowd + live betting odds swing |
+| *K — The Catch & The Prize* | 8s | *(payoff beat)* catch the runner → prize forms → crypto to wallet |
 
-**Feature beats (H, I, J)** work as standalone social posts, mid-roll inserts, or in an extended ~76s cut.
+**Feature beats (H, I, J, K)** work as standalone social posts, mid-roll inserts, or in an extended
+~84s cut. **K** is the strongest finale for a highlight reel.
 
 ---
 
