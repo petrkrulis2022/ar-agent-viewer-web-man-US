@@ -250,6 +250,63 @@ quality, daytime, solid opaque person.
 
 ---
 
+## H) FEATURE BEAT — "THE CITY HELPS HIM" (8s, 9:16) — the item economy
+
+> Showcases: viewers deploy AR items, the Rungent uses them, transport modes. Slots in mid-roll or
+> extends a leg.
+
+```
+Cinematic photoreal, vertical 9:16, neon-noir rain-slicked night city, teal-magenta grade with
+electric-green accents, film grain, volumetric light.
+
+[0-2s] A bystander on a balcony taps their glowing phone. On a street corner below, a translucent neon
+AR bicycle materializes with a green shimmer and a soft pulse, hovering an inch off the wet pavement.
+[2-4s] The muscular neon-green holographic runner sprints into frame, spots the AR bike, and vaults onto
+it in one fluid motion; the bike solidifies into glowing green light beneath him.
+[4-6s] He accelerates hard down the neon street on the glowing bike, motion-trail streaks exploding
+behind him, weaving between real parked cars, faster than a sprint.
+[6-8s] A hunter skids around the corner a second too late, phone raised — sees only empty street and
+fading green light trails. Frustration. Hard cut, green glitch.
+
+Audio: a soft synth chime as the bike materializes, a whoosh and rising electronic surge as he speeds
+off, tires-on-wet-asphalt hum, a distant frustrated shout, an ominous beat.
+
+Negative prompt: text, watermark, logo, subtitles, distorted hands, extra limbs, cartoonish, low
+quality, daytime, solid opaque person.
+```
+
+**Add in post:** `A VIEWER DEPLOYED A BIKE` → `🚲 CYCLING · 25 KM/H`; keep the LIVE tag + countdown HUD.
+
+---
+
+## I) FEATURE BEAT — "CORNERED" (8s, 9:16) — evasion / skills
+
+> Showcases: multi-hunter pincer, the decoy/smoke skill, the "TARGET LOST" tension. Slots in mid-roll.
+
+```
+Cinematic photoreal, vertical 9:16, tense, rain-slicked neon alley at night, teal-magenta grade with
+electric-green accents, film grain, shallow depth of field.
+
+[0-2s] The neon-green holographic runner skids to a stop in a dead-end alley. From two directions,
+real hunters with raised phones close in, their cyan AR avatars flanking him. He's trapped.
+[2-4s] A targeting reticle snaps onto him; a "HOLD TO CATCH" ring begins to close, tightening. His
+glow flickers under the lock. Maximum tension, time slowing.
+[4-6s] He slams his palm down — a burst of dense green smoke and a duplicate GHOST version of himself
+splits off and sprints the wrong way. The reticle jerks toward the decoy; the ring breaks.
+[6-8s] The real runner melts backward into shadow and is gone; the hunters are left swiping at green
+smoke and a dissolving ghost. Hard cut, green glitch.
+
+Audio: heartbeat and rising tension drone, an electronic lock-on tone tightening, a sharp
+whoosh-and-hiss as the smoke bursts, a distorted glitch as the decoy splits, then sudden silence.
+
+Negative prompt: text, watermark, logo, subtitles, distorted hands, extra limbs, cartoonish, low
+quality, daytime, solid opaque person.
+```
+
+**Add in post:** `SKILL: DECOY` / `TARGET LOST`, with the reticle + HUD overlay.
+
+---
+
 ## The full cut
 
 | Segment | Length | Beat |
@@ -258,7 +315,11 @@ quality, daytime, solid opaque person.
 | **E — It's Not Over** | 8s | He reassembles, looks at camera, bolts. "NEXT LEG LOADING" |
 | **F — The City Is Told** | 8s | Map flight → new city ignites → phones light up → crowds mobilize |
 | **G — The Hunt Resumes** | 8s | Hunter POV, he roars past and vanishes → "JOIN THE HUNT" + logo |
-| **Total** | **~52s** | Clean 60-second cut |
+| **Total (narrative cut)** | **~52s** | Clean 60-second cut |
+| *H — The City Helps Him* | 8s | *(optional feature beat)* viewer deploys a bike, he escapes on it |
+| *I — Cornered* | 8s | *(optional feature beat)* pincer + decoy skill, "TARGET LOST" |
+
+**Feature beats (H, I)** work as standalone social posts, mid-roll inserts, or in an extended ~68s cut.
 
 ---
 
