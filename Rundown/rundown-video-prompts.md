@@ -307,6 +307,37 @@ quality, daytime, solid opaque person.
 
 ---
 
+## J) FEATURE BEAT — "THE WORLD IS WATCHING" (8s, 9:16) — spectators + betting
+
+> Showcases: the audience/broadcast + prediction-market layer — the "own the sport AND the sportsbook"
+> thesis. Great for investor cuts. Slots in mid-roll.
+
+```
+Cinematic photoreal, vertical 9:16, packed neon bar/lounge at night, teal-magenta grade with
+electric-green accents, film grain, shallow depth of field, volumetric haze.
+
+[0-2s] Interior of a crowded neon bar. A big screen shows the live RUNDOWN broadcast — a stylized
+glowing green dot (the runner) weaving through a dark 3D city map, fading green breadcrumb trail behind
+it, cyan hunter dots closing in. Faces in the crowd lit by the screen, tense, drinks raised.
+[2-4s] Close on phones in hands: live odds ticking and shifting — a "RUNGENT ESCAPES vs CAUGHT" bar
+swinging, percentages flickering. A thumb taps to place a bet; a green confirmation pulse.
+[4-6s] The broadcast cuts to a hunter-cam POV of the muscular neon-green holographic runner sprinting
+through a real street; the whole bar reacts — gasps, someone stands, cheering building.
+[6-8s] The odds swing hard, a green surge ripples across every phone in the room; the crowd erupts,
+fists up. Hard cut, green glitch, clean center left for text.
+
+Audio: bar ambience rising from murmur to roar, notification and bet-confirm chimes, a hyped
+commentator voice "He's making his move—", a driving electronic beat, a crowd eruption on the final
+beat.
+
+Negative prompt: text, watermark, logo, subtitles, distorted hands, extra limbs, cartoonish, low
+quality, daytime, solid opaque person.
+```
+
+**Add in post:** `LIVE` tag · `RUNGENT 62% · HUNTERS 38%` · `BACK YOUR SIDE` · the **RUNDOWN** wordmark.
+
+---
+
 ## The full cut
 
 | Segment | Length | Beat |
@@ -318,8 +349,9 @@ quality, daytime, solid opaque person.
 | **Total (narrative cut)** | **~52s** | Clean 60-second cut |
 | *H — The City Helps Him* | 8s | *(optional feature beat)* viewer deploys a bike, he escapes on it |
 | *I — Cornered* | 8s | *(optional feature beat)* pincer + decoy skill, "TARGET LOST" |
+| *J — The World Is Watching* | 8s | *(optional feature beat)* bar crowd + live betting odds swing |
 
-**Feature beats (H, I)** work as standalone social posts, mid-roll inserts, or in an extended ~68s cut.
+**Feature beats (H, I, J)** work as standalone social posts, mid-roll inserts, or in an extended ~76s cut.
 
 ---
 
