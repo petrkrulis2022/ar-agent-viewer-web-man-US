@@ -391,6 +391,75 @@ wordmark.
 
 ---
 
+## B-roll & transition assets (breathers + connective tissue)
+
+> A kinetic cut needs breathers between action beats, and branded connective tissue so separate 8s
+> clips read as one film. **Generate the b-roll; do cuts/glitch transitions as editor presets**
+> (cleaner + free). Only AI-generate transitions as **full-frame overlay textures** on black.
+
+### B-roll (atmosphere cutaways, ~4–8s, 9:16)
+
+```
+BR1 — EMPTY STREET RESIDUE: A dark, rain-slicked neon night street, completely empty. Faint glowing
+green embers and light particles drift slowly through the air — the residue of something that just
+vanished. Slow cinematic push-in. Neon reflections in puddles. No people. Moody, quiet, tense. Teal-
+magenta grade with electric-green accents, film grain, volumetric light. Audio: low ominous hum, rain,
+distant siren. Negative prompt: text, watermark, people, daytime, cartoonish, low quality.
+```
+
+```
+BR2 — SEEN THROUGH THE LENS: Macro close-up of a smartphone screen held up at night; on the screen a
+targeting reticle sweeps across an empty neon street searching, "scanning"; for a moment a faint green
+holographic shimmer flickers at the edge of the screen, then is gone. The real street behind the phone
+is empty. Handheld, intimate, tense. Teal-magenta grade, green accents, film grain. Audio: soft
+electronic scan tones, breathing, rain. Negative prompt: text, watermark, distorted hands, daytime,
+cartoonish, low quality.
+```
+
+```
+BR3 — NEON PUDDLE REFLECTION: Extreme close-up of rain falling into a neon puddle on dark asphalt at
+night, magenta and cyan signs reflected; a glowing green holographic figure's reflection ripples across
+the water surface for a beat, then dissolves. Slow motion. Film grain, volumetric light. Audio: rain
+droplets, a soft synth shimmer. Negative prompt: text, watermark, daytime, cartoonish, low quality.
+```
+
+```
+BR4 — SPECTATOR MAP-CAM: A slow orbit around a stylized dark 3D city map at night — glowing neon
+contour lines and buildings; a single pulsing green dot (the runner) with a fading green breadcrumb
+trail, and scattered cyan hunter dots closing in around it. Holographic, data-viz, cinematic. Teal-
+magenta grade, green/cyan accents. Audio: soft data blips, a low tension drone. Negative prompt: text,
+watermark, daytime, cartoonish, low quality.
+```
+
+```
+BR5 — THE CROWD LOOKS UP: A night plaza full of people raising glowing phones toward empty air above
+them, faces lit green from below, breath visible in the cold; anticipation and energy. Neon signage.
+Cinematic, shallow depth of field, film grain. Audio: crowd murmur building, a rising beat. Negative
+prompt: text, watermark, distorted faces/hands, daytime, cartoonish, low quality.
+```
+
+### Transition overlay textures (full-frame, on black, to composite in the editor)
+
+```
+TX1 — GREEN GLITCH WIPE: Full-frame abstract digital glitch on pure black — electric-green (#00FF6A)
+RGB-split, datamosh blocks, scanline tearing, and a horizontal light-bar wipe sweeping across, ~1s.
+Loopable, high contrast, no subject, no text. For use as a transition overlay (screen/add blend mode).
+Negative prompt: text, watermark, people, faces, logos, daytime.
+```
+
+```
+TX2 — GREEN PARTICLE SWEEP: Full-frame swarm of glowing neon-green particles and light streaks sweeping
+left-to-right across pure black, converging then dispersing, ~1s. Loopable, no subject, no text. For
+use as a particle-dissolve transition overlay (screen/add blend mode). Negative prompt: text,
+watermark, people, faces, logos, daytime.
+```
+
+**Editor-preset transitions (no AI needed):** reticle-lock snap (reticle closes → hard cut), radar/
+scanline sweep wipe, RGB-split glitch cut, green breadcrumb-trail whip, map-zoom (punch up into the 3D
+map, drop back to street). Use these for the cuts *between* clips; use TX1/TX2 as flavor overlays.
+
+---
+
 ## Consistency & production tips
 - **Lock the character:** reuse the exact runner description (muscular, neon-green holographic,
   emissive rim, motion streaks, scanlines) verbatim in every prompt. If your tool supports a
