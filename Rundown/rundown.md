@@ -483,4 +483,4 @@ A signature surface — and a marketing weapon.
 ---
 
 **Sibling docs:** `rundown-tech.md` (full stack), `rundown-design.md` (design-tool prompts).
-**Related:** `../CUBE_PAY_PROJECT_OVERVIEW.md`, `../p2p.md`, `../P2P_CUBE_FUNDRAISING_OVERVIEW.md`.
+**Related:** `../CUBE_PAY_PROJECT_OVERVIEW.md`, `../p2p/p2p.md`, `../p2p/P2P_CUBE_FUNDRAISING_OVERVIEW.md`.

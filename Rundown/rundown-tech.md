@@ -24,7 +24,7 @@ is self-contained so it can be lifted out wholesale).
 | **Real-time position sync** | Supabase Realtime | Live Hunter positions, delayed Rungent breadcrumbs |
 | **Tap-to-interact** | agent modals / CubePaymentEngine | Catch/shoot trigger + item rental UI |
 | **Multi-chain payments** | `hederaPaymentService`, `solanaPaymentService`, `evmPaymentService`, ENS, etc. | Rungent pays item providers; prize-pool payouts |
-| **Per-trade escrow pattern** | `../contracts/P2PEscrow.sol` (P2P Cube) | Prize-pool escrow + item stake-for-pot-share |
+| **Per-trade escrow pattern** | `../p2p/P2PEscrow.sol` (P2P Cube) | Prize-pool escrow + item stake-for-pot-share |
 | **Agent hash filter** | `ARViewer.jsx` filter logic | Show only the relevant Rungent/items to a Hunter |
 | **On-the-fly agent deployment** | AgentSphere deploy flow | "Instant local Rungent" demo (drop at any lat/lng) |
 
@@ -275,5 +275,5 @@ rungent/
 ---
 
 **Sibling docs:** `rundown.md` (product), `rundown-design.md` (design prompts).
-**Reuse sources:** `../CUBE_PAY_PROJECT_OVERVIEW.md`, `../p2p.md`, `../contracts/P2PEscrow.sol`,
+**Reuse sources:** `../CUBE_PAY_PROJECT_OVERVIEW.md`, `../p2p/p2p.md`, `../p2p/P2PEscrow.sol`,
 `../src/components/Enhanced3DAgent.jsx`, `../src/components/ARViewer.jsx`, `../src/services/`.

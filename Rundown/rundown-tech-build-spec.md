@@ -69,7 +69,7 @@ Point the build agent at these as reference implementations.
 | **Object filtering in the AR view** | `ARViewer.jsx` filter logic | Show only the relevant leg's Rungent/items to a hunter; hide others. |
 | **Interactive tap object (the cube)** | `CubePaymentEngine.jsx`, `AgentInteractionModal.jsx` | The Rungent is **tappable/interactive** (talk, inspect) exactly like the cube. |
 | **Object carries a wallet + multi-chain pay** | `wallet_address`/`agent_wallet_address`; `solanaPaymentService.js`, `evmPaymentService.js`, ENS | Rungent's **operating wallet** + **prize escrow**; items priced/paid; bet settlement. |
-| **Per-trade escrow contract** | `contracts/P2PEscrow.sol` | Adapt into RUNDOWN's **PrizeEscrow** (release-to-catcher) — see §7. |
+| **Per-trade escrow contract** | `../p2p/P2PEscrow.sol` | Adapt into RUNDOWN's **PrizeEscrow** (release-to-catcher) — see §7. |
 | **Supabase realtime + schema-extend habit** | `add_*_schema.sql` migrations, Supabase Realtime | Live hunter positions, delayed breadcrumbs, leg state, bet events. |
 | **On-the-fly deployment** | AgentSphere deploy flow | The **"instant local Rungent"** demo mode: drop a Rungent at any lat/lng on demand. |
 
@@ -294,7 +294,7 @@ contract LegCommit {
 }
 
 // PrizeEscrow.sol — holds prize USDC; releases to catcher or to Rungent on arrival
-// (adapt contracts/P2PEscrow.sol: seller->none, buyer->catcher, arbiter->server oracle)
+// (adapt ../p2p/P2PEscrow.sol: seller->none, buyer->catcher, arbiter->server oracle)
 contract PrizeEscrow {
     address public token;        // USDC (testnet)
     uint256 public amount;
@@ -572,5 +572,5 @@ funds.
 ---
 
 **Related:** `rundown.md`, `rundown-tech.md`, `rundown-design.md`, `rundown-design-context.md`,
-`rundown-visual-mock.html`, `rundown-video-prompts.md`, `../contracts/P2PEscrow.sol`,
+`rundown-visual-mock.html`, `rundown-video-prompts.md`, `../p2p/P2PEscrow.sol`,
 `../CUBE_PAY_PROJECT_OVERVIEW.md`.
